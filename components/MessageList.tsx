@@ -88,11 +88,12 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
             </div>
             
             {/* Message Content */}
-            <div 
-              className={`${isSystem ? 'opacity-90' : ''}`}
-              style={isSystem ? { color: theme.system } : {}}
-            >
-              <MessageContent text={msg.text} theme={theme} />
+            <div className={isSystem ? 'opacity-90' : ''}>
+              <MessageContent 
+                text={msg.text} 
+                theme={theme} 
+                textColor={isUser ? theme.user : isSystem ? theme.system : undefined}
+              />
             </div>
             
             {/* Streaming Cursor */}

@@ -6,6 +6,7 @@ import type { ThemeColors } from '../domain/Theme';
 interface MessageContentProps {
   text: string;
   theme?: ThemeColors;
+  textColor?: string;
 }
 
 // Declare hljs globally
@@ -98,7 +99,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, back
   );
 };
 
-export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text, theme }) => {
+export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text, theme, textColor: customTextColor }) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Apply syntax highlighting after render
@@ -110,7 +111,7 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
     }
   }, [text]);
 
-  const textColor = theme?.text || '#00FF41';
+  const textColor = customTextColor || theme?.text || '#00FF41';
   const accentColor = theme?.accent || '#00A800';
 
   return (
