@@ -7,10 +7,22 @@ export class ApiKeyService {
     return !!(window as any).aistudio;
   }
 
+  static getEnvApiKey(): string {
+    // Check for environment variable from .env.local (via Vite)
+    const envKey = import.meta.env?.GEMINI_API_KEY || '';
+    return envKey;
+  }
+
   static async hasApiKey(): Promise<boolean> {
     if (this.isStudioEnvironment()) {
       return await (window as any).aistudio.hasSelectedApiKey();
     }
+    // Check environment variable first
+    const envKey = this.getEnvApiKey();
+    if (envKey.length > 0) {
+      return true;
+    }
+    // Fall back to stored key
     const savedKey = StorageService.getString(API_KEY_STORAGE_KEY, '');
     return savedKey.length > 0;
   }
@@ -19,6 +31,12 @@ export class ApiKeyService {
     if (this.isStudioEnvironment()) {
       return process.env.API_KEY || '';
     }
+    // Check environment variable first (from .env.local)
+    const envKey = this.getEnvApiKey();
+    if (envKey.length > 0) {
+      return envKey;
+    }
+    // Fall back to stored key
     return StorageService.getString(API_KEY_STORAGE_KEY, '');
   }
 
