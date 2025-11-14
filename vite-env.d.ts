@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly GEMINI_API_KEY?: string;
+  readonly VITE_APP_VERSION?: string;
+  readonly VITE_APP_BUILD?: string;
 }
 
 interface ImportMeta {
