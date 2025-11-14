@@ -270,18 +270,25 @@ export const App: React.FC = () => {
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Command History Navigation
-    if (commandHistory.length > 0 && !showSuggestions) {
+    // Command History Navigation (only when suggestions are not shown)
+    if (!showSuggestions && commandHistory.length > 0) {
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        const newIndex = Math.min(historyIndex + 1, commandHistory.length - 1);
+        const newIndex = historyIndex === -1 
+          ? 0 
+          : Math.min(historyIndex + 1, commandHistory.length - 1);
         setHistoryIndex(newIndex);
         setInput(commandHistory[newIndex]);
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        const newIndex = Math.max(historyIndex - 1, -1);
-        setHistoryIndex(newIndex);
-        setInput(newIndex === -1 ? '' : commandHistory[newIndex]);
+        if (historyIndex > 0) {
+          const newIndex = historyIndex - 1;
+          setHistoryIndex(newIndex);
+          setInput(commandHistory[newIndex]);
+        } else if (historyIndex === 0) {
+          setHistoryIndex(-1);
+          setInput('');
+        }
       }
     }
   }, [commandHistory, historyIndex, showSuggestions]);

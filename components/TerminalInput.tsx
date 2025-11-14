@@ -43,28 +43,37 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   }, [autoFocus, disabled]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Handle suggestions navigation when suggestions are visible
     if (showSuggestions && suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         onSuggestionIndexChange((activeSuggestionIndex + 1) % suggestions.length);
+        return;
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         onSuggestionIndexChange((activeSuggestionIndex - 1 + suggestions.length) % suggestions.length);
+        return;
       } else if (e.key === 'Tab' || e.key === 'Enter') {
         if (activeSuggestionIndex >= 0) {
           e.preventDefault();
           onSuggestionSelect(suggestions[activeSuggestionIndex].name);
+          return;
         }
       } else if (e.key === 'Escape') {
         e.preventDefault();
         onSuggestionsClose();
+        return;
       }
     }
 
+    // Handle Enter key for sending messages
     if (e.key === 'Enter' && !showSuggestions) {
       onSend();
+      return;
     }
 
+    // For arrow keys when suggestions are not shown, let parent handle history navigation
+    // Call parent's onKeyDown handler for all keys (including arrow keys when suggestions are hidden)
     onKeyDown?.(e);
   };
 
