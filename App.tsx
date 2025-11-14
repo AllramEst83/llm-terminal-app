@@ -3,7 +3,6 @@ import { Message } from './domain/Message';
 import { Settings } from './domain/Settings';
 import { ApiKeyService } from './services/ApiKeyService';
 import { ThemeService } from './services/ThemeService';
-import { StorageService } from './services/StorageService';
 import { CommandService } from './services/CommandService';
 import { BootSequenceService } from './services/BootSequenceService';
 import { MessageService } from './services/MessageService';
@@ -53,14 +52,6 @@ export const App: React.FC = () => {
   // Initialize app
   useEffect(() => {
     const initApp = async () => {
-      // Diagnose localStorage availability (for debugging production issues)
-      const storageDiagnostics = StorageService.diagnose();
-      if (!storageDiagnostics.available) {
-        console.error('localStorage is not available:', storageDiagnostics.error);
-      } else {
-        console.debug('localStorage is available', storageDiagnostics);
-      }
-
       const isStudio = ApiKeyService.isStudioEnvironment();
       setIsStudioEnv(isStudio);
 

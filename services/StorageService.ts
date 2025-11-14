@@ -10,60 +10,6 @@ export class StorageService {
     }
   }
 
-  /**
-   * Diagnostic function to check localStorage status
-   * Useful for debugging production issues
-   */
-  static diagnose(): {
-    available: boolean;
-    quota?: number;
-    used?: number;
-    remaining?: number;
-    error?: string;
-  } {
-    const result: {
-      available: boolean;
-      quota?: number;
-      used?: number;
-      remaining?: number;
-      error?: string;
-    } = {
-      available: false
-    };
-
-    try {
-      // Test basic availability
-      const testKey = '__storage_test__';
-      localStorage.setItem(testKey, testKey);
-      localStorage.removeItem(testKey);
-      result.available = true;
-
-      // Try to get storage quota (may not be available in all browsers)
-      if ('storage' in navigator && 'estimate' in navigator.storage) {
-        navigator.storage.estimate().then(estimate => {
-          result.quota = estimate.quota;
-          result.used = estimate.usage;
-          result.remaining = estimate.quota && estimate.usage 
-            ? estimate.quota - estimate.usage 
-            : undefined;
-        }).catch(() => {
-          // Quota estimation not available
-        });
-      }
-    } catch (error) {
-      result.available = false;
-      if (error instanceof DOMException) {
-        result.error = error.name === 'SecurityError' 
-          ? 'SecurityError: localStorage access denied (may be in iframe or private browsing)'
-          : error.message;
-      } else {
-        result.error = String(error);
-      }
-    }
-
-    return result;
-  }
-
   static get<T>(key: string, defaultValue: T): T {
     if (!this.isAvailable()) {
       console.warn('localStorage is not available. Settings will not persist.');
