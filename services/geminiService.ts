@@ -67,11 +67,24 @@ export async function sendMessageToGemini(
   } catch (error) {
     console.error("Error sending message to Gemini:", error);
     let errorMessage: string;
-    if (error instanceof Error && (error.message.includes('API key not valid') || error.message.includes('PERMISSION_DENIED'))) {
-         errorMessage = "SYSTEM ERROR: Permission denied. Please ensure your API key is valid and has the correct permissions.";
+    
+    if (error instanceof Error) {
+      const errorMsg = error.message.toLowerCase();
+      const errorStr = String(error);
+      
+      if (errorMsg.includes('api key') || errorMsg.includes('permission_denied') || errorMsg.includes('invalid api key') || errorStr.includes('401')) {
+        errorMessage = "SYSTEM ERROR: Invalid API key or permission denied.\n\nPlease check:\n- Your API key is correct\n- The API key has the necessary permissions\n- You can update it using: /apikey <your_key>";
+      } else if (errorMsg.includes('quota') || errorMsg.includes('rate limit') || errorStr.includes('429')) {
+        errorMessage = "SYSTEM ERROR: API quota exceeded or rate limit reached.\n\nPlease try again later or check your API quota.";
+      } else if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('connection')) {
+        errorMessage = "SYSTEM ERROR: Network connection failed.\n\nPlease check your internet connection and try again.";
+      } else {
+        errorMessage = `SYSTEM ERROR: ${error.message || 'Failed to get response from API.'}\n\nCheck the browser console for more details.`;
+      }
     } else {
-        errorMessage = "SYSTEM ERROR: Failed to get response. Please check console.";
+      errorMessage = `SYSTEM ERROR: Unexpected error occurred.\n\nError: ${String(error)}\n\nCheck the browser console for more details.`;
     }
+    
     // Stream the error message back to the UI
     onStream(errorMessage, true);
     onComplete();

@@ -16,7 +16,7 @@ const getCurrentTimestamp = () => {
 const INITIAL_MESSAGE_DATA: Omit<Message, 'id' | 'timestamp'> = { role: 'system', text: '* Google Gemini v1.5 (Flash Edition) *\n* MEMORY: 640K RAM OK *\n* SYSTEM READY. *\n\nAwaiting your command...' };
 
 const getInitialMessages = (): Message[] => [
-    { ...INITIAL_MESSAGE_DATA, id: 'init1', timestamp: getCurrentTimestamp() }
+    { ...INITIAL_MESSAGE_DATA, id: 'init1', timestamp: undefined }
 ];
 
 
@@ -381,10 +381,14 @@ export const App: React.FC = () => {
           setInput('');
           return;
         } else if (command === 'settings') {
+          const keyStatus = isStudioEnv 
+            ? 'Using Studio API Key' 
+            : (apiKey ? `Configured (${apiKey.substring(0, 8)}...)` : 'Not configured');
           systemResponseText = `CURRENT SETTINGS:
 -----------------
 FONT SIZE: ${fontSize}px
-THEME:     ${themeName.toUpperCase()}`;
+THEME:     ${themeName.toUpperCase()}
+API KEY:   ${keyStatus}`;
         } else if (command === 'font') {
           const size = parseInt(args[0], 10);
           if (!isNaN(size) && size >= 8 && size <= 48) {
@@ -415,7 +419,7 @@ THEME:     ${themeName.toUpperCase()}`;
               setApiKey(newKey);
               setIsKeyReady(true);
               localStorage.setItem('terminal_apiKey', newKey);
-              systemResponseText = 'SYSTEM: API key has been updated successfully.';
+              systemResponseText = 'SYSTEM: API key has been updated successfully.\n\nTry sending a message to verify it works.';
             } else {
               systemResponseText = 'SYSTEM ERROR: No API key provided.\nUsage: /apikey <your_api_key>\n\nYou can get a key from Google AI Studio.';
             }
@@ -471,16 +475,21 @@ THEME:     ${themeName.toUpperCase()}`;
         trimmedInput,
         keyForApi,
         (chunkText, isFirstChunk) => {
+            // Check if this is an error message
+            const isError = chunkText.startsWith('SYSTEM ERROR');
+            const messageRole = isError ? 'system' : 'model';
+            
             if (isFirstChunk) {
                 setIsLoading(false);
                 setIsStreaming(true);
-                const modelMessageId = (Date.now() + 1).toString();
-                setMessages(prev => [...prev, { id: modelMessageId, role: 'model', text: chunkText, timestamp: getCurrentTimestamp() }]);
+                const messageId = (Date.now() + 1).toString();
+                setMessages(prev => [...prev, { id: messageId, role: messageRole, text: chunkText, timestamp: getCurrentTimestamp() }]);
             } else {
                 setMessages(prev => {
                     const newMessages = [...prev];
                     const lastMsg = newMessages[newMessages.length - 1];
-                    if (lastMsg?.role === 'model') {
+                    // Update the last message if it matches the role (model or system for errors)
+                    if (lastMsg && (lastMsg.role === messageRole || (isError && lastMsg.role === 'system'))) {
                         lastMsg.text += chunkText;
                     }
                     return newMessages;
@@ -644,7 +653,7 @@ THEME:     ${themeName.toUpperCase()}`;
         <>
           {messages.map((msg, index) => (
             <div key={msg.id} className="mb-2 whitespace-pre-wrap" style={msg.role === 'system' ? { color: theme.system } : {}}>
-              <span className="mr-2" style={{ color: theme.accent, opacity: 0.6 }}>{msg.timestamp}</span>
+              {msg.timestamp && <span className="mr-2" style={{ color: theme.accent, opacity: 0.6 }}>{msg.timestamp}</span>}
               {msg.role === 'user' ? 
                 <span style={{ color: theme.prompt }}>{'>'} </span>
                 : <span className="mr-1"></span>
