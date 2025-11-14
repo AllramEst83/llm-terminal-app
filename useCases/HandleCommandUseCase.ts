@@ -210,11 +210,11 @@ export class HandleCommandUseCase {
   private handleHelp(): CommandResult {
     const commands = CommandService.getAllCommands();
     const commandList = commands
-      .map(cmd => `  /${cmd.name.padEnd(15, ' ')} - ${cmd.description}`)
+      .map(cmd => `- \`/${cmd.name}\` - ${cmd.description}`)
       .join('\n');
     
     const message = MessageService.createSystemMessage(
-      `Available commands:\n${commandList}`
+      `Available commands:\n\n${commandList}`
     );
 
     return {
