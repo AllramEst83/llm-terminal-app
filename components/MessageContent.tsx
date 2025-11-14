@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { ThemeColors } from '../domain/Theme';
@@ -10,6 +10,93 @@ interface MessageContentProps {
 
 // Declare hljs globally
 declare const hljs: any;
+
+interface CodeBlockProps {
+  code: string;
+  language: string;
+  accentColor: string;
+  backgroundColor: string;
+  textColor: string;
+}
+
+const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, backgroundColor, textColor }) => {
+  const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const codeRef = useRef<HTMLElement>(null);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      
+      // Clear existing timeout if any
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      // Reset to "Copy" state after 2 seconds
+      timeoutRef.current = setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+    }
+  };
+
+  // Apply syntax highlighting
+  useEffect(() => {
+    if (typeof hljs !== 'undefined' && codeRef.current && !codeRef.current.classList.contains('hljs')) {
+      hljs.highlightElement(codeRef.current);
+    }
+  }, [code, language]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="relative my-3">
+      <pre 
+        className="rounded overflow-x-auto" 
+        style={{ 
+          backgroundColor: '#1a1a1a',
+          border: `1px solid ${accentColor}40`,
+          padding: '0.75rem'
+        }}
+      >
+        <code 
+          ref={codeRef}
+          className={`language-${language}`} 
+          style={{ 
+            display: 'block',
+            fontSize: '0.9em',
+            lineHeight: '1.5'
+          }}
+        >
+          {code}
+        </code>
+      </pre>
+      <div className="flex justify-end mt-1">
+        <button
+          onClick={handleCopy}
+          className="px-2 py-1 text-xs uppercase focus:outline-none transition-opacity hover:opacity-80"
+          style={{
+            backgroundColor: accentColor,
+            color: backgroundColor,
+            border: `1px solid ${accentColor}60`
+          }}
+        >
+          {copied ? 'Copied ✓' : 'Copy'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text, theme }) => {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -93,22 +180,16 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
             const codeProps = codeElement?.props || {};
             const className = codeProps.className || '';
             const language = className.replace('language-', '') || 'plaintext';
-            const code = codeProps.children || '';
+            const code = String(codeProps.children || '').replace(/\n$/, '');
             
             return (
-              <pre className="my-3 rounded overflow-x-auto" style={{ 
-                backgroundColor: '#1a1a1a',
-                border: `1px solid ${accentColor}40`,
-                padding: '0.75rem'
-              }}>
-                <code className={`language-${language}`} style={{ 
-                  display: 'block',
-                  fontSize: '0.9em',
-                  lineHeight: '1.5'
-                }}>
-                  {String(code).replace(/\n$/, '')}
-                </code>
-              </pre>
+              <CodeBlock
+                code={code}
+                language={language}
+                accentColor={accentColor}
+                backgroundColor={theme?.background || '#0D0D0D'}
+                textColor={textColor}
+              />
             );
           },
           
