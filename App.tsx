@@ -53,6 +53,7 @@ const COMMANDS = [
   { name: 'settings', description: 'Displays current settings.' },
   { name: 'font', description: 'Sets font size (e.g., /font 18).' },
   { name: 'theme', description: 'Changes color scheme (e.g., /theme amber).' },
+  { name: 'apikey', description: 'Sets or updates the API key (e.g., /apikey <your_key>).' },
   { name: 'reset', description: 'Resets all settings to their default values.' },
   { name: 'help', description: 'Shows this list of commands.' },
 ];
@@ -122,7 +123,7 @@ const TerminalHeader: React.FC<{ theme: Theme }> = ({ theme }) => (
     className="p-2 flex items-center justify-between border-b-2 header-lines"
     style={{ backgroundColor: theme.headerBg, color: theme.headerText, borderColor: theme.accent }}
   >
-    <span className="text-lg">C:\\> GEMINI_CHAT.EXE</span>
+    <span className="text-lg">C:\\{'>'} GEMINI_CHAT.EXE</span>
     <div className="flex space-x-2">
       <div className="w-4 h-4 border flex items-center justify-center text-xs" style={{ borderColor: theme.text }}>_</div>
       <div className="w-4 h-4 border flex items-center justify-center text-xs" style={{ borderColor: theme.text }}>[]</div>
@@ -179,7 +180,7 @@ const PressToBootUI: React.FC<{ theme: Theme }> = ({ theme }) => (
     <div className="p-4 whitespace-pre-wrap flex flex-col items-center justify-center h-full">
       <div style={{ color: theme.system }}>SYSTEM READY. API KEY DETECTED.</div>
       <div className="mt-4 flex items-center">
-        <span style={{ color: theme.prompt }} className="mr-2">></span>
+        <span style={{ color: theme.prompt }} className="mr-2">{'>'}</span>
         <span className="uppercase">Press any key to boot</span>
         <span style={{ backgroundColor: theme.text }} className="w-3 h-5 inline-block cursor-blink ml-2"></span>
       </div>
@@ -333,12 +334,12 @@ export const App: React.FC = () => {
     }
   }, [isLoading, isStreaming, messages, booted]);
 
-  const handleSelectKey = async () => {
+  const handleSelectKey = useCallback(async () => {
     await (window as any).aistudio.openSelectKey();
     setIsKeyReady(true);
     // User interaction has occurred, so we can start booting immediately.
     setBooting(true);
-  };
+  }, []);
   
   const handleApiKeySubmit = (submittedKey: string) => {
     setApiKey(submittedKey);
@@ -401,6 +402,23 @@ THEME:     ${themeName.toUpperCase()}`;
               systemResponseText = `Available themes:\n${Object.keys(THEMES).join(', ')}\n\nUsage: /theme <theme_name>`;
           } else {
               systemResponseText = `SYSTEM ERROR: Theme "${requestedTheme}" not found.`;
+          }
+        } else if (command === 'apikey') {
+          if (isStudioEnv) {
+            // In Studio environment, open the key selector
+            handleSelectKey();
+            systemResponseText = 'SYSTEM: Opening API key selector...';
+          } else {
+            // In non-Studio environment, accept the key as argument
+            const newKey = args.join(' ').trim();
+            if (newKey) {
+              setApiKey(newKey);
+              setIsKeyReady(true);
+              localStorage.setItem('terminal_apiKey', newKey);
+              systemResponseText = 'SYSTEM: API key has been updated successfully.';
+            } else {
+              systemResponseText = 'SYSTEM ERROR: No API key provided.\nUsage: /apikey <your_api_key>\n\nYou can get a key from Google AI Studio.';
+            }
           }
         } else if (command === 'reset') {
           localStorage.removeItem('terminal_fontSize');
@@ -484,7 +502,7 @@ THEME:     ${themeName.toUpperCase()}`;
             setIsStreaming(false);
         }
     );
-  }, [input, isLoading, isStreaming, messages, fontSize, themeName, commandHistory, apiKey, isStudioEnv]);
+    }, [input, isLoading, isStreaming, messages, fontSize, themeName, commandHistory, apiKey, isStudioEnv, handleSelectKey]);
 
   const handleSuggestionClick = (command: string) => {
     setInput(`/${command} `);
@@ -557,7 +575,7 @@ THEME:     ${themeName.toUpperCase()}`;
         This app uses the Gemini API. For more information on billing, see ai.google.dev/gemini-api/docs/billing.
       </div>
       <div className="mt-4 flex items-center">
-        <span style={{ color: theme.prompt }} className="mr-2">></span>
+        <span style={{ color: theme.prompt }} className="mr-2">{'>'}</span>
         <button 
           onClick={handleSelectKey}
           style={{ backgroundColor: theme.accent, color: theme.background }}
@@ -597,7 +615,7 @@ THEME:     ${themeName.toUpperCase()}`;
                 This app uses the Gemini API. For more information on billing, see ai.google.dev/gemini-api/docs/billing.
             </div>
             <form onSubmit={handleSubmit} className="mt-4 flex items-center">
-                 <span style={{ color: theme.prompt }} className="mr-2">></span>
+                 <span style={{ color: theme.prompt }} className="mr-2">{'>'}</span>
                  <input
                     ref={inputRef}
                     type="password"
@@ -628,7 +646,7 @@ THEME:     ${themeName.toUpperCase()}`;
             <div key={msg.id} className="mb-2 whitespace-pre-wrap" style={msg.role === 'system' ? { color: theme.system } : {}}>
               <span className="mr-2" style={{ color: theme.accent, opacity: 0.6 }}>{msg.timestamp}</span>
               {msg.role === 'user' ? 
-                <span style={{ color: theme.prompt }} > > </span>
+                <span style={{ color: theme.prompt }}>{'>'} </span>
                 : <span className="mr-1"></span>
               }
               <MessageContent text={msg.text} />
@@ -662,7 +680,7 @@ THEME:     ${themeName.toUpperCase()}`;
           {isLoading && (
              <div className="flex items-center">
                 <span className="mr-2" style={{ color: theme.accent, opacity: 0.6 }}>{getCurrentTimestamp()}</span>
-                <span style={{ color: theme.prompt }}>> </span>
+                <span style={{ color: theme.prompt }}>{'>'} </span>
                 <span className="ml-2">CONNECTING...</span>
             </div>
           )}
@@ -674,25 +692,25 @@ THEME:     ${themeName.toUpperCase()}`;
   return (
     <div className="h-full flex flex-col p-4 sm:p-8">
       <div 
-        className="w-full h-full shadow-lg flex flex-col relative"
+        className="w-full h-full shadow-lg flex flex-col relative border-4"
         style={{ 
           fontSize: `${fontSize}px`,
           backgroundColor: theme.background,
           color: theme.text,
-          boxShadow: `0 0 15px ${theme.accent}33`
+          boxShadow: `0 0 15px ${theme.accent}33`,
+          borderColor: theme.accent
         }}
       >
         <TerminalHeader theme={theme} />
         <div 
           ref={scrollRef}
           className="flex-grow p-4 overflow-y-auto relative scan-lines"
-          style={{ borderRight: `4px solid ${theme.accent}` }}
           onClick={() => booted && inputRef.current?.focus()}
         >
           {renderContent()}
         </div>
         {booted && (
-          <div className="p-2 border-t-2 flex items-center relative" style={{ borderColor: theme.accent }}>
+          <div className="p-2 border-t-4 flex items-center relative" style={{ borderColor: theme.accent }}>
              {showSuggestions && suggestions.length > 0 && (
                 <CommandSuggestions
                     suggestions={suggestions}
@@ -701,7 +719,7 @@ THEME:     ${themeName.toUpperCase()}`;
                     theme={theme}
                 />
             )}
-            <span style={{ color: theme.prompt }} className="mr-2">></span>
+            <span style={{ color: theme.prompt }} className="mr-2">{'>'}</span>
             <input
               ref={inputRef}
               type="text"
