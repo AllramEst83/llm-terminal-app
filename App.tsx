@@ -218,7 +218,7 @@ export const App: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
-    const sendUseCase = new SendMessageUseCase(messages, apiKey);
+    const sendUseCase = new SendMessageUseCase(messages, settings);
     await sendUseCase.execute(
       trimmedInput,
       (chunkText, isFirstChunk) => {

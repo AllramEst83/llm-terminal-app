@@ -30,6 +30,18 @@ export class ManageSettingsUseCase {
       newSettings = newSettings.withApiKey(updates.apiKey);
     }
 
+    if (updates.modelName !== undefined) {
+      newSettings = newSettings.withModelName(updates.modelName);
+    }
+
+    if (updates.thinkingEnabled !== undefined) {
+      newSettings = newSettings.withThinkingEnabled(updates.thinkingEnabled);
+    }
+
+    if (updates.thinkingBudget !== undefined) {
+      newSettings = newSettings.withThinkingBudget(updates.thinkingBudget);
+    }
+
     await this.saveSettings(newSettings);
     return newSettings;
   }

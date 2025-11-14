@@ -40,6 +40,10 @@ export class HandleCommandUseCase {
         return await this.handleReset();
       case 'info':
         return await this.handleInfo();
+      case 'model':
+        return this.handleModel(args);
+      case 'think':
+        return this.handleThink(args);
       case 'help':
       case '':
         return this.handleHelp();
@@ -62,12 +66,18 @@ export class HandleCommandUseCase {
           ? `Configured (${this.currentSettings.apiKey.substring(0, 8)}...)`
           : 'Not configured');
 
+    const thinkingStatus = this.currentSettings.thinkingEnabled
+      ? `Enabled${this.currentSettings.thinkingBudget ? ` (${this.currentSettings.thinkingBudget} tokens)` : ' (default budget)'}`
+      : 'Disabled';
+
     const message = MessageService.createSystemMessage(
-      `CURRENT SETTINGS:
------------------
-FONT SIZE: ${this.currentSettings.fontSize}px
-THEME:     ${this.currentSettings.themeName.toUpperCase()}
-API KEY:   ${keyStatus}`
+      `## CURRENT SETTINGS
+
+- **FONT SIZE:** ${this.currentSettings.fontSize}px
+- **THEME:** ${this.currentSettings.themeName.toUpperCase()}
+- **MODEL:** ${this.currentSettings.modelName}
+- **THINKING:** ${thinkingStatus}
+- **API KEY:** ${keyStatus}`
     );
 
     return {
@@ -169,6 +179,9 @@ API KEY:   ${keyStatus}`
         fontSize: Settings.DEFAULT_FONT_SIZE,
         themeName: Theme.DEFAULT_THEME_NAME,
         apiKey: this.isStudioEnv ? this.currentSettings.apiKey : '',
+        modelName: Settings.DEFAULT_MODEL_NAME,
+        thinkingEnabled: false,
+        thinkingBudget: undefined,
       },
     };
   }
@@ -208,6 +221,101 @@ API KEY:   ${keyStatus}`
       success: true,
       message,
     };
+  }
+
+  private handleModel(args: string[]): CommandResult {
+    const requestedModel = args[0]?.toLowerCase();
+    
+    if (!requestedModel) {
+      const message = MessageService.createSystemMessage(
+        `Available models:\npro, flash\n\nUsage: /model <model_name>\n\nShortcuts:\n  pro   → gemini-2.5-pro\n  flash → gemini-2.5-flash`
+      );
+      return { success: true, message };
+    }
+
+    let modelName: string;
+    if (requestedModel === 'pro') {
+      modelName = 'gemini-2.5-pro';
+    } else if (requestedModel === 'flash') {
+      modelName = 'gemini-2.5-flash';
+    } else if (requestedModel.startsWith('gemini-')) {
+      modelName = requestedModel;
+    } else {
+      const message = MessageService.createErrorMessage(
+        `SYSTEM ERROR: Invalid model "${requestedModel}".\n\nUse "pro", "flash", or a full model name like "gemini-2.5-pro".`
+      );
+      return { success: false, message };
+    }
+
+    const message = MessageService.createSystemMessage(
+      `SYSTEM: Model set to ${modelName}.`
+    );
+
+    return {
+      success: true,
+      message,
+      settingsUpdate: { modelName },
+    };
+  }
+
+  private handleThink(args: string[]): CommandResult {
+    const arg = args[0]?.toLowerCase();
+    
+    if (!arg) {
+      const currentStatus = this.currentSettings.thinkingEnabled
+        ? `Enabled${this.currentSettings.thinkingBudget ? ` (${this.currentSettings.thinkingBudget} tokens)` : ' (default budget)'}`
+        : 'Disabled';
+      const message = MessageService.createSystemMessage(
+        `Thinking mode: ${currentStatus}\n\nUsage:\n  /think on        - Enable with default budget\n  /think off       - Disable\n  /think <number>  - Enable with custom budget (e.g., /think 5000)`
+      );
+      return { success: true, message };
+    }
+
+    if (arg === 'on') {
+      const message = MessageService.createSystemMessage(
+        'SYSTEM: Thinking mode enabled with default budget.'
+      );
+      return {
+        success: true,
+        message,
+        settingsUpdate: {
+          thinkingEnabled: true,
+          thinkingBudget: undefined,
+        },
+      };
+    } else if (arg === 'off') {
+      const message = MessageService.createSystemMessage(
+        'SYSTEM: Thinking mode disabled.'
+      );
+      return {
+        success: true,
+        message,
+        settingsUpdate: {
+          thinkingEnabled: false,
+          thinkingBudget: undefined,
+        },
+      };
+    } else {
+      const budget = parseInt(arg, 10);
+      if (isNaN(budget) || budget <= 0) {
+        const message = MessageService.createErrorMessage(
+          `SYSTEM ERROR: Invalid thinking budget "${arg}".\n\nUse a positive number (e.g., /think 5000).`
+        );
+        return { success: false, message };
+      }
+
+      const message = MessageService.createSystemMessage(
+        `SYSTEM: Thinking mode enabled with budget of ${budget} tokens.`
+      );
+      return {
+        success: true,
+        message,
+        settingsUpdate: {
+          thinkingEnabled: true,
+          thinkingBudget: budget,
+        },
+      };
+    }
   }
 
   private handleUnknownCommand(command: string): CommandResult {

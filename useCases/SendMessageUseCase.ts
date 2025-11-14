@@ -1,4 +1,5 @@
 import { Message } from '../domain/Message';
+import { Settings } from '../domain/Settings';
 import { sendMessageToGemini } from '../services/geminiService';
 import { MessageService } from '../services/MessageService';
 import { getCurrentTimestamp } from '../utils/dateUtils';
@@ -12,7 +13,7 @@ export interface SendMessageResult {
 export class SendMessageUseCase {
   constructor(
     private currentMessages: Message[],
-    private apiKey: string
+    private settings: Settings
   ) {}
 
   async execute(
@@ -25,7 +26,10 @@ export class SendMessageUseCase {
     await sendMessageToGemini(
       this.currentMessages,
       inputText,
-      this.apiKey,
+      this.settings.apiKey,
+      this.settings.modelName,
+      this.settings.thinkingEnabled,
+      this.settings.thinkingBudget,
       (chunkText, isFirstChunk) => {
         onStreamCallback(chunkText, isFirstChunk);
       },

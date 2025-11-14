@@ -22,6 +22,9 @@ export async function sendMessageToGemini(
     currentMessages: Message[], 
     newMessage: string,
     apiKey: string,
+    modelName: string,
+    thinkingEnabled: boolean,
+    thinkingBudget: number | undefined,
     onStream: (chunkText: string, isFirstChunk: boolean) => void,
     onComplete: (sources?: Source[]) => void
 ): Promise<void> {
@@ -29,11 +32,16 @@ export async function sendMessageToGemini(
     const ai = getAiInstance(apiKey);
     
     const chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
+      model: modelName,
       history: formatMessagesForGemini(currentMessages),
       config: {
           systemInstruction: 'You are a helpful assistant in a retro 1980s computer terminal. Respond like you are from that era. Keep responses concise. You now have access to the "World Wide Web" via Google Search for up-to-date information. If a query requires recent information or the user uses the /search command, use this tool. The user can use commands like /help, /settings, /font, /sound, /clear, and /search, but you should not attempt to execute them; the system handles them. For code snippets, use Markdown fences (```) with the language name, e.g., ```javascript.',
           tools: [{googleSearch: {}}],
+          ...(thinkingEnabled && {
+            thinkingConfig: {
+              thinkingBudget: thinkingBudget || 8192
+            }
+          }),
       },
     });
     

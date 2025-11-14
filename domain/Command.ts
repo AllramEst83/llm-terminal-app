@@ -13,6 +13,8 @@ export class Command {
     { name: 'apikey', description: 'Sets or updates the API key (e.g., /apikey <your_key>).' },
     { name: 'reset', description: 'Resets all settings to their default values.' },
     { name: 'info', description: 'Displays browser and system information.' },
+    { name: 'model', description: 'Switch between models (e.g., /model pro or /model flash).' },
+    { name: 'think', description: 'Enable thinking mode (e.g., /think on, /think off, /think 5000).' },
     { name: 'help', description: 'Shows this list of commands.' },
   ];
 
