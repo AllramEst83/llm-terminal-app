@@ -203,7 +203,9 @@ export const App: React.FC = () => {
         }
 
         if (result.message) {
-          setMessages(prev => [...prev, userMessage, result.message!]);
+          // Only add the system response, not the user command message
+          // Commands should not be part of the conversation history sent to the LLM
+          setMessages(prev => [...prev, result.message!]);
         }
 
         setInput('');
