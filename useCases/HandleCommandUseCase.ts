@@ -4,6 +4,7 @@ import { CommandService } from '../services/CommandService';
 import { ThemeService } from '../services/ThemeService';
 import { ApiKeyService } from '../services/ApiKeyService';
 import { MessageService } from '../services/MessageService';
+import { BrowserInfoService } from '../services/BrowserInfoService';
 import { Message } from '../domain/Message';
 
 export interface CommandResult {
@@ -37,6 +38,8 @@ export class HandleCommandUseCase {
         return await this.handleApiKey(args);
       case 'reset':
         return await this.handleReset();
+      case 'info':
+        return await this.handleInfo();
       case 'help':
       case '':
         return this.handleHelp();
@@ -168,6 +171,27 @@ API KEY:   ${keyStatus}`
         apiKey: this.isStudioEnv ? this.currentSettings.apiKey : '',
       },
     };
+  }
+
+  private async handleInfo(): Promise<CommandResult> {
+    try {
+      const browserInfo = await BrowserInfoService.getBrowserInfo();
+      const formattedInfo = BrowserInfoService.formatBrowserInfo(browserInfo);
+      const message = MessageService.createSystemMessage(formattedInfo);
+
+      return {
+        success: true,
+        message,
+      };
+    } catch (error) {
+      const message = MessageService.createErrorMessage(
+        'SYSTEM ERROR: Failed to retrieve browser information.'
+      );
+      return {
+        success: false,
+        message,
+      };
+    }
   }
 
   private handleHelp(): CommandResult {

@@ -12,6 +12,7 @@ export class Command {
     { name: 'theme', description: 'Changes color scheme (e.g., /theme amber).' },
     { name: 'apikey', description: 'Sets or updates the API key (e.g., /apikey <your_key>).' },
     { name: 'reset', description: 'Resets all settings to their default values.' },
+    { name: 'info', description: 'Displays browser and system information.' },
     { name: 'help', description: 'Shows this list of commands.' },
   ];
 
