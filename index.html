@@ -203,6 +203,71 @@
       .hljs-strong {
         font-weight: bold;
       }
+
+      /* Markdown content improvements */
+      .message-content {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+
+      .message-content > *:first-child {
+        margin-top: 0;
+      }
+
+      .message-content > *:last-child {
+        margin-bottom: 0;
+      }
+
+      /* Nested lists */
+      .message-content ul ul,
+      .message-content ol ol,
+      .message-content ul ol,
+      .message-content ol ul {
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+      }
+
+      /* Better list spacing */
+      .message-content li > p {
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+      }
+
+      /* Code block improvements */
+      .message-content pre {
+        position: relative;
+      }
+
+      .message-content pre code {
+        white-space: pre;
+        word-wrap: normal;
+        overflow-wrap: normal;
+      }
+
+      /* Table improvements */
+      .message-content table {
+        font-size: 0.9em;
+      }
+
+      .message-content table th:first-child,
+      .message-content table td:first-child {
+        padding-left: 0.5rem;
+      }
+
+      .message-content table th:last-child,
+      .message-content table td:last-child {
+        padding-right: 0.5rem;
+        border-right: none;
+      }
+
+      /* Blockquote improvements */
+      .message-content blockquote > *:first-child {
+        margin-top: 0;
+      }
+
+      .message-content blockquote > *:last-child {
+        margin-bottom: 0;
+      }
     </style>
   <script type="importmap">
 {
