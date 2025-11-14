@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>80s Terminal Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <!-- Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/xt256.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+      html, body, #root {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        font-family: 'VT323', monospace;
+        box-sizing: border-box;
+      }
+      @keyframes blink {
+        50% { opacity: 0; }
+      }
+      .cursor-blink {
+        animation: blink 1s step-end infinite;
+      }
+      .scan-lines::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: linear-gradient(
+          to bottom,
+          rgba(18, 16, 16, 0) 50%,
+          rgba(0, 0, 0, 0.25) 50%
+        );
+        background-size: 100% 4px;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      .header-lines {
+        background-image: repeating-linear-gradient(to bottom, transparent, transparent 1px, rgba(0,0,0,0.3) 1px, rgba(0,0,0,0.3) 2px);
+        background-size: 100% 2px;
+      }
+
+      /* Custom scrollbar for webkit browsers */
+      ::-webkit-scrollbar {
+        width: 12px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--scrollbar-track-color, #222);
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: var(--scrollbar-thumb-color, #00FF41);
+        border: 3px solid var(--scrollbar-track-color, #222);
+        border-radius: 6px;
+      }
+
+      /* Custom styles for highlight.js to match the terminal theme */
+      pre {
+        margin: 0;
+      }
+      pre code.hljs {
+          display: block;
+          overflow-x: auto;
+          padding: 0.5em;
+          background: #1a1a1a;
+          color: #0f0;
+          border: 1px solid #0a500a;
+      }
+      .hljs-comment,
+      .hljs-quote {
+        color: #7C7C7C;
+        font-style: italic;
+      }
+      .hljs-keyword,
+      .hljs-selector-tag,
+      .hljs-literal,
+      .hljs-name {
+        color: #66ff66;
+      }
+      .hljs-variable,
+      .hljs-template-variable,
+      .hljs-selector-id,
+      .hljs-selector-class {
+        color: #33ccff;
+      }
+      .hljs-string,
+      .hljs-regexp,
+      .hljs-symbol,
+      .hljs-bullet,
+      .hljs-link {
+        color: #99ff99;
+      }
+      .hljs-number,
+      .hljs-built_in,
+      .hljs-builtin-name,
+      .hljs-type,
+      .hljs-params {
+        color: #ffff66;
+      }
+      .hljs-attribute {
+          color: #ffcc66;
+      }
+      .hljs-title,
+      .hljs-section,
+      .hljs-function .hljs-title {
+        color: #ffffff;
+        font-weight: bold;
+      }
+      .hljs-addition {
+        background-color: #144212;
+        display: inline-block;
+        width: 100%;
+      }
+      .hljs-deletion {
+        background-color: #600;
+        display: inline-block;
+        width: 100%;
+      }
+      .hljs-emphasis {
+        font-style: italic;
+      }
+      .hljs-strong {
+        font-weight: bold;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.1"
+  }
+}
+</script>
+</head>
+  <body class="bg-black">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
