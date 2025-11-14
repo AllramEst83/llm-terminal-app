@@ -47,6 +47,7 @@ export const App: React.FC = () => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const isInitializedRef = useRef<boolean>(false);
 
   // Initialize app
   useEffect(() => {
@@ -62,12 +63,19 @@ export const App: React.FC = () => {
       const loadedTheme = ThemeService.getTheme(loadedSettings.themeName);
       setTheme(loadedTheme);
       ThemeService.applyTheme(loadedTheme);
+      
+      // Mark as initialized after loading settings
+      isInitializedRef.current = true;
     };
     initApp();
   }, []);
 
-  // Save settings when they change
+  // Save settings when they change (but only after initialization)
   useEffect(() => {
+    if (!isInitializedRef.current) {
+      return; // Don't save during initial load
+    }
+    
     const saveSettings = async () => {
       const settingsUseCase = new ManageSettingsUseCase();
       await settingsUseCase.saveSettings(settings);
