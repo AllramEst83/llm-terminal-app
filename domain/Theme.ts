@@ -18,7 +18,10 @@ export type ThemeName =
   | 'unicorn' 
   | 'dos' 
   | 'cga' 
-  | 'rose-pine';
+  | 'rose-pine'
+  | 'harvest-70s'
+  | 'neon-80s'
+  | 'synthwave-80s';
 
 export class Theme {
   private static readonly THEMES: Record<ThemeName, ThemeColors> = {
@@ -111,6 +114,36 @@ export class Theme {
       headerBg: '#26233a', 
       headerText: '#f0c6c6', 
       system: '#9ccfd8' 
+    },
+    'harvest-70s': { 
+      name: '70s Harvest', 
+      background: '#2A1F0A', 
+      text: '#D4AF37', 
+      accent: '#8B6914', 
+      prompt: '#FFA500', 
+      headerBg: '#4A3A1A', 
+      headerText: '#FFD700', 
+      system: '#90EE90' 
+    },
+    'neon-80s': { 
+      name: '80s Neon', 
+      background: '#0A0A0A', 
+      text: '#00FFFF', 
+      accent: '#FF00FF', 
+      prompt: '#FFFF00', 
+      headerBg: '#1A0A2A', 
+      headerText: '#FF00FF', 
+      system: '#00FF00' 
+    },
+    'synthwave-80s': { 
+      name: '80s Synthwave', 
+      background: '#0D0221', 
+      text: '#FF006E', 
+      accent: '#00F5FF', 
+      prompt: '#FF006E', 
+      headerBg: '#1A0B3A', 
+      headerText: '#00F5FF', 
+      system: '#8338EC' 
     },
   };
 
