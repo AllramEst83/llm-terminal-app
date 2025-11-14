@@ -8,9 +8,13 @@ interface MessageListProps {
   isStreaming: boolean;
   theme: ThemeColors;
   endOfMessagesRef?: React.RefObject<HTMLDivElement>;
+  fontSize: number;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef }) => {
+export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize }) => {
+  const headerFontSizeMultiplier = 0.4;
+  const headerFontSize = fontSize * headerFontSizeMultiplier;
+  
   return (
     <>
       {messages.map((msg, index) => {
@@ -32,19 +36,33 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
             <div className="flex items-center gap-2 mb-1.5">
               {msg.timestamp && (
                 <span 
-                  className="text-xs font-mono opacity-60" 
-                  style={{ color: theme.accent }}
+                  className="font-mono opacity-60" 
+                  style={{ 
+                    color: theme.accent,
+                    fontSize: `${headerFontSize}px`
+                  }}
                 >
                   {msg.timestamp}
                 </span>
               )}
               {isUser && (
-                <span 
-                  className="font-bold text-sm" 
-                  style={{ color: theme.prompt }}
-                >
-                  {'>'}
-                </span>
+                <>
+                  <span 
+                    className="font-bold text-sm" 
+                    style={{ color: theme.prompt }}
+                  >
+                    {'>'}
+                  </span>
+                  <span 
+                    className="uppercase tracking-wider font-semibold" 
+                    style={{ 
+                      color: theme.prompt,
+                      fontSize: `${headerFontSize}px`
+                    }}
+                  >
+                    User
+                  </span>
+                </>
               )}
               {isModel && (
                 <span 
