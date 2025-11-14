@@ -37,8 +37,8 @@ export class ThemeService {
     return Theme.DEFAULT_THEME_NAME;
   }
 
-  static saveThemeName(themeName: ThemeName): void {
-    StorageService.setString(THEME_STORAGE_KEY, themeName);
+  static saveThemeName(themeName: ThemeName): boolean {
+    return StorageService.setString(THEME_STORAGE_KEY, themeName);
   }
 
   static applyTheme(theme: ThemeColors): void {

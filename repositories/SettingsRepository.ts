@@ -18,9 +18,19 @@ export class SettingsRepository {
   }
 
   static async save(settings: Settings): Promise<void> {
-    StorageService.set(FONT_SIZE_STORAGE_KEY, settings.fontSize);
-    ThemeService.saveThemeName(settings.themeName);
-    ApiKeyService.setApiKey(settings.apiKey);
+    const fontSizeSaved = StorageService.set(FONT_SIZE_STORAGE_KEY, settings.fontSize);
+    const themeSaved = ThemeService.saveThemeName(settings.themeName);
+    const apiKeySaved = ApiKeyService.setApiKey(settings.apiKey);
+    
+    if (!fontSizeSaved || !themeSaved || !apiKeySaved) {
+      console.warn('Some settings failed to save to localStorage:', {
+        fontSize: fontSizeSaved,
+        theme: themeSaved,
+        apiKey: apiKeySaved
+      });
+    } else {
+      console.debug('Settings saved successfully to localStorage');
+    }
   }
 
   static async reset(): Promise<Settings> {

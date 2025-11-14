@@ -40,10 +40,11 @@ export class ApiKeyService {
     return StorageService.getString(API_KEY_STORAGE_KEY, '');
   }
 
-  static setApiKey(apiKey: string): void {
+  static setApiKey(apiKey: string): boolean {
     if (!this.isStudioEnvironment()) {
-      StorageService.setString(API_KEY_STORAGE_KEY, apiKey);
+      return StorageService.setString(API_KEY_STORAGE_KEY, apiKey);
     }
+    return true; // In Studio env, consider it "saved" (handled by Studio)
   }
 
   static removeApiKey(): void {
