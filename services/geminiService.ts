@@ -1,6 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import type { Message } from '../domain/Message';
-import type { Source } from '../types';
+import type { Message, Source } from '../domain/Message';
 
 function getAiInstance(apiKey: string) {
   if (!apiKey) {

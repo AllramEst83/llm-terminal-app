@@ -1,4 +1,7 @@
-import type { Source } from '../types';
+export interface Source {
+  title: string;
+  uri: string;
+}
 
 export class Message {
   constructor(
