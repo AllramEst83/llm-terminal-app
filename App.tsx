@@ -18,6 +18,7 @@ import { PressToBootUI } from './components/PressToBootUI';
 import { ApiKeySelectionUI } from './components/ApiKeySelectionUI';
 import { ApiKeyInputUI } from './components/ApiKeyInputUI';
 import { getCurrentTimestamp } from './utils/dateUtils';
+import { useMobileKeyboard } from './hooks/useMobileKeyboard';
 
 // Tell TypeScript that hljs is available globally.
 declare const hljs: any;
@@ -48,6 +49,9 @@ export const App: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const isInitializedRef = useRef<boolean>(false);
+  
+  // Detect mobile keyboard and get adjustment height
+  const keyboardHeight = useMobileKeyboard();
 
   // Initialize app
   useEffect(() => {
@@ -144,6 +148,20 @@ export const App: React.FC = () => {
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView();
   }, [messages, isStreaming, bootSequence]);
+
+  // Ensure input stays visible when mobile keyboard appears
+  useEffect(() => {
+    if (keyboardHeight > 0 && booted) {
+      // Small delay to ensure keyboard animation completes
+      const timeoutId = setTimeout(() => {
+        const input = document.querySelector('input');
+        if (input) {
+          input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 250);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [keyboardHeight, booted]);
 
   const handleSelectKey = useCallback(async () => {
     await ApiKeyService.openKeySelector();
@@ -328,7 +346,13 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-4 sm:p-8">
+    <div 
+      className="h-full flex flex-col p-4 sm:p-8"
+      style={{
+        transform: keyboardHeight > 0 ? `translateY(-${keyboardHeight}px)` : undefined,
+        transition: 'transform 0.2s ease-out'
+      }}
+    >
       <div 
         className="w-full h-full shadow-lg flex flex-col relative border-4 crt-screen"
         style={{ 
