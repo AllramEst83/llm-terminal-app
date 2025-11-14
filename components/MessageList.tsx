@@ -12,7 +12,7 @@ interface MessageListProps {
 }
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize }) => {
-  const headerFontSizeMultiplier = 0.4;
+  const headerFontSizeMultiplier = 0.6;
   const headerFontSize = fontSize * headerFontSizeMultiplier;
   
   return (
