@@ -61,6 +61,14 @@ const COMMANDS = [
 const DEFAULT_FONT_SIZE = 16;
 const DEFAULT_THEME_NAME: ThemeName = 'classic';
 
+// Helper function to convert hex to RGB
+const hexToRgb = (hex: string): string => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result 
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+    : '0, 255, 65'; // Default to classic green
+};
+
 const MessageContent: React.FC<{ text: string }> = React.memo(({ text }) => {
   // Regex to split by code blocks (block and inline) first.
   const mainParts = text.split(/(```(?:[a-zA-Z0-9]+)?\n[\s\S]*?\n```|`[^`]+`)/g);
@@ -241,6 +249,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     document.documentElement.style.setProperty('--scrollbar-thumb-color', theme.accent);
     document.documentElement.style.setProperty('--scrollbar-track-color', theme.headerBg);
+    document.documentElement.style.setProperty('--crt-glow-rgb', hexToRgb(theme.accent));
   }, [theme]);
 
   useEffect(() => {
@@ -701,12 +710,11 @@ API KEY:   ${keyStatus}`;
   return (
     <div className="h-full flex flex-col p-4 sm:p-8">
       <div 
-        className="w-full h-full shadow-lg flex flex-col relative border-4"
+        className="w-full h-full shadow-lg flex flex-col relative border-4 crt-screen"
         style={{ 
           fontSize: `${fontSize}px`,
           backgroundColor: theme.background,
           color: theme.text,
-          boxShadow: `0 0 15px ${theme.accent}33`,
           borderColor: theme.accent
         }}
       >

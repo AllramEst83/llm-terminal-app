@@ -49,6 +49,80 @@
         background-size: 100% 2px;
       }
 
+      /* CRT Screen Effect */
+      .crt-screen {
+        position: relative;
+        border-radius: 8px 8px 20px 20px;
+        overflow: hidden;
+        --crt-glow-color: #00FF41;
+        --crt-glow-rgb: 0, 255, 65;
+        box-shadow: 
+          0 0 0 2px rgba(0, 0, 0, 0.8),
+          0 0 20px rgba(var(--crt-glow-rgb), 0.3),
+          inset 0 0 30px rgba(0, 0, 0, 0.5),
+          inset 0 0 60px rgba(0, 0, 0, 0.3),
+          0 0 40px rgba(0, 0, 0, 0.8),
+          0 10px 60px rgba(0, 0, 0, 0.6);
+        animation: crt-glow 3s ease-in-out infinite;
+      }
+
+      .crt-screen::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+          radial-gradient(ellipse at top, rgba(var(--crt-glow-rgb), 0.1) 0%, transparent 50%),
+          radial-gradient(ellipse at bottom, rgba(0, 0, 0, 0.4) 0%, transparent 50%),
+          radial-gradient(ellipse at left, rgba(0, 0, 0, 0.3) 0%, transparent 50%),
+          radial-gradient(ellipse at right, rgba(0, 0, 0, 0.3) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 2;
+        border-radius: 8px 8px 20px 20px;
+      }
+
+      .crt-screen::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+          linear-gradient(to bottom, 
+            rgba(0, 0, 0, 0.1) 0%,
+            transparent 5%,
+            transparent 95%,
+            rgba(0, 0, 0, 0.2) 100%);
+        pointer-events: none;
+        z-index: 3;
+        border-radius: 8px 8px 20px 20px;
+      }
+
+      /* CRT Glow Animation */
+      @keyframes crt-glow {
+        0%, 100% { 
+          box-shadow: 
+            0 0 0 2px rgba(0, 0, 0, 0.8),
+            0 0 20px rgba(var(--crt-glow-rgb), 0.3),
+            inset 0 0 30px rgba(0, 0, 0, 0.5),
+            inset 0 0 60px rgba(0, 0, 0, 0.3),
+            0 0 40px rgba(0, 0, 0, 0.8),
+            0 10px 60px rgba(0, 0, 0, 0.6);
+        }
+        50% { 
+          box-shadow: 
+            0 0 0 2px rgba(0, 0, 0, 0.8),
+            0 0 25px rgba(var(--crt-glow-rgb), 0.4),
+            inset 0 0 30px rgba(0, 0, 0, 0.5),
+            inset 0 0 60px rgba(0, 0, 0, 0.3),
+            0 0 40px rgba(0, 0, 0, 0.8),
+            0 10px 60px rgba(0, 0, 0, 0.6);
+        }
+      }
+
       /* Custom scrollbar for webkit browsers */
       ::-webkit-scrollbar {
         width: 12px;
