@@ -7,6 +7,7 @@ export interface ThemeColors {
   headerBg: string;
   headerText: string;
   system: string;
+  ai: string;
 }
 
 export type ThemeName = 
@@ -33,7 +34,8 @@ export class Theme {
       prompt: '#00A800', 
       headerBg: '#4A4A4A', 
       headerText: '#00FF41', 
-      system: '#00FF41' 
+      system: '#00FF41',
+      ai: '#00FFFF' 
     },
     amber: { 
       name: 'Amber', 
@@ -43,7 +45,8 @@ export class Theme {
       prompt: '#FFB000', 
       headerBg: '#4A2B00', 
       headerText: '#FFD061', 
-      system: '#FFB000' 
+      system: '#FFB000',
+      ai: '#FF4500' 
     },
     'mono-blue': { 
       name: 'Monochrome Blue', 
@@ -53,7 +56,8 @@ export class Theme {
       prompt: '#00BFFF', 
       headerBg: '#002C4A', 
       headerText: '#61D9FF', 
-      system: '#00BFFF' 
+      system: '#00BFFF',
+      ai: '#00FFFF' 
     },
     hacker: { 
       name: 'Hacker', 
@@ -63,7 +67,8 @@ export class Theme {
       prompt: '#39FF14', 
       headerBg: '#333333', 
       headerText: '#39FF14', 
-      system: '#39FF14' 
+      system: '#39FF14',
+      ai: '#00FFFF' 
     },
     vt100: { 
       name: 'VT100', 
@@ -73,7 +78,8 @@ export class Theme {
       prompt: '#FFFFFF', 
       headerBg: '#4A4A4A', 
       headerText: '#FFFFFF', 
-      system: '#FFFFFF' 
+      system: '#FFFFFF',
+      ai: '#00FFFF' 
     },
     unicorn: { 
       name: '80s Unicorn', 
@@ -83,7 +89,8 @@ export class Theme {
       prompt: '#ff79c6', 
       headerBg: '#1d1f4d', 
       headerText: '#f1fa8c', 
-      system: '#8be9fd' 
+      system: '#8be9fd',
+      ai: '#FF79C6' 
     },
     dos: { 
       name: 'DOS', 
@@ -93,7 +100,8 @@ export class Theme {
       prompt: '#FFFF00', 
       headerBg: '#000080', 
       headerText: '#FFFFFF', 
-      system: '#FFFF00' 
+      system: '#FFFF00',
+      ai: '#00FFFF' 
     },
     cga: { 
       name: 'CGA', 
@@ -103,7 +111,8 @@ export class Theme {
       prompt: '#FFFFFF', 
       headerBg: '#555555', 
       headerText: '#FFFFFF', 
-      system: '#FF55FF' 
+      system: '#FF55FF',
+      ai: '#55FF55' 
     },
     'rose-pine': { 
       name: 'Rosé Pine', 
@@ -113,7 +122,8 @@ export class Theme {
       prompt: '#c4a7e7', 
       headerBg: '#26233a', 
       headerText: '#f0c6c6', 
-      system: '#9ccfd8' 
+      system: '#9ccfd8',
+      ai: '#FFD700' 
     },
     'harvest-70s': { 
       name: '70s Harvest', 
@@ -123,7 +133,8 @@ export class Theme {
       prompt: '#FFA500', 
       headerBg: '#4A3A1A', 
       headerText: '#FFD700', 
-      system: '#90EE90' 
+      system: '#90EE90',
+      ai: '#FF1493' 
     },
     'neon-80s': { 
       name: '80s Neon', 
@@ -133,7 +144,8 @@ export class Theme {
       prompt: '#FFFF00', 
       headerBg: '#1A0A2A', 
       headerText: '#FF00FF', 
-      system: '#00FF00' 
+      system: '#00FF00',
+      ai: '#FF1493' 
     },
     'synthwave-80s': { 
       name: '80s Synthwave', 
@@ -143,7 +155,8 @@ export class Theme {
       prompt: '#FF006E', 
       headerBg: '#1A0B3A', 
       headerText: '#00F5FF', 
-      system: '#8338EC' 
+      system: '#8338EC',
+      ai: '#FFBE0B' 
     },
   };
 

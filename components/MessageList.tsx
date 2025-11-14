@@ -68,8 +68,12 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
               )}
               {isModel && (
                 <span 
-                  className="text-xs uppercase tracking-wider opacity-70" 
-                  style={{ color: theme.accent }}
+                  className="uppercase tracking-wider font-bold" 
+                  style={{ 
+                    color: theme.ai,
+                    fontSize: `${headerFontSize}px`,
+                    textShadow: `0 0 8px ${theme.ai}40`
+                  }}
                 >
                   AI
                 </span>
