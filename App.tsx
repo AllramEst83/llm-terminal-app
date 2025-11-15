@@ -143,10 +143,15 @@ export const App: React.FC = () => {
     }
   }, [messages, isStreaming]);
 
+  // Auto-scroll function
+  const scrollToBottom = useCallback(() => {
+    endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
   // Auto-scroll
   useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView();
-  }, [messages, isStreaming, bootSequence]);
+    scrollToBottom();
+  }, [messages, isStreaming, bootSequence, isLoading, scrollToBottom]);
 
   // Loading animation
   useEffect(() => {
@@ -198,6 +203,9 @@ export const App: React.FC = () => {
     if (CommandService.isCommand(trimmedInput)) {
       const parsed = CommandService.parseCommand(trimmedInput);
       if (parsed && parsed.command !== 'search') {
+           // Clear input immediately for all commands
+           setInput('');
+
         // Show loading state for async commands like image
         if (parsed.command === 'image') {
           setIsLoading(true);
@@ -213,7 +221,6 @@ export const App: React.FC = () => {
 
         if (result.shouldClearMessages) {
           setMessages(MessageService.getInitialMessages());
-          setInput('');
           return;
         }
 
@@ -233,7 +240,6 @@ export const App: React.FC = () => {
           setMessages(prev => [...prev, result.message!]);
         }
 
-        setInput('');
         return;
       }
     }
@@ -339,7 +345,7 @@ export const App: React.FC = () => {
 
     return (
       <>
-        <MessageList messages={messages} isStreaming={isStreaming} theme={theme} endOfMessagesRef={endOfMessagesRef} fontSize={settings.fontSize} />
+        <MessageList messages={messages} isStreaming={isStreaming} theme={theme} endOfMessagesRef={endOfMessagesRef} fontSize={settings.fontSize} onImageLoad={scrollToBottom} />
         {isLoading && (
           <div className="flex items-center">
             <span className="mr-2" style={{ color: theme.accent, opacity: 0.6 }}>{getCurrentTimestamp()}</span>

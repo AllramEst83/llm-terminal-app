@@ -10,9 +10,10 @@ interface MessageListProps {
   theme: ThemeColors;
   endOfMessagesRef?: React.RefObject<HTMLDivElement>;
   fontSize: number;
+  onImageLoad?: () => void;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize }) => {
+export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize, onImageLoad }) => {
   const headerFontSizeMultiplier = 0.6;
   const headerFontSize = fontSize * headerFontSizeMultiplier;
   const systemFontSizeMultiplier = 0.6;
@@ -92,18 +93,20 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
               )}
             </div>
             
-            {/* Message Content */}
-            <div 
-              className={`${isSystem ? 'opacity-90' : ''}`}
-              style={isSystem ? { color: theme.system } : {}}
-            >
-              <MessageContent text={msg.text} theme={theme} />
-            </div>
+            {/* Message Content - Hide if imageData exists to avoid duplicate text */}
+            {!msg.imageData && (
+              <div 
+                className={`${isSystem ? 'opacity-90' : ''}`}
+                style={isSystem ? { color: theme.system } : {}}
+              >
+                <MessageContent text={msg.text} theme={theme} />
+              </div>
+            )}
             
             {/* Image Display */}
             {msg.imageData && (
               <div className="mt-2">
-                <ImageDisplay base64Image={msg.imageData} prompt={msg.text} theme={theme} />
+                <ImageDisplay base64Image={msg.imageData} prompt={msg.text} theme={theme} onImageLoad={onImageLoad} />
               </div>
             )}
             

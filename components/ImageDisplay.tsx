@@ -5,9 +5,10 @@ interface ImageDisplayProps {
   base64Image: string;
   prompt: string;
   theme?: ThemeColors;
+  onImageLoad?: () => void;
 }
 
-export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt, theme }) => {
+export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt, theme, onImageLoad }) => {
   const imageUrl = `data:image/png;base64,${base64Image}`;
   const textColor = theme?.text || '#00FF41';
   const accentColor = theme?.accent || '#00A800';
@@ -51,6 +52,12 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt,
         className="w-full h-auto rounded object-cover" 
         style={{
           border: `1px solid ${accentColor}40`
+        }}
+        onLoad={() => {
+          // Trigger scroll after image loads to ensure proper layout
+          requestAnimationFrame(() => {
+            onImageLoad?.();
+          });
         }}
       />
       <button
