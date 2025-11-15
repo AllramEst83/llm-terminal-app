@@ -369,7 +369,7 @@ export const App: React.FC = () => {
           borderColor: theme.accent
         }}
       >
-        <TerminalHeader theme={theme} />
+        <TerminalHeader theme={theme} modelName={settings.modelName} thinkingEnabled={settings.thinkingEnabled} />
         <div 
           ref={scrollRef}
           className="flex-grow p-4 overflow-y-auto relative scan-lines"
