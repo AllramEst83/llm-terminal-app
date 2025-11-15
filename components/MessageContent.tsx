@@ -24,9 +24,67 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, back
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const codeRef = useRef<HTMLElement>(null);
 
-  const handleCopy = async () => {
+  // Fallback copy method using execCommand (for older browsers/mobile)
+  const copyWithExecCommand = (text: string): boolean => {
     try {
-      await navigator.clipboard.writeText(code);
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      textArea.style.opacity = '0';
+      textArea.setAttribute('readonly', '');
+      textArea.setAttribute('aria-hidden', 'true');
+      
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      // For iOS Safari
+      const range = document.createRange();
+      range.selectNodeContents(textArea);
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      textArea.setSelectionRange(0, text.length);
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      return successful;
+    } catch (err) {
+      console.error('execCommand copy failed:', err);
+      return false;
+    }
+  };
+
+  // Copy text to clipboard with multiple fallback methods
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    // Method 1: Modern Clipboard API (preferred)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.warn('Clipboard API failed, trying fallback:', err);
+        // Fall through to fallback method
+      }
+    }
+    
+    // Method 2: execCommand fallback (for older browsers/mobile)
+    return copyWithExecCommand(text);
+  };
+
+  // Handle copy button click/touch
+  const handleCopy = async (e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const success = await copyToClipboard(code);
+    
+    if (success) {
       setCopied(true);
       
       // Clear existing timeout if any
@@ -38,8 +96,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, back
       timeoutRef.current = setTimeout(() => {
         setCopied(false);
       }, 2000);
-    } catch (err) {
-      console.error('Failed to copy code:', err);
+    } else {
+      // Last resort: show code in alert for user to manually copy
+      console.error('All copy methods failed');
+      // Note: Alert is commented out as it's intrusive, but can be enabled if needed
+      // alert('Copy failed. Please select and copy manually:\n\n' + code);
     }
   };
 
@@ -84,11 +145,19 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, back
       <div className="flex justify-end mt-1">
         <button
           onClick={handleCopy}
-          className="px-2 py-1 text-xs uppercase focus:outline-none transition-opacity hover:opacity-80"
+          onTouchEnd={handleCopy}
+          type="button"
+          aria-label={copied ? 'Code copied to clipboard' : 'Copy code to clipboard'}
+          className="px-2 py-1 text-xs uppercase focus:outline-none transition-opacity hover:opacity-80 active:opacity-70"
           style={{
             backgroundColor: accentColor,
             color: backgroundColor,
-            border: `1px solid ${accentColor}60`
+            border: `1px solid ${accentColor}60`,
+            cursor: 'pointer',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            touchAction: 'manipulation',
+            minWidth: '60px'
           }}
         >
           {copied ? 'Copied ✓' : 'Copy'}

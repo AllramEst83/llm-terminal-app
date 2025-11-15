@@ -42,6 +42,16 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
     }
   }, [autoFocus, disabled]);
 
+  const handleSuggestionSelect = (command: string) => {
+    onSuggestionSelect(command);
+    // Refocus input after selecting suggestion to keep keyboard open on mobile
+    setTimeout(() => {
+      if (inputRef.current && !inputRef.current.disabled) {
+        inputRef.current.focus();
+      }
+    }, 0);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Handle suggestions navigation when suggestions are visible
     if (showSuggestions && suggestions.length > 0) {
@@ -56,7 +66,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
       } else if (e.key === 'Tab' || e.key === 'Enter') {
         if (activeSuggestionIndex >= 0) {
           e.preventDefault();
-          onSuggestionSelect(suggestions[activeSuggestionIndex].name);
+          handleSuggestionSelect(suggestions[activeSuggestionIndex].name);
           return;
         }
       } else if (e.key === 'Escape') {
@@ -83,7 +93,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
         <CommandSuggestions
           suggestions={suggestions}
           activeIndex={activeSuggestionIndex}
-          onSelect={onSuggestionSelect}
+          onSelect={handleSuggestionSelect}
           theme={theme}
         />
       )}
@@ -95,9 +105,9 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         className="bg-transparent border-none w-full focus:outline-none"
-        style={{ color: theme.text }}
+        style={{ color: theme.text, opacity: disabled ? 0.5 : 1 }}
         autoFocus={autoFocus}
-        disabled={disabled}
+        readOnly={disabled}
         autoComplete="off"
       />
     </div>

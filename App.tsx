@@ -24,6 +24,14 @@ declare const hljs: any;
 
 const loadingChars = ['|', '/', '-', '\\'];
 
+// Detect if device is mobile
+const isMobileDevice = (): boolean => {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+         (window.visualViewport && window.visualViewport.height < window.innerHeight * 0.9) ||
+         ('ontouchstart' in window) ||
+         (navigator.maxTouchPoints > 0);
+};
+
 export const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
@@ -51,6 +59,8 @@ export const App: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const isInitializedRef = useRef<boolean>(false);
+  const terminalContainerRef = useRef<HTMLDivElement>(null);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
 
   // Initialize app
   useEffect(() => {
@@ -145,13 +155,146 @@ export const App: React.FC = () => {
 
   // Auto-scroll function
   const scrollToBottom = useCallback(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (endOfMessagesRef.current && scrollRef.current) {
+      // Scroll within the message container, not the whole page
+      // This prevents page scroll when keyboard is open on mobile
+      const container = scrollRef.current;
+      const target = endOfMessagesRef.current;
+      
+      // Calculate scroll position relative to container
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const scrollTop = container.scrollTop;
+      const targetOffsetTop = targetRect.top - containerRect.top + scrollTop;
+      
+      // Only scroll if target is not already visible
+      const containerBottom = scrollTop + container.clientHeight;
+      const targetBottom = targetOffsetTop + target.offsetHeight;
+      
+      if (targetBottom > containerBottom || targetOffsetTop < scrollTop) {
+        container.scrollTo({
+          top: Math.max(0, targetBottom - container.clientHeight),
+          behavior: 'smooth'
+        });
+      }
+    }
   }, []);
 
   // Auto-scroll
   useEffect(() => {
     scrollToBottom();
   }, [messages, isStreaming, bootSequence, isLoading, scrollToBottom]);
+
+  // Handle mobile keyboard - adjust terminal height when keyboard opens
+  useEffect(() => {
+    // Only run viewport height adjustment on mobile devices
+    if (!isMobileDevice()) {
+      return;
+    }
+
+    const rootElement = document.documentElement;
+    const updateViewportHeight = () => {
+      // Use Visual Viewport API if available (modern browsers)
+      if (window.visualViewport) {
+        const vh = window.visualViewport.height;
+        setViewportHeight(vh);
+        // Set CSS custom property and root height
+        rootElement.style.setProperty('--viewport-height', `${vh}px`);
+        rootElement.style.height = `${vh}px`;
+        document.body.style.height = `${vh}px`;
+        const rootDiv = document.getElementById('root');
+        if (rootDiv) {
+          rootDiv.style.height = `${vh}px`;
+        }
+      } else {
+        // Fallback to window.innerHeight
+        const height = window.innerHeight;
+        setViewportHeight(height);
+        rootElement.style.setProperty('--viewport-height', `${height}px`);
+        rootElement.style.height = `${height}px`;
+        document.body.style.height = `${height}px`;
+        const rootDiv = document.getElementById('root');
+        if (rootDiv) {
+          rootDiv.style.height = `${height}px`;
+        }
+      }
+    };
+
+    // Initial height
+    updateViewportHeight();
+
+    // Listen to visual viewport changes (keyboard open/close)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateViewportHeight);
+      window.visualViewport.addEventListener('scroll', updateViewportHeight);
+    } else {
+      // Fallback to window resize
+      window.addEventListener('resize', updateViewportHeight);
+    }
+
+    // Also listen to orientation changes
+    const handleOrientationChange = () => {
+      // Delay to allow orientation change to complete
+      setTimeout(updateViewportHeight, 100);
+    };
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updateViewportHeight);
+        window.visualViewport.removeEventListener('scroll', updateViewportHeight);
+      } else {
+        window.removeEventListener('resize', updateViewportHeight);
+      }
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
+  }, []);
+
+  // Scroll input into view when keyboard opens (mobile only)
+  useEffect(() => {
+    if (!booted) return;
+
+    // Only run on mobile devices
+    if (!isMobileDevice()) {
+      return;
+    }
+
+    const handleViewportChange = () => {
+      if (!window.visualViewport) return;
+      
+      // Check if keyboard is likely open (viewport height reduced significantly)
+      const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.75;
+      
+      if (isKeyboardOpen) {
+        // Small delay to ensure layout has updated
+        setTimeout(() => {
+          const input = document.querySelector('input');
+          if (input) {
+            // Scroll the input into view, but don't scroll the page
+            input.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' });
+            
+            // Also ensure the terminal container shows the input
+            if (terminalContainerRef.current) {
+              const inputRect = input.getBoundingClientRect();
+              const containerRect = terminalContainerRef.current.getBoundingClientRect();
+              
+              // If input is below visible area, scroll it into view
+              if (inputRect.bottom > containerRect.bottom) {
+                input.scrollIntoView({ behavior: 'smooth', block: 'end' });
+              }
+            }
+          }
+        }, 150);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportChange);
+      return () => {
+        window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      };
+    }
+  }, [booted]);
 
   // Loading animation
   useEffect(() => {
@@ -359,21 +502,36 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-2 sm:p-4">
+    <div 
+      className="flex flex-col p-2 sm:p-4"
+      style={{ 
+        height: '100%',
+        maxHeight: '100%',
+        overflow: 'hidden',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
       <div 
-        className="w-full h-full shadow-lg flex flex-col relative border-4 crt-screen"
+        ref={terminalContainerRef}
+        className="w-full shadow-lg flex flex-col relative border-4 crt-screen flex-1 min-h-0"
         style={{ 
           fontSize: `${settings.fontSize}px`,
           backgroundColor: theme.background,
           color: theme.text,
-          borderColor: theme.accent
+          borderColor: theme.accent,
+          transition: 'height 0.2s ease-out, max-height 0.2s ease-out',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
         }}
       >
         <TerminalHeader theme={theme} modelName={settings.modelName} thinkingEnabled={settings.thinkingEnabled} />
         <div 
           ref={scrollRef}
-          className="flex-grow p-4 overflow-y-auto relative scan-lines"
-          onClick={() => booted && document.querySelector('input')?.focus()}
+          className="flex-1 p-4 overflow-y-auto relative scan-lines min-h-0"
+          style={{ overflowY: 'auto' }}
         >
           {renderContent()}
         </div>

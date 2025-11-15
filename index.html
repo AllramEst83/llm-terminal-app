@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>80s Terminal Chatbot</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,13 +12,24 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/xt256.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
-      html, body, #root {
+      html {
         height: 100%;
         margin: 0;
+        overflow: hidden;
       }
       body {
-        font-family: 'VT323', monospace;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        font-family: 'MesloLGL Nerd Font Mono', monospace;
         box-sizing: border-box;
+        position: relative;
+      }
+      #root {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        position: relative;
       }
       @keyframes blink {
         50% { opacity: 0; }
