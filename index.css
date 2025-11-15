@@ -2,3 +2,19 @@
 
 @source "./**/*.{html,js,ts,jsx,tsx}";
 
+.loading-char {
+  display: inline-block;
+  min-width: 1ch;
+  text-align: center;
+  animation: pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+

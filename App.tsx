@@ -22,6 +22,8 @@ import { getCurrentTimestamp } from './utils/dateUtils';
 // Tell TypeScript that hljs is available globally.
 declare const hljs: any;
 
+const loadingChars = ['|', '/', '-', '\\'];
+
 export const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
@@ -44,6 +46,7 @@ export const App: React.FC = () => {
   
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  const [loadingCharIndex, setLoadingCharIndex] = useState<number>(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -144,6 +147,18 @@ export const App: React.FC = () => {
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView();
   }, [messages, isStreaming, bootSequence]);
+
+  // Loading animation
+  useEffect(() => {
+    if (isLoading) {
+      const intervalId = setInterval(() => {
+        setLoadingCharIndex((prevIndex) => (prevIndex + 1) % loadingChars.length);
+      }, 80);
+      return () => clearInterval(intervalId);
+    } else {
+      setLoadingCharIndex(0);
+    }
+  }, [isLoading]);
 
   const handleSelectKey = useCallback(async () => {
     await ApiKeyService.openKeySelector();
@@ -319,7 +334,7 @@ export const App: React.FC = () => {
           <div className="flex items-center">
             <span className="mr-2" style={{ color: theme.accent, opacity: 0.6 }}>{getCurrentTimestamp()}</span>
             <span style={{ color: theme.prompt }}>{'>'} </span>
-            <span className="ml-2">CONNECTING...</span>
+            <span className="ml-2">CONNECTING..... [<span className="loading-char">{loadingChars[loadingCharIndex]}</span>]</span>
           </div>
         )}
         <div ref={endOfMessagesRef} />
