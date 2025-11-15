@@ -7,6 +7,7 @@ const FONT_SIZE_STORAGE_KEY = 'terminal_fontSize';
 const MODEL_NAME_STORAGE_KEY = 'terminal_modelName';
 const THINKING_ENABLED_STORAGE_KEY = 'terminal_thinkingEnabled';
 const THINKING_BUDGET_STORAGE_KEY = 'terminal_thinkingBudget';
+const AUDIO_ENABLED_STORAGE_KEY = 'terminal_audioEnabled';
 
 export class SettingsRepository {
   static async load(): Promise<Settings> {
@@ -28,8 +29,12 @@ export class SettingsRepository {
       THINKING_BUDGET_STORAGE_KEY,
       undefined
     );
+    const audioEnabled = StorageService.get<boolean>(
+      AUDIO_ENABLED_STORAGE_KEY,
+      true
+    );
 
-    return new Settings(fontSize, themeName, apiKey, modelName, thinkingEnabled, thinkingBudget);
+    return new Settings(fontSize, themeName, apiKey, modelName, thinkingEnabled, thinkingBudget, audioEnabled);
   }
 
   static async save(settings: Settings): Promise<void> {
@@ -41,15 +46,17 @@ export class SettingsRepository {
     const thinkingBudgetSaved = settings.thinkingBudget !== undefined
       ? StorageService.set(THINKING_BUDGET_STORAGE_KEY, settings.thinkingBudget)
       : (StorageService.remove(THINKING_BUDGET_STORAGE_KEY), true);
+    const audioEnabledSaved = StorageService.set(AUDIO_ENABLED_STORAGE_KEY, settings.audioEnabled);
     
-    if (!fontSizeSaved || !themeSaved || !apiKeySaved || !modelNameSaved || !thinkingEnabledSaved || !thinkingBudgetSaved) {
+    if (!fontSizeSaved || !themeSaved || !apiKeySaved || !modelNameSaved || !thinkingEnabledSaved || !thinkingBudgetSaved || !audioEnabledSaved) {
       console.warn('Some settings failed to save to localStorage:', {
         fontSize: fontSizeSaved,
         theme: themeSaved,
         apiKey: apiKeySaved,
         modelName: modelNameSaved,
         thinkingEnabled: thinkingEnabledSaved,
-        thinkingBudget: thinkingBudgetSaved
+        thinkingBudget: thinkingBudgetSaved,
+        audioEnabled: audioEnabledSaved
       });
     } else {
       console.debug('Settings saved successfully to localStorage');
@@ -63,6 +70,7 @@ export class SettingsRepository {
     StorageService.remove(MODEL_NAME_STORAGE_KEY);
     StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
     StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
+    StorageService.remove(AUDIO_ENABLED_STORAGE_KEY);
     return Settings.createDefault();
   }
 }

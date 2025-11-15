@@ -18,6 +18,7 @@ import { PressToBootUI } from './components/PressToBootUI';
 import { ApiKeySelectionUI } from './components/ApiKeySelectionUI';
 import { ApiKeyInputUI } from './components/ApiKeyInputUI';
 import { getCurrentTimestamp } from './utils/dateUtils';
+import { playKeystrokeSound, playErrorBeep, playBootSound, unlockAudio, startThinkingSound, stopThinkingSound } from './services/audioService';
 
 // Tell TypeScript that hljs is available globally.
 declare const hljs: any;
@@ -104,6 +105,8 @@ export const App: React.FC = () => {
     if (!isKeyReady || booting || booted) return;
 
     const startBootProcess = () => {
+      // Unlock audio on user interaction
+      unlockAudio();
       setBooting(true);
       window.removeEventListener('keydown', startBootProcess);
       window.removeEventListener('click', startBootProcess);
@@ -121,6 +124,9 @@ export const App: React.FC = () => {
   // Boot sequence animation
   useEffect(() => {
     if (!booting) return;
+
+    // Play boot sound when boot sequence starts
+    playBootSound(settings.audioEnabled);
 
     const bootMessages = BootSequenceService.getBootMessages();
     let currentTimeout: number;
@@ -142,7 +148,15 @@ export const App: React.FC = () => {
     
     runBootSequence();
     return () => clearTimeout(currentTimeout);
-  }, [booting]);
+  }, [booting, settings.audioEnabled]);
+
+  // Cleanup: Stop thinking sound when component unmounts
+  useEffect(() => {
+    return () => {
+      // Stop thinking sound on unmount
+      stopThinkingSound(true); // Immediate stop on unmount
+    };
+  }, []);
 
   // Syntax highlighting
   useEffect(() => {
@@ -327,6 +341,7 @@ export const App: React.FC = () => {
         "SYSTEM ERROR: API Key is missing. Please reset the app."
       );
       setMessages(prev => [...prev, errorMsg]);
+      playErrorBeep(settings.audioEnabled);
       return;
     }
 
@@ -356,6 +371,11 @@ export const App: React.FC = () => {
         // Clear loading state after command execution
         if (parsed.command === 'image') {
           setIsLoading(false);
+        }
+
+        // Play error beep if command failed
+        if (!result.success) {
+          playErrorBeep(settings.audioEnabled);
         }
 
         if (result.shouldClearMessages) {
@@ -388,8 +408,14 @@ export const App: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
-    const sendUseCase = new SendMessageUseCase(messages, settings);
-    await sendUseCase.execute(
+    // Start thinking sound when AI starts generating response
+    // Wait for keystroke sound to finish first
+    const keystrokePromise = playKeystrokeSound(settings.audioEnabled);
+    startThinkingSound(settings.audioEnabled, keystrokePromise);
+
+    try {
+      const sendUseCase = new SendMessageUseCase(messages, settings);
+      await sendUseCase.execute(
       trimmedInput,
       (chunkText, isFirstChunk) => {
         const isError = chunkText.startsWith('SYSTEM ERROR');
@@ -401,6 +427,13 @@ export const App: React.FC = () => {
           const messageId = (Date.now() + 1).toString();
           const newMessage = Message.create(messageRole, chunkText, getCurrentTimestamp());
           setMessages(prev => [...prev, newMessage]);
+          
+          // Stop thinking sound when first chunk arrives
+          // If error, stop immediately; otherwise it will stop when streaming completes
+          if (isError) {
+            stopThinkingSound(false); // Fade out on error
+            playErrorBeep(settings.audioEnabled);
+          }
         } else {
           setMessages(prev => {
             return MessageService.updateLastMessage(prev, (msg) => {
@@ -425,8 +458,18 @@ export const App: React.FC = () => {
         }
         setIsLoading(false);
         setIsStreaming(false);
+        
+        // Stop thinking sound when response is complete
+        stopThinkingSound(false); // Fade out smoothly
       }
-    );
+      );
+    } catch (error) {
+      // Stop thinking sound on any unexpected error
+      stopThinkingSound(false);
+      setIsLoading(false);
+      setIsStreaming(false);
+      // Error handling is done in the execute callbacks, but we need to ensure sound stops
+    }
   }, [input, isLoading, isStreaming, messages, settings, isStudioEnv, commandHistory, handleSelectKey]);
 
   const handleSuggestionClick = useCallback((command: string) => {
@@ -435,6 +478,9 @@ export const App: React.FC = () => {
   }, []);
   
   const handleInputChange = useCallback((value: string) => {
+    // Unlock audio on user interaction
+    unlockAudio();
+    
     setInput(value);
     setHistoryIndex(-1);
 
@@ -450,6 +496,9 @@ export const App: React.FC = () => {
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Unlock audio on user interaction
+    unlockAudio();
+    
     // Command History Navigation (only when suggestions are not shown)
     if (!showSuggestions && commandHistory.length > 0) {
       if (e.key === 'ArrowUp') {

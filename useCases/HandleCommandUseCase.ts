@@ -47,6 +47,8 @@ export class HandleCommandUseCase {
         return this.handleThink(args);
       case 'image':
         return await this.handleImage(args);
+      case 'audio':
+        return this.handleAudio(args);
       case 'help':
       case '':
         return this.handleHelp();
@@ -73,6 +75,8 @@ export class HandleCommandUseCase {
       ? `Enabled${this.currentSettings.thinkingBudget ? ` (${this.currentSettings.thinkingBudget} tokens)` : ' (default budget)'}`
       : 'Disabled';
 
+    const audioStatus = this.currentSettings.audioEnabled ? 'Enabled' : 'Disabled';
+
     const message = MessageService.createSystemMessage(
       `## CURRENT SETTINGS
 
@@ -80,6 +84,7 @@ export class HandleCommandUseCase {
 - **THEME:** ${this.currentSettings.themeName.toUpperCase()}
 - **MODEL:** ${this.currentSettings.modelName}
 - **THINKING:** ${thinkingStatus}
+- **AUDIO:** ${audioStatus}
 - **API KEY:** ${keyStatus}`
     );
 
@@ -185,6 +190,7 @@ export class HandleCommandUseCase {
         modelName: Settings.DEFAULT_MODEL_NAME,
         thinkingEnabled: false,
         thinkingBudget: undefined,
+        audioEnabled: true,
       },
     };
   }
@@ -398,6 +404,47 @@ export class HandleCommandUseCase {
         success: false,
         message,
       };
+    }
+  }
+
+  private handleAudio(args: string[]): CommandResult {
+    const arg = args[0]?.toLowerCase();
+    
+    if (!arg) {
+      const currentStatus = this.currentSettings.audioEnabled ? 'Enabled' : 'Disabled';
+      const message = MessageService.createSystemMessage(
+        `Audio effects: ${currentStatus}\n\nUsage:\n  /audio on   - Enable audio effects\n  /audio off  - Disable audio effects`
+      );
+      return { success: true, message };
+    }
+
+    if (arg === 'on') {
+      const message = MessageService.createSystemMessage(
+        'SYSTEM: Audio effects enabled.'
+      );
+      return {
+        success: true,
+        message,
+        settingsUpdate: {
+          audioEnabled: true,
+        },
+      };
+    } else if (arg === 'off') {
+      const message = MessageService.createSystemMessage(
+        'SYSTEM: Audio effects disabled.'
+      );
+      return {
+        success: true,
+        message,
+        settingsUpdate: {
+          audioEnabled: false,
+        },
+      };
+    } else {
+      const message = MessageService.createErrorMessage(
+        `SYSTEM ERROR: Invalid audio setting "${arg}".\n\nUse "on" or "off" (e.g., /audio on).`
+      );
+      return { success: false, message };
     }
   }
 

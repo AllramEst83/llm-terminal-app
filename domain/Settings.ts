@@ -8,7 +8,8 @@ export class Settings {
     public readonly apiKey: string,
     public readonly modelName: string,
     public readonly thinkingEnabled: boolean,
-    public readonly thinkingBudget?: number
+    public readonly thinkingBudget?: number,
+    public readonly audioEnabled: boolean = true
   ) {}
 
   static readonly DEFAULT_FONT_SIZE = 16;
@@ -24,7 +25,8 @@ export class Settings {
       '',
       this.DEFAULT_MODEL_NAME,
       false,
-      undefined
+      undefined,
+      true
     );
   }
 
@@ -36,30 +38,34 @@ export class Settings {
     if (!Settings.isValidFontSize(fontSize)) {
       return this;
     }
-    return new Settings(fontSize, this.themeName, this.apiKey, this.modelName, this.thinkingEnabled, this.thinkingBudget);
+    return new Settings(fontSize, this.themeName, this.apiKey, this.modelName, this.thinkingEnabled, this.thinkingBudget, this.audioEnabled);
   }
 
   withThemeName(themeName: ThemeName): Settings {
     if (!Theme.isValidThemeName(themeName)) {
       return this;
     }
-    return new Settings(this.fontSize, themeName, this.apiKey, this.modelName, this.thinkingEnabled, this.thinkingBudget);
+    return new Settings(this.fontSize, themeName, this.apiKey, this.modelName, this.thinkingEnabled, this.thinkingBudget, this.audioEnabled);
   }
 
   withApiKey(apiKey: string): Settings {
-    return new Settings(this.fontSize, this.themeName, apiKey, this.modelName, this.thinkingEnabled, this.thinkingBudget);
+    return new Settings(this.fontSize, this.themeName, apiKey, this.modelName, this.thinkingEnabled, this.thinkingBudget, this.audioEnabled);
   }
 
   withModelName(modelName: string): Settings {
-    return new Settings(this.fontSize, this.themeName, this.apiKey, modelName, this.thinkingEnabled, this.thinkingBudget);
+    return new Settings(this.fontSize, this.themeName, this.apiKey, modelName, this.thinkingEnabled, this.thinkingBudget, this.audioEnabled);
   }
 
   withThinkingEnabled(thinkingEnabled: boolean): Settings {
-    return new Settings(this.fontSize, this.themeName, this.apiKey, this.modelName, thinkingEnabled, this.thinkingBudget);
+    return new Settings(this.fontSize, this.themeName, this.apiKey, this.modelName, thinkingEnabled, this.thinkingBudget, this.audioEnabled);
   }
 
   withThinkingBudget(thinkingBudget: number | undefined): Settings {
-    return new Settings(this.fontSize, this.themeName, this.apiKey, this.modelName, this.thinkingEnabled, thinkingBudget);
+    return new Settings(this.fontSize, this.themeName, this.apiKey, this.modelName, this.thinkingEnabled, thinkingBudget, this.audioEnabled);
+  }
+
+  withAudioEnabled(audioEnabled: boolean): Settings {
+    return new Settings(this.fontSize, this.themeName, this.apiKey, this.modelName, this.thinkingEnabled, this.thinkingBudget, audioEnabled);
   }
 
   reset(): Settings {
