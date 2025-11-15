@@ -155,28 +155,24 @@ export const App: React.FC = () => {
 
   // Auto-scroll function
   const scrollToBottom = useCallback(() => {
-    if (endOfMessagesRef.current && scrollRef.current) {
+    if (scrollRef.current) {
       // Scroll within the message container, not the whole page
       // This prevents page scroll when keyboard is open on mobile
       const container = scrollRef.current;
-      const target = endOfMessagesRef.current;
       
-      // Calculate scroll position relative to container
-      const containerRect = container.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const scrollTop = container.scrollTop;
-      const targetOffsetTop = targetRect.top - containerRect.top + scrollTop;
-      
-      // Only scroll if target is not already visible
-      const containerBottom = scrollTop + container.clientHeight;
-      const targetBottom = targetOffsetTop + target.offsetHeight;
-      
-      if (targetBottom > containerBottom || targetOffsetTop < scrollTop) {
-        container.scrollTo({
-          top: Math.max(0, targetBottom - container.clientHeight),
-          behavior: 'smooth'
+      // Use requestAnimationFrame to ensure DOM has updated before scrolling
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Scroll all the way to the bottom by using scrollHeight
+          // This ensures we always scroll to the absolute bottom, not just enough to show a target element
+          const maxScrollTop = container.scrollHeight - container.clientHeight;
+          
+          container.scrollTo({
+            top: maxScrollTop,
+            behavior: 'smooth'
+          });
         });
-      }
+      });
     }
   }, []);
 
