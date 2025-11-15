@@ -14,10 +14,8 @@ interface MessageListProps {
 }
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize, onImageLoad }) => {
-  const headerFontSizeMultiplier = 0.6;
+  const headerFontSizeMultiplier = 0.9;
   const headerFontSize = fontSize * headerFontSizeMultiplier;
-  const systemFontSizeMultiplier = 0.6;
-  const systemFontSize = fontSize * systemFontSizeMultiplier;
   
   return (
     <>
@@ -85,7 +83,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
                   className="uppercase tracking-wider opacity-70" 
                   style={{ 
                     color: theme.system,
-                    fontSize: `${systemFontSize}px`
+                    fontSize: `${headerFontSize}px`
                   }}
                 >
                   SYSTEM
