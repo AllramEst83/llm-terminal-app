@@ -6,3 +6,4 @@ export function getCurrentTimestamp(): string {
   return `[${hours}:${minutes}:${seconds}]`;
 }
 
+

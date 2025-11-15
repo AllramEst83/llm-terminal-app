@@ -228,17 +228,17 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
           
           // Lists
           ul: ({ node, ...props }) => (
-            <ul className="list-disc list-inside mb-2 ml-4 space-y-1" style={{ color: textColor }}>
+            <ul className="list-disc list-outside mb-2 ml-6 space-y-1" style={{ color: textColor }}>
               {props.children}
             </ul>
           ),
           ol: ({ node, ...props }) => (
-            <ol className="list-decimal list-inside mb-2 ml-4 space-y-1" style={{ color: textColor }}>
+            <ol className="list-decimal list-outside mb-2 ml-6 space-y-1" style={{ color: textColor }}>
               {props.children}
             </ol>
           ),
           li: ({ node, ...props }) => (
-            <li className="pl-1" style={{ color: textColor }}>
+            <li className="pl-2" style={{ color: textColor, display: 'list-item' }}>
               {props.children}
             </li>
           ),

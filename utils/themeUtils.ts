@@ -11,3 +11,4 @@ export function applyThemeToDocument(theme: { accent: string; headerBg: string }
   document.documentElement.style.setProperty('--crt-glow-rgb', hexToRgb(theme.accent));
 }
 
+
