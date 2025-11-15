@@ -359,7 +359,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col p-4 sm:p-8">
+    <div className="h-full flex flex-col p-2 sm:p-4">
       <div 
         className="w-full h-full shadow-lg flex flex-col relative border-4 crt-screen"
         style={{ 
