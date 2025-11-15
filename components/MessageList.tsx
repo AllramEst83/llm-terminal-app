@@ -25,13 +25,26 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
         const isModel = msg.role === 'model';
         const isLastMessage = index === messages.length - 1;
         
+        // Determine card background and border colors based on role
+        const cardBg = isUser 
+          ? (theme.userCardBg || theme.background)
+          : isModel 
+          ? (theme.aiCardBg || theme.background)
+          : (theme.systemCardBg || theme.background);
+        
+        const borderColor = isUser 
+          ? theme.prompt 
+          : isModel 
+          ? theme.ai 
+          : theme.system;
+        
         return (
           <div 
             key={msg.id} 
-            className={`mb-4 ${isUser ? 'pb-2' : 'pb-3'} ${isModel ? 'border-l-2 pl-3' : ''}`}
+            className="mb-4 rounded-md p-3"
             style={{ 
-              borderLeftColor: isModel ? `${theme.accent}40` : 'transparent',
-              borderLeftWidth: isModel ? '2px' : '0'
+              backgroundColor: cardBg,
+              border: `1px solid ${borderColor}40`
             }}
           >
             {/* Message Header */}

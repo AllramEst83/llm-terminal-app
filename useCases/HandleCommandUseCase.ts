@@ -118,9 +118,12 @@ export class HandleCommandUseCase {
     const requestedTheme = args[0] as ThemeName;
     
     if (!requestedTheme) {
-      const availableThemes = Theme.getThemeNames().join(', ');
+      const allThemes = Theme.getAllThemes();
+      const themeList = Object.entries(allThemes)
+        .map(([key, theme]) => `- **${key}** - ${theme.name}`)
+        .join('\n');
       const message = MessageService.createSystemMessage(
-        `Available themes:\n${availableThemes}\n\nUsage: /theme <theme_name>`
+        `Available themes:\n\n${themeList}\n\nUsage: /theme <theme_name>`
       );
       return { success: true, message };
     }

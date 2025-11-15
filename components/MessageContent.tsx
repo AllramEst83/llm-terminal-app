@@ -181,71 +181,68 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
 
   const textColor = theme?.text || '#00FF41';
   const accentColor = theme?.accent || '#00A800';
+  const backgroundColor = theme?.background || '#0D0D0D';
+  const promptColor = theme?.prompt || '#FFD700';
+
+  // Helper to create styled components with consistent patterns
+  const createHeader = (level: 1 | 2 | 3 | 4 | 5 | 6, className: string) => 
+    ({ children }: { children: React.ReactNode }) => {
+      const Component = `h${level}` as keyof JSX.IntrinsicElements;
+      const hasBorder = level <= 2;
+      return (
+        <Component 
+          className={`${className} ${hasBorder ? 'border-b pb-1' : ''}`} 
+          style={{ 
+            color: textColor, 
+            ...(hasBorder && { borderColor: accentColor })
+          }}
+        >
+          {children}
+        </Component>
+      );
+    };
 
   return (
     <div ref={contentRef} className="message-content">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        skipHtml={false}
         components={{
           // Headers
-          h1: ({ node, ...props }) => (
-            <h1 className="text-2xl font-bold mb-2 mt-4 first:mt-0 border-b pb-1" style={{ color: textColor, borderColor: accentColor }}>
-              {props.children}
-            </h1>
-          ),
-          h2: ({ node, ...props }) => (
-            <h2 className="text-xl font-bold mb-2 mt-3 first:mt-0 border-b pb-1" style={{ color: textColor, borderColor: accentColor }}>
-              {props.children}
-            </h2>
-          ),
-          h3: ({ node, ...props }) => (
-            <h3 className="text-lg font-bold mb-1 mt-2 first:mt-0" style={{ color: textColor }}>
-              {props.children}
-            </h3>
-          ),
-          h4: ({ node, ...props }) => (
-            <h4 className="text-base font-bold mb-1 mt-2 first:mt-0" style={{ color: textColor }}>
-              {props.children}
-            </h4>
-          ),
-          h5: ({ node, ...props }) => (
-            <h5 className="text-sm font-bold mb-1 mt-2 first:mt-0" style={{ color: textColor }}>
-              {props.children}
-            </h5>
-          ),
-          h6: ({ node, ...props }) => (
-            <h6 className="text-xs font-bold mb-1 mt-2 first:mt-0" style={{ color: textColor }}>
-              {props.children}
-            </h6>
-          ),
+          h1: createHeader(1, 'text-2xl font-bold mb-2 mt-4 first:mt-0'),
+          h2: createHeader(2, 'text-xl font-bold mb-2 mt-3 first:mt-0'),
+          h3: createHeader(3, 'text-lg font-bold mb-1 mt-2 first:mt-0'),
+          h4: createHeader(4, 'text-base font-bold mb-1 mt-2 first:mt-0'),
+          h5: createHeader(5, 'text-sm font-bold mb-1 mt-2 first:mt-0'),
+          h6: createHeader(6, 'text-xs font-bold mb-1 mt-2 first:mt-0'),
           
           // Paragraphs
-          p: ({ node, ...props }) => (
+          p: ({ children }) => (
             <p className="mb-2 leading-relaxed" style={{ color: textColor }}>
-              {props.children}
+              {children}
             </p>
           ),
           
           // Lists
-          ul: ({ node, ...props }) => (
+          ul: ({ children }) => (
             <ul className="list-disc list-outside mb-2 ml-6 space-y-1" style={{ color: textColor }}>
-              {props.children}
+              {children}
             </ul>
           ),
-          ol: ({ node, ...props }) => (
+          ol: ({ children }) => (
             <ol className="list-decimal list-outside mb-2 ml-6 space-y-1" style={{ color: textColor }}>
-              {props.children}
+              {children}
             </ol>
           ),
-          li: ({ node, ...props }) => (
+          li: ({ children }) => (
             <li className="pl-2" style={{ color: textColor, display: 'list-item' }}>
-              {props.children}
+              {children}
             </li>
           ),
           
           // Code blocks
-          pre: ({ node, ...props }) => {
-            const codeElement = React.Children.only(props.children) as React.ReactElement<any>;
+          pre: ({ children }) => {
+            const codeElement = React.Children.only(children) as React.ReactElement<any>;
             const codeProps = codeElement?.props || {};
             const className = codeProps.className || '';
             const language = className.replace('language-', '') || 'plaintext';
@@ -256,43 +253,48 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
                 code={code}
                 language={language}
                 accentColor={accentColor}
-                backgroundColor={theme?.background || '#0D0D0D'}
+                backgroundColor={backgroundColor}
                 textColor={textColor}
               />
             );
           },
           
           // Inline code
-          code: ({ node, inline, className, ...props }) => {
+          code: ({ inline, className, children, ...props }) => {
             if (inline) {
               return (
                 <code 
                   className="px-1.5 py-0.5 rounded text-sm font-mono" 
                   style={{ 
                     backgroundColor: `${accentColor}20`,
-                    color: theme?.prompt || '#FFD700',
+                    color: promptColor,
                     border: `1px solid ${accentColor}40`
                   }}
                   {...props}
-                />
+                >
+                  {children}
+                </code>
               );
             }
-            return <code className={className} {...props} />;
+            return <code className={className} {...props}>{children}</code>;
           },
           
           // Links
-          a: ({ node, ...props }) => (
+          a: ({ href, children, ...props }) => (
             <a
-              {...props}
+              href={href}
               className="underline hover:opacity-75 transition-opacity"
               style={{ color: accentColor }}
               target="_blank"
               rel="noopener noreferrer"
-            />
+              {...props}
+            >
+              {children}
+            </a>
           ),
           
           // Blockquotes
-          blockquote: ({ node, ...props }) => (
+          blockquote: ({ children }) => (
             <blockquote 
               className="border-l-4 pl-4 my-2 italic opacity-90" 
               style={{ 
@@ -300,12 +302,12 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
                 color: textColor
               }}
             >
-              {props.children}
+              {children}
             </blockquote>
           ),
           
           // Horizontal rule
-          hr: ({ node, ...props }) => (
+          hr: () => (
             <hr 
               className="my-4 border-0 border-t" 
               style={{ 
@@ -315,7 +317,7 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
           ),
           
           // Tables
-          table: ({ node, ...props }) => (
+          table: ({ children }) => (
             <div className="overflow-x-auto my-3">
               <table 
                 className="border-collapse w-full" 
@@ -323,31 +325,31 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
                   border: `1px solid ${accentColor}60`
                 }}
               >
-                {props.children}
+                {children}
               </table>
             </div>
           ),
-          thead: ({ node, ...props }) => (
+          thead: ({ children }) => (
             <thead style={{ backgroundColor: `${accentColor}20` }}>
-              {props.children}
+              {children}
             </thead>
           ),
-          tbody: ({ node, ...props }) => (
+          tbody: ({ children }) => (
             <tbody>
-              {props.children}
+              {children}
             </tbody>
           ),
-          tr: ({ node, ...props }) => (
+          tr: ({ children }) => (
             <tr 
               className="border-b" 
               style={{ 
                 borderBottomColor: `${accentColor}40`
               }}
             >
-              {props.children}
+              {children}
             </tr>
           ),
-          th: ({ node, ...props }) => (
+          th: ({ children }) => (
             <th 
               className="px-3 py-2 text-left font-bold border-r" 
               style={{ 
@@ -355,10 +357,10 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
                 borderRightColor: `${accentColor}40`
               }}
             >
-              {props.children}
+              {children}
             </th>
           ),
-          td: ({ node, ...props }) => (
+          td: ({ children }) => (
             <td 
               className="px-3 py-2 border-r" 
               style={{ 
@@ -366,28 +368,31 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
                 borderRightColor: `${accentColor}40`
               }}
             >
-              {props.children}
+              {children}
             </td>
           ),
           
           // Strong and emphasis
-          strong: ({ node, ...props }) => (
+          strong: ({ children }) => (
             <strong className="font-bold" style={{ color: textColor }}>
-              {props.children}
+              {children}
             </strong>
           ),
-          em: ({ node, ...props }) => (
+          em: ({ children }) => (
             <em className="italic" style={{ color: textColor }}>
-              {props.children}
+              {children}
             </em>
           ),
           
           // Strikethrough
-          del: ({ node, ...props }) => (
+          del: ({ children }) => (
             <del className="line-through opacity-70" style={{ color: textColor }}>
-              {props.children}
+              {children}
             </del>
           ),
+          
+          // Text node handler - ensures markdown syntax is properly parsed
+          text: ({ children }) => <>{children}</>,
         }}
       >
         {text}
