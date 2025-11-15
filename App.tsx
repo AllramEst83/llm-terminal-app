@@ -198,8 +198,18 @@ export const App: React.FC = () => {
     if (CommandService.isCommand(trimmedInput)) {
       const parsed = CommandService.parseCommand(trimmedInput);
       if (parsed && parsed.command !== 'search') {
+        // Show loading state for async commands like image
+        if (parsed.command === 'image') {
+          setIsLoading(true);
+        }
+        
         const commandUseCase = new HandleCommandUseCase(settings, isStudioEnv);
         const result = await commandUseCase.execute(parsed.command, parsed.args);
+        
+        // Clear loading state after command execution
+        if (parsed.command === 'image') {
+          setIsLoading(false);
+        }
 
         if (result.shouldClearMessages) {
           setMessages(MessageService.getInitialMessages());

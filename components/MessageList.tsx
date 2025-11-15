@@ -1,6 +1,7 @@
 import React from 'react';
 import { Message } from '../domain/Message';
 import { MessageContent } from './MessageContent';
+import { ImageDisplay } from './ImageDisplay';
 import type { ThemeColors } from '../domain/Theme';
 
 interface MessageListProps {
@@ -98,6 +99,13 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
             >
               <MessageContent text={msg.text} theme={theme} />
             </div>
+            
+            {/* Image Display */}
+            {msg.imageData && (
+              <div className="mt-2">
+                <ImageDisplay base64Image={msg.imageData} prompt={msg.text} theme={theme} />
+              </div>
+            )}
             
             {/* Streaming Cursor */}
             {isStreaming && isModel && isLastMessage && (

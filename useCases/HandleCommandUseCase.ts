@@ -5,6 +5,7 @@ import { ThemeService } from '../services/ThemeService';
 import { ApiKeyService } from '../services/ApiKeyService';
 import { MessageService } from '../services/MessageService';
 import { BrowserInfoService } from '../services/BrowserInfoService';
+import { generateImage } from '../services/imageService';
 import { Message } from '../domain/Message';
 
 export interface CommandResult {
@@ -44,6 +45,8 @@ export class HandleCommandUseCase {
         return this.handleModel(args);
       case 'think':
         return this.handleThink(args);
+      case 'image':
+        return await this.handleImage(args);
       case 'help':
       case '':
         return this.handleHelp();
@@ -314,6 +317,86 @@ export class HandleCommandUseCase {
           thinkingEnabled: true,
           thinkingBudget: budget,
         },
+      };
+    }
+  }
+
+  private async handleImage(args: string[]): Promise<CommandResult> {
+    if (args.length === 0) {
+      const message = MessageService.createErrorMessage(
+        'Usage: /image <prompt> [--aspect <ratio>]\n\nExamples:\n  /image a cat\n  /image a cat --aspect 16:9\n  /image a cat --aspect 9:16\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4'
+      );
+      return { success: false, message };
+    }
+
+    // Parse arguments: look for --aspect flag
+    let promptParts: string[] = [];
+    let aspectRatio = '1:1'; // default
+    let i = 0;
+
+    while (i < args.length) {
+      if (args[i] === '--aspect' && i + 1 < args.length) {
+        aspectRatio = args[i + 1];
+        i += 2;
+      } else {
+        promptParts.push(args[i]);
+        i++;
+      }
+    }
+
+    const prompt = promptParts.join(' ').trim();
+    
+    if (!prompt) {
+      const message = MessageService.createErrorMessage(
+        'Usage: /image <prompt> [--aspect <ratio>]\n\nExamples:\n  /image a cat\n  /image a cat --aspect 16:9\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4'
+      );
+      return { success: false, message };
+    }
+
+    try {
+      const apiKey = await ApiKeyService.getApiKey();
+      if (!apiKey) {
+        const message = MessageService.createErrorMessage(
+          'SYSTEM ERROR: API key is missing. Please configure your API key using /apikey <your_key>.'
+        );
+        return { success: false, message };
+      }
+
+      const imageData = await generateImage(prompt, apiKey, aspectRatio);
+      const aspectInfo = aspectRatio !== '1:1' ? ` (${aspectRatio})` : '';
+      const message = MessageService.createSystemMessage(
+        `Generated image for: "${prompt}"${aspectInfo}`
+      ).withImageData(imageData);
+
+      return {
+        success: true,
+        message,
+      };
+    } catch (error) {
+      console.error('Error generating image:', error);
+      let errorMessage = 'SYSTEM ERROR: Failed to generate image.';
+      
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        if (errorMsg.includes('invalid aspect ratio')) {
+          errorMessage = `SYSTEM ERROR: ${error.message}\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4\n\nExample: /image a cat --aspect 16:9`;
+        } else if (errorMsg.includes('api key') || errorMsg.includes('permission') || errorMsg.includes('invalid')) {
+          errorMessage = `SYSTEM ERROR: ${error.message}\n\nTroubleshooting:\n- Verify your API key is correct\n- Ensure Imagen API is enabled in Google AI Studio\n- Check that your API key has access to image generation\n- Try updating your key: /apikey <your_key>`;
+        } else if (errorMsg.includes('quota') || errorMsg.includes('rate limit')) {
+          errorMessage = 'SYSTEM ERROR: API quota exceeded or rate limit reached.\n\nPlease try again later.';
+        } else if (errorMsg.includes('policy') || errorMsg.includes('violation')) {
+          errorMessage = 'SYSTEM ERROR: Content policy violation. Please try a different prompt.';
+        } else if (errorMsg.includes('not found') || errorMsg.includes('404')) {
+          errorMessage = 'SYSTEM ERROR: Imagen API not available.\n\nThe Imagen API may not be enabled for your API key or may not be available in your region.\n\nPlease check:\n- Enable Imagen API in Google AI Studio\n- Verify your API key has the necessary permissions';
+        } else {
+          errorMessage = `SYSTEM ERROR: ${error.message}`;
+        }
+      }
+
+      const message = MessageService.createErrorMessage(errorMessage);
+      return {
+        success: false,
+        message,
       };
     }
   }

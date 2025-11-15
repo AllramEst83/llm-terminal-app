@@ -9,21 +9,24 @@ export class Message {
     public readonly role: 'user' | 'model' | 'system',
     public readonly text: string,
     public readonly timestamp?: string,
-    public readonly sources?: Source[]
+    public readonly sources?: Source[],
+    public readonly imageData?: string
   ) {}
 
   static create(
     role: 'user' | 'model' | 'system',
     text: string,
     timestamp?: string,
-    sources?: Source[]
+    sources?: Source[],
+    imageData?: string
   ): Message {
     return new Message(
       Date.now().toString(),
       role,
       text,
       timestamp,
-      sources
+      sources,
+      imageData
     );
   }
 
@@ -45,7 +48,8 @@ export class Message {
       this.role,
       newText,
       this.timestamp,
-      this.sources
+      this.sources,
+      this.imageData
     );
   }
 
@@ -55,7 +59,19 @@ export class Message {
       this.role,
       this.text,
       this.timestamp,
-      sources
+      sources,
+      this.imageData
+    );
+  }
+
+  withImageData(imageData: string): Message {
+    return new Message(
+      this.id,
+      this.role,
+      this.text,
+      this.timestamp,
+      this.sources,
+      imageData
     );
   }
 }
