@@ -80,24 +80,86 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
         {showPopup && (
           <div
             ref={popupRef}
-            className="absolute right-0 top-full mt-2 p-3 rounded shadow-lg z-50 min-w-[200px]"
+            className="absolute right-0 top-full mt-2 rounded shadow-lg z-50 w-[280px]"
             style={{
               backgroundColor: theme.background,
               color: theme.text,
               border: `2px solid ${theme.accent}`,
             }}
           >
-            <div className="flex flex-col space-y-3 text-sm">
-              <div className="flex items-center space-x-2">
-                <span style={{ color: theme.text, opacity: 0.8 }}>Model:</span>
-                <span style={{ color: theme.accent }}>{modelName}</span>
+            {/* Header */}
+            <div 
+              className="px-4 py-2 border-b"
+              style={{ borderColor: theme.accent, opacity: 0.3 }}
+            >
+              <h3 
+                className="text-sm font-bold uppercase tracking-wider"
+                style={{ color: theme.accent }}
+              >
+                SYSTEM INFO
+              </h3>
+            </div>
+            
+            {/* Content */}
+            <div className="p-4 space-y-4">
+              {/* Model Section */}
+              <div className="space-y-1">
+                <div 
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: theme.text, opacity: 0.7 }}
+                >
+                  Model
+                </div>
+                <div 
+                  className="text-sm font-mono truncate"
+                  style={{ color: theme.accent }}
+                >
+                  {modelName}
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <span style={{ color: theme.text, opacity: 0.8 }}>Thinking:</span>
-                <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
+
+              {/* Thinking Section */}
+              <div className="space-y-1">
+                <div 
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: theme.text, opacity: 0.7 }}
+                >
+                  Thinking
+                </div>
+                <div className="flex items-center">
+                  <button
+                    className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                      thinkingEnabled ? 'opacity-100' : 'opacity-60'
+                    }`}
+                    style={{
+                      backgroundColor: thinkingEnabled ? theme.accent : 'transparent',
+                      color: thinkingEnabled ? theme.background : theme.text,
+                      border: `1px solid ${theme.accent}`,
+                    }}
+                    disabled
+                  >
+                    {thinkingEnabled ? 'ON' : 'OFF'}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center justify-center pt-2">
-                <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
+
+              {/* Divider */}
+              <div 
+                className="h-px"
+                style={{ backgroundColor: theme.accent, opacity: 0.3 }}
+              />
+
+              {/* Token Section */}
+              <div className="space-y-2">
+                <div 
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: theme.text, opacity: 0.7 }}
+                >
+                  Token Usage
+                </div>
+                <div className="flex items-center justify-start">
+                  <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
+                </div>
               </div>
             </div>
           </div>
