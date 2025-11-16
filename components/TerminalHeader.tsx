@@ -1,16 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { ThemeColors } from '../domain/Theme';
+import { TokenCounter } from './TokenCounter';
 
 interface TerminalHeaderProps {
   theme: ThemeColors;
   modelName: string;
   thinkingEnabled: boolean;
+  inputTokenCount: number;
 }
 
-export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName, thinkingEnabled }) => {
+export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName, thinkingEnabled, inputTokenCount }) => {
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const iconRef = useRef<HTMLButtonElement>(null);
+
+  // Get max tokens based on model
+  const maxTokens = modelName.includes('pro') ? 2_000_000 : 1_000_000;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -40,12 +45,14 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
       style={{ backgroundColor: theme.headerBg, color: theme.headerText, borderColor: theme.accent }}
     >
       <span className="text-lg">C:\\{'>'} GEMINI_CHAT.EXE</span>
-      <div className="hidden md:flex items-center space-x-2 text-sm">
+      <div className="hidden md:flex items-center space-x-3 text-sm">
         <span style={{ color: theme.headerText, opacity: 0.8 }}>Model:</span>
         <span style={{ color: theme.accent }}>{modelName}</span>
         <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
         <span style={{ color: theme.headerText, opacity: 0.8 }}>Thinking:</span>
         <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
+        <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
+        <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
       </div>
       <div className="md:hidden relative">
         <button
@@ -80,7 +87,7 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
               border: `2px solid ${theme.accent}`,
             }}
           >
-            <div className="flex flex-col space-y-2 text-sm">
+            <div className="flex flex-col space-y-3 text-sm">
               <div className="flex items-center space-x-2">
                 <span style={{ color: theme.text, opacity: 0.8 }}>Model:</span>
                 <span style={{ color: theme.accent }}>{modelName}</span>
@@ -88,6 +95,9 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
               <div className="flex items-center space-x-2">
                 <span style={{ color: theme.text, opacity: 0.8 }}>Thinking:</span>
                 <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
+              </div>
+              <div className="flex items-center justify-center pt-2">
+                <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
               </div>
             </div>
           </div>
