@@ -43,6 +43,8 @@ export class TokenCountService {
   }
 
   // Update token usage for a specific model
+  // inputTokens: total conversation tokens (replaces existing value)
+  // outputTokens: new response tokens (adds to existing cumulative total)
   static updateTokenUsage(
     modelName: string,
     inputTokens: number,
@@ -52,7 +54,9 @@ export class TokenCountService {
     const normalizedModel = this.normalizeModelName(modelName);
     
     if (normalizedModel in usage) {
-      usage[normalizedModel as keyof ModelTokenUsage].inputTokens += inputTokens;
+      // Set input tokens (total conversation tokens, not cumulative)
+      usage[normalizedModel as keyof ModelTokenUsage].inputTokens = inputTokens;
+      // Add output tokens (cumulative total of all responses)
       usage[normalizedModel as keyof ModelTokenUsage].outputTokens += outputTokens;
       sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(usage));
     }
