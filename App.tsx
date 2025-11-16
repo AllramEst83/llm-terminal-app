@@ -56,6 +56,7 @@ export const App: React.FC = () => {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [loadingCharIndex, setLoadingCharIndex] = useState<number>(0);
+  const [inputTokenCount, setInputTokenCount] = useState<number>(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -78,6 +79,9 @@ export const App: React.FC = () => {
       setTheme(loadedTheme);
       ThemeService.applyTheme(loadedTheme);
       
+      // Initialize token counting for the session
+      TokenCountService.initializeSessionStorage();
+      
       // Mark as initialized after loading settings
       isInitializedRef.current = true;
     };
@@ -99,6 +103,18 @@ export const App: React.FC = () => {
     };
     saveSettings();
   }, [settings]);
+
+  // Update input token count when model changes
+  useEffect(() => {
+    if (!isInitializedRef.current || !booted) {
+      return;
+    }
+    
+    // Only update token count from session storage when model switches
+    // (not on every message change, as that will be handled by the callback)
+    const usage = TokenCountService.getModelTokenUsage(settings.modelName);
+    setInputTokenCount(usage.inputTokens);
+  }, [settings.modelName, booted]);
 
   // Boot sequence trigger
   useEffect(() => {
@@ -373,6 +389,7 @@ export const App: React.FC = () => {
 
         if (result.shouldClearMessages) {
           setMessages(MessageService.getInitialMessages());
+          setInputTokenCount(0);
           return;
         }
 
@@ -405,7 +422,14 @@ export const App: React.FC = () => {
     playKeystrokeSound(settings.audioEnabled);
 
     try {
-      const sendUseCase = new SendMessageUseCase(messages, settings);
+      const sendUseCase = new SendMessageUseCase(
+        messages, 
+        settings,
+        (newInputTokenCount) => {
+          // Update token count in UI after tokens are counted
+          setInputTokenCount(newInputTokenCount);
+        }
+      );
       await sendUseCase.execute(
       trimmedInput,
       (chunkText, isFirstChunk) => {
@@ -556,7 +580,7 @@ export const App: React.FC = () => {
           overflow: 'hidden'
         }}
       >
-        <TerminalHeader theme={theme} modelName={settings.modelName} thinkingEnabled={settings.thinkingEnabled} />
+        <TerminalHeader theme={theme} modelName={settings.modelName} thinkingEnabled={settings.thinkingEnabled} inputTokenCount={inputTokenCount} />
         <div 
           ref={scrollRef}
           className="flex-1 p-4 overflow-y-auto relative scan-lines min-h-0"

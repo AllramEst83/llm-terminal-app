@@ -7,6 +7,7 @@ import { MessageService } from '../services/MessageService';
 import { BrowserInfoService } from '../services/BrowserInfoService';
 import { generateImage } from '../services/imageService';
 import { Message } from '../domain/Message';
+import { TokenCountService } from '../services/TokenCountService';
 
 export interface CommandResult {
   success: boolean;
@@ -31,6 +32,8 @@ export class HandleCommandUseCase {
         return this.handleClear();
       case 'settings':
         return this.handleSettings();
+      case 'tokens':
+        return this.handleTokens();
       case 'font':
         return this.handleFont(args);
       case 'theme':
@@ -58,6 +61,9 @@ export class HandleCommandUseCase {
   }
 
   private handleClear(): CommandResult {
+    // Clear token usage when clearing messages
+    TokenCountService.clearTokenUsage();
+    
     return {
       success: true,
       shouldClearMessages: true,
@@ -87,6 +93,17 @@ export class HandleCommandUseCase {
 - **AUDIO:** ${audioStatus}
 - **API KEY:** ${keyStatus}`
     );
+
+    return {
+      success: true,
+      message,
+    };
+  }
+
+  private handleTokens(): CommandResult {
+    const usage = TokenCountService.getTokenUsage();
+    const formattedUsage = TokenCountService.formatTokenUsage(usage);
+    const message = MessageService.createSystemMessage(formattedUsage);
 
     return {
       success: true,
