@@ -5,8 +5,6 @@
 // ============================================================================
 
 const KEYSTROKE_THROTTLE_MS = 50;
-const THINKING_FADE_DURATION_MS = 300;
-const THINKING_VOLUME = 0.4;
 const KEYSTROKE_VOLUME = 0.2;
 const BOOT_VOLUME = 0.7;
 const FADE_STEPS = 30;
@@ -22,8 +20,6 @@ let lastKeystrokeTime = 0;
 // Audio elements (cached for reuse)
 let bootAudio: HTMLAudioElement | null = null;
 let keystrokeAudio: HTMLAudioElement | null = null;
-let thinkingAudio: HTMLAudioElement | null = null;
-let thinkingFadeInterval: number | null = null;
 
 // ============================================================================
 // Utility Functions
@@ -120,16 +116,6 @@ const fadeVolume = (
   }, stepDuration);
 
   return intervalId;
-};
-
-/**
- * Clear fade interval safely.
- */
-const clearFadeInterval = (): void => {
-  if (thinkingFadeInterval !== null) {
-    clearInterval(thinkingFadeInterval);
-    thinkingFadeInterval = null;
-  }
 };
 
 // ============================================================================
@@ -319,129 +305,3 @@ export function playBootSound(audioEnabled: boolean = true): void {
   }
 }
 
-// ============================================================================
-// Thinking Sound Management
-// ============================================================================
-
-/**
- * Start playing the thinking/processing sound with fade in.
- * This should be called when AI starts generating a response.
- * @param waitFor - Optional promise to wait for before starting (e.g., wait for keystroke sound to finish)
- */
-export function startThinkingSound(audioEnabled: boolean = true, waitFor?: Promise<void>): void {
-  if (!audioEnabled) {
-    return;
-  }
-
-  const startPlayback = () => {
-    // Stop any existing thinking sound first
-    if (thinkingAudio && !thinkingAudio.paused) {
-      stopThinkingSound(true);
-    }
-
-    try {
-      // Create audio element if it doesn't exist
-      if (!thinkingAudio) {
-        thinkingAudio = createAudioElement('/audio/cpu-working.mp3', 0, { loop: true });
-        
-        thinkingAudio.addEventListener('error', () => {
-          thinkingAudio = null;
-        });
-
-        // Fallback: if loop fails, manually restart on ended event
-        thinkingAudio.addEventListener('ended', () => {
-          if (thinkingAudio && thinkingAudio.loop && !thinkingAudio.paused) {
-            thinkingAudio.currentTime = 0;
-            playAudioSafely(thinkingAudio);
-          }
-        });
-      }
-
-      // Ensure audio is paused and reset before starting
-      if (thinkingAudio.paused === false) {
-        thinkingAudio.pause();
-      }
-
-      // Configure for playback
-      thinkingAudio.loop = true;
-      thinkingAudio.currentTime = 0;
-      thinkingAudio.volume = 0;
-
-      // Start playing
-      playAudioSafely(thinkingAudio).then(() => {
-        // Verify loop is still enabled after play starts
-        if (thinkingAudio && !thinkingAudio.loop) {
-          thinkingAudio.loop = true;
-        }
-
-        // Start fade in
-        if (thinkingAudio) {
-          clearFadeInterval();
-          thinkingFadeInterval = fadeVolume(
-            thinkingAudio,
-            THINKING_VOLUME,
-            THINKING_FADE_DURATION_MS
-          );
-        }
-      });
-    } catch (error) {
-      debugLog('Thinking audio initialization failed:', error);
-    }
-  };
-
-  // Wait for the promise if provided, otherwise start immediately
-  if (waitFor) {
-    waitFor.then(() => {
-      startPlayback();
-    }).catch(() => {
-      // If wait promise fails, start anyway
-      startPlayback();
-    });
-  } else {
-    startPlayback();
-  }
-}
-
-/**
- * Stop playing the thinking/processing sound with fade out.
- * This should be called when AI finishes generating a response or on error.
- */
-export function stopThinkingSound(immediate: boolean = false): void {
-  clearFadeInterval();
-
-  if (!thinkingAudio) {
-    return;
-  }
-
-  try {
-    if (immediate) {
-      // Stop immediately but keep the element for reuse
-      thinkingAudio.pause();
-      thinkingAudio.currentTime = 0;
-      thinkingAudio.volume = 0;
-    } else {
-      // Fade out
-      const startVolume = thinkingAudio.volume;
-      if (startVolume > 0) {
-        thinkingFadeInterval = fadeVolume(
-          thinkingAudio,
-          0,
-          THINKING_FADE_DURATION_MS,
-          () => {
-            if (thinkingAudio) {
-              thinkingAudio.pause();
-              thinkingAudio.currentTime = 0;
-              thinkingAudio.volume = 0;
-            }
-          }
-        );
-      } else {
-        // Already at 0, just pause
-        thinkingAudio.pause();
-        thinkingAudio.currentTime = 0;
-      }
-    }
-  } catch (error) {
-    debugLog('Thinking audio stop failed:', error);
-  }
-}
