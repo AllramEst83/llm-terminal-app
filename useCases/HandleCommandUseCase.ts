@@ -7,14 +7,7 @@ import { MessageService } from '../services/MessageService';
 import { BrowserInfoService } from '../services/BrowserInfoService';
 import { generateImage } from '../services/imageService';
 import { Message } from '../domain/Message';
-
-export interface CommandResult {
-  success: boolean;
-  message?: Message;
-  settingsUpdate?: Partial<Settings>;
-  shouldClearMessages?: boolean;
-  shouldOpenKeySelector?: boolean;
-}
+import type { CommandResult } from '../domain/CommandResult';
 
 export class HandleCommandUseCase {
   constructor(

@@ -1,10 +1,5 @@
 import { BootSequenceService } from '../services/BootSequenceService';
-
-export interface BootSequenceState {
-  isBooting: boolean;
-  isBooted: boolean;
-  bootSequence: string[];
-}
+import type { BootSequenceState } from '../domain/BootSequence';
 
 export class ManageBootSequenceUseCase {
   private bootMessages = BootSequenceService.getBootMessages();

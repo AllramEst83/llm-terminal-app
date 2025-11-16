@@ -4,12 +4,6 @@ import { sendMessageToGemini } from '../services/geminiService';
 import { MessageService } from '../services/MessageService';
 import { getCurrentTimestamp } from '../utils/dateUtils';
 
-export interface SendMessageResult {
-  userMessage: Message;
-  onStream: (chunkText: string, isFirstChunk: boolean) => void;
-  onComplete: (sources?: Array<{ title: string; uri: string }>) => void;
-}
-
 export class SendMessageUseCase {
   constructor(
     private currentMessages: Message[],

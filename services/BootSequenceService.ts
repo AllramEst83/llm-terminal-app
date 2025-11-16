@@ -1,7 +1,4 @@
-export interface BootMessage {
-  text: string;
-  delay: number;
-}
+import type { BootMessage } from '../domain/BootSequence';
 
 export class BootSequenceService {
   static readonly BOOT_MESSAGES: BootMessage[] = [
