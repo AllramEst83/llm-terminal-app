@@ -18,7 +18,7 @@ import { PressToBootUI } from './components/PressToBootUI';
 import { ApiKeySelectionUI } from './components/ApiKeySelectionUI';
 import { ApiKeyInputUI } from './components/ApiKeyInputUI';
 import { getCurrentTimestamp } from './utils/dateUtils';
-import { playKeystrokeSound, playErrorBeep, playBootSound, unlockAudio, startThinkingSound, stopThinkingSound } from './services/audioService';
+import { playKeystrokeSound, playErrorBeep, playBootSound, unlockAudio } from './services/audioService';
 
 // Tell TypeScript that hljs is available globally.
 declare const hljs: any;
@@ -56,6 +56,7 @@ export const App: React.FC = () => {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [loadingCharIndex, setLoadingCharIndex] = useState<number>(0);
+  const [inputTokenCount, setInputTokenCount] = useState<number>(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -78,6 +79,9 @@ export const App: React.FC = () => {
       setTheme(loadedTheme);
       ThemeService.applyTheme(loadedTheme);
       
+      // Initialize token counting for the session
+      TokenCountService.initializeSessionStorage();
+      
       // Mark as initialized after loading settings
       isInitializedRef.current = true;
     };
@@ -99,6 +103,18 @@ export const App: React.FC = () => {
     };
     saveSettings();
   }, [settings]);
+
+  // Update input token count when model changes
+  useEffect(() => {
+    if (!isInitializedRef.current || !booted) {
+      return;
+    }
+    
+    // Only update token count from session storage when model switches
+    // (not on every message change, as that will be handled by the callback)
+    const usage = TokenCountService.getModelTokenUsage(settings.modelName);
+    setInputTokenCount(usage.inputTokens);
+  }, [settings.modelName, booted]);
 
   // Boot sequence trigger
   useEffect(() => {
@@ -150,13 +166,6 @@ export const App: React.FC = () => {
     return () => clearTimeout(currentTimeout);
   }, [booting, settings.audioEnabled]);
 
-  // Cleanup: Stop thinking sound when component unmounts
-  useEffect(() => {
-    return () => {
-      // Stop thinking sound on unmount
-      stopThinkingSound(true); // Immediate stop on unmount
-    };
-  }, []);
 
   // Syntax highlighting
   useEffect(() => {
@@ -380,6 +389,7 @@ export const App: React.FC = () => {
 
         if (result.shouldClearMessages) {
           setMessages(MessageService.getInitialMessages());
+          setInputTokenCount(0);
           return;
         }
 
@@ -408,13 +418,18 @@ export const App: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
-    // Start thinking sound when AI starts generating response
-    // Wait for keystroke sound to finish first
-    const keystrokePromise = playKeystrokeSound(settings.audioEnabled);
-    startThinkingSound(settings.audioEnabled, keystrokePromise);
+    // Play keystroke sound
+    playKeystrokeSound(settings.audioEnabled);
 
     try {
-      const sendUseCase = new SendMessageUseCase(messages, settings);
+      const sendUseCase = new SendMessageUseCase(
+        messages, 
+        settings,
+        (newInputTokenCount) => {
+          // Update token count in UI after tokens are counted
+          setInputTokenCount(newInputTokenCount);
+        }
+      );
       await sendUseCase.execute(
       trimmedInput,
       (chunkText, isFirstChunk) => {
@@ -428,10 +443,8 @@ export const App: React.FC = () => {
           const newMessage = Message.create(messageRole, chunkText, getCurrentTimestamp());
           setMessages(prev => [...prev, newMessage]);
           
-          // Stop thinking sound when first chunk arrives
-          // If error, stop immediately; otherwise it will stop when streaming completes
+          // Play error beep if error
           if (isError) {
-            stopThinkingSound(false); // Fade out on error
             playErrorBeep(settings.audioEnabled);
           }
         } else {
@@ -458,17 +471,12 @@ export const App: React.FC = () => {
         }
         setIsLoading(false);
         setIsStreaming(false);
-        
-        // Stop thinking sound when response is complete
-        stopThinkingSound(false); // Fade out smoothly
       }
       );
     } catch (error) {
-      // Stop thinking sound on any unexpected error
-      stopThinkingSound(false);
       setIsLoading(false);
       setIsStreaming(false);
-      // Error handling is done in the execute callbacks, but we need to ensure sound stops
+      // Error handling is done in the execute callbacks
     }
   }, [input, isLoading, isStreaming, messages, settings, isStudioEnv, commandHistory, handleSelectKey]);
 
@@ -572,7 +580,7 @@ export const App: React.FC = () => {
           overflow: 'hidden'
         }}
       >
-        <TerminalHeader theme={theme} modelName={settings.modelName} thinkingEnabled={settings.thinkingEnabled} />
+        <TerminalHeader theme={theme} modelName={settings.modelName} thinkingEnabled={settings.thinkingEnabled} inputTokenCount={inputTokenCount} />
         <div 
           ref={scrollRef}
           className="flex-1 p-4 overflow-y-auto relative scan-lines min-h-0"
