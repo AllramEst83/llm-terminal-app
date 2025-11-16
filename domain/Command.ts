@@ -8,6 +8,7 @@ export class Command {
     { name: 'clear', description: 'Clears the terminal screen.' },
     { name: 'search', description: 'Searches the web (e.g., /search latest news).' },
     { name: 'settings', description: 'Displays current settings.' },
+    { name: 'tokens', description: 'Shows token usage for the current session grouped by model.' },
     { name: 'font', description: 'Sets font size (e.g., /font 18).' },
     { name: 'theme', description: 'Changes color scheme (e.g., /theme amber).' },
     { name: 'apikey', description: 'Sets or updates the API key (e.g., /apikey <your_key>).' },
