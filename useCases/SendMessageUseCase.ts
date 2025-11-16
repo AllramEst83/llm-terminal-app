@@ -6,12 +6,6 @@ import { getCurrentTimestamp } from '../utils/dateUtils';
 import { TokenCountService } from '../services/TokenCountService';
 import { ApiKeyService } from '../services/ApiKeyService';
 
-export interface SendMessageResult {
-  userMessage: Message;
-  onStream: (chunkText: string, isFirstChunk: boolean) => void;
-  onComplete: (sources?: Array<{ title: string; uri: string }>) => void;
-}
-
 export class SendMessageUseCase {
   constructor(
     private currentMessages: Message[],
