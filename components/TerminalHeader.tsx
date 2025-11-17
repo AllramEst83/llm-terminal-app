@@ -1,15 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { ThemeColors } from '../domain/Theme';
 import { TokenCounter } from './TokenCounter';
+import type { Session } from '../domain/Session';
 
 interface TerminalHeaderProps {
   theme: ThemeColors;
   modelName: string;
   thinkingEnabled: boolean;
   inputTokenCount: number;
+  session?: Session | null;
+  onLogout?: () => void;
 }
 
-export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName, thinkingEnabled, inputTokenCount }) => {
+export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ 
+  theme, 
+  modelName, 
+  thinkingEnabled, 
+  inputTokenCount,
+  session,
+  onLogout
+}) => {
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const iconRef = useRef<HTMLButtonElement>(null);
@@ -46,6 +56,13 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
     >
       <span className="text-lg">C:\\{'>'} GEMINI_CHAT.EXE</span>
       <div className="hidden md:flex items-center space-x-3 text-sm">
+        {session && (
+          <>
+            <span style={{ color: theme.headerText, opacity: 0.8 }}>User:</span>
+            <span style={{ color: theme.accent }}>{session.user.username}</span>
+            <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
+          </>
+        )}
         <span style={{ color: theme.headerText, opacity: 0.8 }}>Model:</span>
         <span style={{ color: theme.accent }}>{modelName}</span>
         <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
@@ -53,6 +70,23 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
         <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
         <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
         <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
+        {session && onLogout && (
+          <>
+            <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
+            <button
+              onClick={onLogout}
+              className="px-2 py-1 text-xs uppercase hover:opacity-80 transition-opacity"
+              style={{ 
+                color: theme.system,
+                border: `1px solid ${theme.system}`,
+                backgroundColor: 'transparent'
+              }}
+              title="Logout"
+            >
+              [LOGOUT]
+            </button>
+          </>
+        )}
       </div>
       <div className="md:hidden relative">
         <button
@@ -102,6 +136,24 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
             
             {/* Content */}
             <div className="p-4 space-y-4">
+              {/* User Section */}
+              {session && (
+                <div className="space-y-1">
+                  <div 
+                    className="text-xs uppercase tracking-wide"
+                    style={{ color: theme.text, opacity: 0.7 }}
+                  >
+                    User
+                  </div>
+                  <div 
+                    className="text-sm font-mono truncate"
+                    style={{ color: theme.accent }}
+                  >
+                    {session.user.username}
+                  </div>
+                </div>
+              )}
+
               {/* Model Section */}
               <div className="space-y-1">
                 <div 
@@ -161,6 +213,30 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
                   <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
                 </div>
               </div>
+
+              {/* Logout Button */}
+              {session && onLogout && (
+                <>
+                  <div 
+                    className="h-px"
+                    style={{ backgroundColor: theme.accent, opacity: 0.3 }}
+                  />
+                  <button
+                    onClick={() => {
+                      setShowPopup(false);
+                      onLogout();
+                    }}
+                    className="w-full px-4 py-2 text-sm uppercase tracking-wide hover:opacity-80 transition-opacity"
+                    style={{ 
+                      color: theme.system,
+                      border: `1px solid ${theme.system}`,
+                      backgroundColor: 'transparent'
+                    }}
+                  >
+                    [LOGOUT]
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}

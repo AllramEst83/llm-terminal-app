@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Message } from './domain/Message';
 import { Settings } from './domain/Settings';
+import { Session } from './domain/Session';
 import { ApiKeyService } from './services/ApiKeyService';
 import { ThemeService } from './services/ThemeService';
 import { CommandService } from './services/CommandService';
 import { BootSequenceService } from './services/BootSequenceService';
 import { MessageService } from './services/MessageService';
 import { TokenCountService } from './services/TokenCountService';
+import { AuthService } from './services/AuthService';
 import { HandleCommandUseCase } from './useCases/HandleCommandUseCase';
 import { SendMessageUseCase } from './useCases/SendMessageUseCase';
 import { ManageBootSequenceUseCase } from './useCases/ManageBootSequenceUseCase';
@@ -18,6 +20,8 @@ import { BootScreen } from './components/BootScreen';
 import { PressToBootUI } from './components/PressToBootUI';
 import { ApiKeySelectionUI } from './components/ApiKeySelectionUI';
 import { ApiKeyInputUI } from './components/ApiKeyInputUI';
+import { LoginScreen } from './components/LoginScreen';
+import { RegisterScreen } from './components/RegisterScreen';
 import { getCurrentTimestamp } from './utils/dateUtils';
 import { playKeystrokeSound, playErrorBeep, playBootSound, unlockAudio } from './services/audioService';
 
@@ -50,6 +54,12 @@ export const App: React.FC = () => {
   const [settings, setSettings] = useState<Settings>(Settings.createDefault());
   const [theme, setTheme] = useState(ThemeService.getDefaultTheme());
   
+  // Authentication state
+  const [session, setSession] = useState<Session | null>(null);
+  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const [authError, setAuthError] = useState<string>('');
+  const [authLoading, setAuthLoading] = useState<boolean>(false);
+  
   const [suggestions, setSuggestions] = useState<typeof CommandService.getAllCommands extends () => infer R ? R : never>([]);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number>(0);
@@ -68,6 +78,12 @@ export const App: React.FC = () => {
   // Initialize app
   useEffect(() => {
     const initApp = async () => {
+      // Check for existing session
+      const existingSession = AuthService.getSession();
+      if (existingSession) {
+        setSession(existingSession);
+      }
+
       const isStudio = ApiKeyService.isStudioEnvironment();
       setIsStudioEnv(isStudio);
 
@@ -334,12 +350,94 @@ export const App: React.FC = () => {
     setBooting(true);
   }, []);
   
-  const handleApiKeySubmit = useCallback((submittedKey: string) => {
+  const handleApiKeySubmit = useCallback(async (submittedKey: string) => {
     const newSettings = settings.withApiKey(submittedKey);
+    await ApiKeyService.setApiKey(submittedKey);
     setSettings(newSettings);
     setIsKeyReady(true);
     setBooting(true);
   }, [settings]);
+
+  const handleLogin = useCallback(async (email: string, password: string) => {
+    setAuthLoading(true);
+    setAuthError('');
+    
+    try {
+      const response = await AuthService.login({ email, password });
+      
+      if (response.success && response.session) {
+        setSession(response.session);
+        setAuthView('login');
+        
+        // Reload settings after login to sync from database
+        const loadedSettings = await new ManageSettingsUseCase().loadSettings();
+        setSettings(loadedSettings);
+        
+        // Check if we now have an API key
+        const hasKey = await ApiKeyService.hasApiKey();
+        setIsKeyReady(hasKey);
+      } else {
+        setAuthError(response.error || 'Login failed. Please try again.');
+      }
+    } catch (error) {
+      setAuthError('An unexpected error occurred. Please try again.');
+      console.error('[App] Login error:', error);
+    } finally {
+      setAuthLoading(false);
+    }
+  }, []);
+
+  const handleRegister = useCallback(async (email: string, username: string, password: string) => {
+    setAuthLoading(true);
+    setAuthError('');
+    
+    try {
+      const response = await AuthService.register({ email, username, password });
+      
+      if (response.success && response.session) {
+        setSession(response.session);
+        setAuthView('login');
+        
+        // Reload settings after registration
+        const loadedSettings = await new ManageSettingsUseCase().loadSettings();
+        setSettings(loadedSettings);
+        
+        // Check if we now have an API key
+        const hasKey = await ApiKeyService.hasApiKey();
+        setIsKeyReady(hasKey);
+      } else {
+        setAuthError(response.error || 'Registration failed. Please try again.');
+      }
+    } catch (error) {
+      setAuthError('An unexpected error occurred. Please try again.');
+      console.error('[App] Register error:', error);
+    } finally {
+      setAuthLoading(false);
+    }
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await AuthService.logout();
+      setSession(null);
+      setBooted(false);
+      setBooting(false);
+      setIsKeyReady(false);
+      setMessages([]);
+      setAuthView('login');
+      setAuthError('');
+      
+      // Clear API key from runtime memory
+      ApiKeyService.clearRuntimeApiKey();
+      
+      // Reset to default settings (but keep theme preference)
+      const currentTheme = settings.themeName;
+      const defaultSettings = Settings.createDefault().withThemeName(currentTheme);
+      setSettings(defaultSettings);
+    } catch (error) {
+      console.error('[App] Logout error:', error);
+    }
+  }, [settings.themeName]);
 
   const handleSendMessage = useCallback(async () => {
     const trimmedInput = input.trim();
@@ -540,11 +638,44 @@ export const App: React.FC = () => {
   }, [commandHistory, historyIndex, showSuggestions]);
 
   const renderContent = () => {
+    // Show authentication screens if not authenticated
+    if (!session) {
+      if (authView === 'login') {
+        return (
+          <LoginScreen
+            theme={theme}
+            onLogin={handleLogin}
+            onSwitchToRegister={() => {
+              setAuthView('register');
+              setAuthError('');
+            }}
+            error={authError}
+            isLoading={authLoading}
+          />
+        );
+      } else {
+        return (
+          <RegisterScreen
+            theme={theme}
+            onRegister={handleRegister}
+            onSwitchToLogin={() => {
+              setAuthView('login');
+              setAuthError('');
+            }}
+            error={authError}
+            isLoading={authLoading}
+          />
+        );
+      }
+    }
+    
+    // Show API key input if authenticated but no key
     if (!isKeyReady) {
       return isStudioEnv 
         ? <ApiKeySelectionUI theme={theme} onSelectKey={handleSelectKey} /> 
         : <ApiKeyInputUI theme={theme} onApiKeySubmit={handleApiKeySubmit} />;
     }
+    
     if (booting) return <BootScreen sequence={bootSequence} theme={theme} />;
     if (!booted) return <PressToBootUI theme={theme} />;
 
@@ -589,7 +720,14 @@ export const App: React.FC = () => {
           overflow: 'hidden'
         }}
       >
-        <TerminalHeader theme={theme} modelName={settings.modelName} thinkingEnabled={settings.thinkingEnabled} inputTokenCount={inputTokenCount} />
+        <TerminalHeader 
+          theme={theme} 
+          modelName={settings.modelName} 
+          thinkingEnabled={settings.thinkingEnabled} 
+          inputTokenCount={inputTokenCount}
+          session={session}
+          onLogout={handleLogout}
+        />
         <div 
           ref={scrollRef}
           className="flex-1 p-4 overflow-y-auto relative scan-lines min-h-0"
