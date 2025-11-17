@@ -356,6 +356,7 @@ export const App: React.FC = () => {
     }
 
     const userMessage = MessageService.createUserMessage(trimmedInput);
+    const modelNameInUse = settings.modelName;
     
     // Add to history
     if (trimmedInput !== commandHistory[0]) {
@@ -441,7 +442,14 @@ export const App: React.FC = () => {
           setIsLoading(false);
           setIsStreaming(true);
           const messageId = (Date.now() + 1).toString();
-          const newMessage = Message.create(messageRole, chunkText, getCurrentTimestamp());
+          const newMessage = Message.create(
+            messageRole,
+            chunkText,
+            getCurrentTimestamp(),
+            undefined,
+            undefined,
+            messageRole === 'model' ? modelNameInUse : undefined
+          );
           setMessages(prev => [...prev, newMessage]);
           
           // Play error beep if error

@@ -11,8 +11,8 @@ export class MessageService {
     return Message.createUser(text, getCurrentTimestamp());
   }
 
-  static createModelMessage(text: string): Message {
-    return Message.createModel(text, getCurrentTimestamp());
+  static createModelMessage(text: string, modelName?: string): Message {
+    return Message.createModel(text, getCurrentTimestamp(), undefined, modelName);
   }
 
   static createSystemMessage(text: string): Message {

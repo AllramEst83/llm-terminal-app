@@ -38,6 +38,8 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
           ? theme.ai 
           : theme.system;
         
+        const modelLabel = msg.modelName ?? 'Unknown Model';
+
         return (
           <div 
             key={msg.id} 
@@ -48,58 +50,72 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
             }}
           >
             {/* Message Header */}
-            <div className="flex items-center gap-2 mb-1.5">
-              {msg.timestamp && (
-                <span 
-                  className="font-mono opacity-60" 
-                  style={{ 
-                    color: theme.accent,
-                    fontSize: `${headerFontSize}px`
-                  }}
-                >
-                  {msg.timestamp}
-                </span>
-              )}
-              {isUser && (
-                <>
+            <div className="flex items-start justify-between gap-3 mb-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                {msg.timestamp && (
                   <span 
-                    className="font-bold text-sm" 
-                    style={{ color: theme.prompt }}
-                  >
-                    {'>'}
-                  </span>
-                  <span 
-                    className="uppercase tracking-wider font-semibold" 
+                    className="font-mono opacity-60" 
                     style={{ 
-                      color: theme.prompt,
+                      color: theme.accent,
                       fontSize: `${headerFontSize}px`
                     }}
                   >
-                    User
+                    {msg.timestamp}
                   </span>
-                </>
-              )}
+                )}
+                {isUser && (
+                  <>
+                    <span 
+                      className="font-bold text-sm" 
+                      style={{ color: theme.prompt }}
+                    >
+                      {'>'}
+                    </span>
+                    <span 
+                      className="uppercase tracking-wider font-semibold" 
+                      style={{ 
+                        color: theme.prompt,
+                        fontSize: `${headerFontSize}px`
+                      }}
+                    >
+                      User
+                    </span>
+                  </>
+                )}
+                {isModel && (
+                  <span 
+                    className="uppercase tracking-wider font-bold" 
+                    style={{ 
+                      color: theme.ai,
+                      fontSize: `${headerFontSize}px`,
+                      textShadow: `0 0 8px ${theme.ai}40`
+                    }}
+                  >
+                    AI
+                  </span>
+                )}
+                {isSystem && (
+                  <span 
+                    className="uppercase tracking-wider opacity-70" 
+                    style={{ 
+                      color: theme.system,
+                      fontSize: `${headerFontSize}px`
+                    }}
+                  >
+                    SYSTEM
+                  </span>
+                )}
+              </div>
               {isModel && (
-                <span 
-                  className="uppercase tracking-wider font-bold" 
+                <span
+                  className="font-mono uppercase tracking-widest text-right whitespace-nowrap"
                   style={{ 
                     color: theme.ai,
-                    fontSize: `${headerFontSize}px`,
-                    textShadow: `0 0 8px ${theme.ai}40`
+                    fontSize: `${Math.max(headerFontSize * 0.8, 10)}px`,
+                    textShadow: `0 0 6px ${theme.ai}30`
                   }}
                 >
-                  AI
-                </span>
-              )}
-              {isSystem && (
-                <span 
-                  className="uppercase tracking-wider opacity-70" 
-                  style={{ 
-                    color: theme.system,
-                    fontSize: `${headerFontSize}px`
-                  }}
-                >
-                  SYSTEM
+                  MODEL: {modelLabel}
                 </span>
               )}
             </div>

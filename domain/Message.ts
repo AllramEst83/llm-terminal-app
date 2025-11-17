@@ -10,7 +10,8 @@ export class Message {
     public readonly text: string,
     public readonly timestamp?: string,
     public readonly sources?: Source[],
-    public readonly imageData?: string
+    public readonly imageData?: string,
+    public readonly modelName?: string
   ) {}
 
   static create(
@@ -18,7 +19,8 @@ export class Message {
     text: string,
     timestamp?: string,
     sources?: Source[],
-    imageData?: string
+    imageData?: string,
+    modelName?: string
   ): Message {
     return new Message(
       Date.now().toString(),
@@ -26,7 +28,8 @@ export class Message {
       text,
       timestamp,
       sources,
-      imageData
+      imageData,
+      modelName
     );
   }
 
@@ -34,8 +37,13 @@ export class Message {
     return Message.create('user', text, timestamp);
   }
 
-  static createModel(text: string, timestamp?: string, sources?: Source[]): Message {
-    return Message.create('model', text, timestamp, sources);
+  static createModel(
+    text: string,
+    timestamp?: string,
+    sources?: Source[],
+    modelName?: string
+  ): Message {
+    return Message.create('model', text, timestamp, sources, undefined, modelName);
   }
 
   static createSystem(text: string, timestamp?: string): Message {
@@ -49,7 +57,8 @@ export class Message {
       newText,
       this.timestamp,
       this.sources,
-      this.imageData
+      this.imageData,
+      this.modelName
     );
   }
 
@@ -60,7 +69,8 @@ export class Message {
       this.text,
       this.timestamp,
       sources,
-      this.imageData
+      this.imageData,
+      this.modelName
     );
   }
 
@@ -71,7 +81,20 @@ export class Message {
       this.text,
       this.timestamp,
       this.sources,
-      imageData
+      imageData,
+      this.modelName
+    );
+  }
+
+  withModelName(modelName: string): Message {
+    return new Message(
+      this.id,
+      this.role,
+      this.text,
+      this.timestamp,
+      this.sources,
+      this.imageData,
+      modelName
     );
   }
 }
