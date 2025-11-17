@@ -393,12 +393,20 @@ export class HandleCommandUseCase {
         return { success: false, message };
       }
 
-      const imageData = await generateImage(prompt, apiKey, aspectRatio, imageModel);
+      const { imageData, usageMetadata } = await generateImage(prompt, apiKey, aspectRatio, imageModel);
       const aspectInfo = aspectRatio !== '1:1' ? ` (${aspectRatio})` : '';
       const modelInfo = imageModel !== 'nano-banana' ? ` [${imageModel}]` : '';
       const message = MessageService.createSystemMessage(
         `Generated image for: "${prompt}"${aspectInfo}${modelInfo}`
       ).withImageData(imageData);
+
+      if (imageModel === 'nano-banana') {
+        const imageTokenCount =
+          usageMetadata?.totalTokenCount ??
+          usageMetadata?.promptTokenCount ??
+          0;
+        TokenCountService.addImageTokens('gemini-2.5-flash', imageTokenCount);
+      }
 
       return {
         success: true,
