@@ -3,6 +3,7 @@ import { Message } from '../domain/Message';
 import { MessageContent } from './MessageContent';
 import { ImageDisplay } from './ImageDisplay';
 import type { ThemeColors } from '../domain/Theme';
+import { getShortModelName } from '../utils/modelUtils';
 
 interface MessageListProps {
   messages: Message[];
@@ -39,6 +40,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
           : theme.system;
         
         const modelLabel = msg.modelName ?? 'Unknown Model';
+        const shortModelName = getShortModelName(msg.modelName);
 
         return (
           <div 
@@ -107,16 +109,30 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
                 )}
               </div>
               {isModel && (
-                <span
-                  className="font-mono uppercase tracking-widest text-right whitespace-nowrap"
-                  style={{ 
-                    color: theme.ai,
-                    fontSize: `${Math.max(headerFontSize * 0.8, 10)}px`,
-                    textShadow: `0 0 6px ${theme.ai}30`
-                  }}
-                >
-                  MODEL: {modelLabel}
-                </span>
+                <>
+                  {/* Mobile: Short version */}
+                  <span
+                    className="md:hidden font-mono uppercase tracking-widest text-right whitespace-nowrap"
+                    style={{ 
+                      color: theme.ai,
+                      fontSize: `${Math.max(headerFontSize * 0.8, 10)}px`,
+                      textShadow: `0 0 6px ${theme.ai}30`
+                    }}
+                  >
+                    Model: {shortModelName}
+                  </span>
+                  {/* Desktop: Full version */}
+                  <span
+                    className="hidden md:inline font-mono uppercase tracking-widest text-right whitespace-nowrap"
+                    style={{ 
+                      color: theme.ai,
+                      fontSize: `${Math.max(headerFontSize * 0.8, 10)}px`,
+                      textShadow: `0 0 6px ${theme.ai}30`
+                    }}
+                  >
+                    MODEL: {modelLabel}
+                  </span>
+                </>
               )}
             </div>
             
