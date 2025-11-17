@@ -5,7 +5,7 @@ import { ThemeService } from '../services/ThemeService';
 import { ApiKeyService } from '../services/ApiKeyService';
 import { MessageService } from '../services/MessageService';
 import { BrowserInfoService } from '../services/BrowserInfoService';
-import { generateImage } from '../services/imageService';
+import { generateImage, type ImageModel } from '../services/imageService';
 import { Message } from '../domain/Message';
 import type { CommandResult } from '../domain/CommandResult';
 import { TokenCountService } from '../services/TokenCountService';
@@ -343,19 +343,31 @@ export class HandleCommandUseCase {
   private async handleImage(args: string[]): Promise<CommandResult> {
     if (args.length === 0) {
       const message = MessageService.createErrorMessage(
-        'Usage: /image <prompt> [--aspect <ratio>]\n\nExamples:\n  /image a cat\n  /image a cat --aspect 16:9\n  /image a cat --aspect 9:16\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4'
+        'Usage: /image <prompt> [--aspect <ratio>] [--model <model>]\n\nExamples:\n  /image a cat\n  /image a cat --aspect 16:9\n  /image a cat --model nano-banana\n  /image a cat --aspect 9:16 --model imagen-4.0\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4\nSupported models: nano-banana (default), imagen-4.0'
       );
       return { success: false, message };
     }
 
-    // Parse arguments: look for --aspect flag
+    // Parse arguments: look for --aspect and --model flags
     let promptParts: string[] = [];
     let aspectRatio = '1:1'; // default
+    let imageModel: ImageModel = 'nano-banana'; // default to Nano Banana
     let i = 0;
 
     while (i < args.length) {
       if (args[i] === '--aspect' && i + 1 < args.length) {
         aspectRatio = args[i + 1];
+        i += 2;
+      } else if (args[i] === '--model' && i + 1 < args.length) {
+        const modelArg = args[i + 1].toLowerCase();
+        if (modelArg === 'nano-banana' || modelArg === 'imagen-4.0') {
+          imageModel = modelArg as ImageModel;
+        } else {
+          const message = MessageService.createErrorMessage(
+            `Invalid model: "${args[i + 1]}"\n\nSupported models: nano-banana (default), imagen-4.0\n\nExample: /image a cat --model nano-banana`
+          );
+          return { success: false, message };
+        }
         i += 2;
       } else {
         promptParts.push(args[i]);
@@ -367,7 +379,7 @@ export class HandleCommandUseCase {
     
     if (!prompt) {
       const message = MessageService.createErrorMessage(
-        'Usage: /image <prompt> [--aspect <ratio>]\n\nExamples:\n  /image a cat\n  /image a cat --aspect 16:9\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4'
+        'Usage: /image <prompt> [--aspect <ratio>] [--model <model>]\n\nExamples:\n  /image a cat\n  /image a cat --aspect 16:9\n  /image a cat --model nano-banana\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4\nSupported models: nano-banana (default), imagen-4.0'
       );
       return { success: false, message };
     }
@@ -381,10 +393,11 @@ export class HandleCommandUseCase {
         return { success: false, message };
       }
 
-      const imageData = await generateImage(prompt, apiKey, aspectRatio);
+      const imageData = await generateImage(prompt, apiKey, aspectRatio, imageModel);
       const aspectInfo = aspectRatio !== '1:1' ? ` (${aspectRatio})` : '';
+      const modelInfo = imageModel !== 'nano-banana' ? ` [${imageModel}]` : '';
       const message = MessageService.createSystemMessage(
-        `Generated image for: "${prompt}"${aspectInfo}`
+        `Generated image for: "${prompt}"${aspectInfo}${modelInfo}`
       ).withImageData(imageData);
 
       return {
@@ -406,7 +419,7 @@ export class HandleCommandUseCase {
         } else if (errorMsg.includes('policy') || errorMsg.includes('violation')) {
           errorMessage = 'SYSTEM ERROR: Content policy violation. Please try a different prompt.';
         } else if (errorMsg.includes('not found') || errorMsg.includes('404')) {
-          errorMessage = 'SYSTEM ERROR: Imagen API not available.\n\nThe Imagen API may not be enabled for your API key or may not be available in your region.\n\nPlease check:\n- Enable Imagen API in Google AI Studio\n- Verify your API key has the necessary permissions';
+          errorMessage = `SYSTEM ERROR: Image generation API not available.\n\nThe ${imageModel === 'nano-banana' ? 'Gemini 2.5 Flash Image (Nano Banana)' : 'Imagen'} API may not be enabled for your API key or may not be available in your region.\n\nPlease check:\n- Enable the image generation API in Google AI Studio\n- Verify your API key has the necessary permissions\n- Try using a different model: /image <prompt> --model ${imageModel === 'nano-banana' ? 'imagen-4.0' : 'nano-banana'}`;
         } else {
           errorMessage = `SYSTEM ERROR: ${error.message}`;
         }
