@@ -14,7 +14,7 @@ const AUDIO_ENABLED_STORAGE_KEY = 'terminal_audioEnabled';
 export class SettingsRepository {
   static async load(): Promise<Settings> {
     // Check if user is authenticated
-    const session = AuthService.getSession();
+    const session = await AuthService.getSession();
     
     // First, try to load from local storage (master)
     let fontSize = StorageService.get<number>(
@@ -101,7 +101,7 @@ export class SettingsRepository {
     }
 
     // If user is authenticated, sync to database
-    const session = AuthService.getSession();
+    const session = await AuthService.getSession();
     if (session) {
       console.log('[SettingsRepository] Syncing settings to database for user', session.user.id);
       try {

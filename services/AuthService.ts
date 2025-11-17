@@ -1,8 +1,7 @@
 import { User } from '../domain/User';
 import { Session } from '../domain/Session';
-import { StorageService } from './StorageService';
-
-const SESSION_STORAGE_KEY = 'terminal_session';
+import { supabase } from './supabaseClient';
+import type { AuthError, User as SupabaseUser } from '@supabase/supabase-js';
 
 export interface RegisterRequest {
   email: string;
@@ -23,92 +22,205 @@ export interface AuthResponse {
 
 export class AuthService {
   /**
-   * Register a new user account
-   * STUB: This is a placeholder implementation
-   * TODO: Implement actual API call to backend
+   * Register a new user account using Supabase Auth
    */
   static async register(request: RegisterRequest): Promise<AuthResponse> {
-    console.log('[AuthService] STUB: register called', { email: request.email, username: request.username });
+    console.log('[AuthService] Registering user', { email: request.email, username: request.username });
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // STUB: Create mock user and session
-    const user = User.create(request.email, request.username);
-    const token = this.generateMockToken();
-    const session = Session.create(user, token);
-    
-    // Save session to local storage
-    this.saveSession(session);
-    
-    return {
-      success: true,
-      session
-    };
+    try {
+      // Sign up with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: request.email,
+        password: request.password,
+        options: {
+          data: {
+            username: request.username
+          }
+        }
+      });
+
+      if (error) {
+        console.error('[AuthService] Registration error:', error);
+        return {
+          success: false,
+          error: this.getErrorMessage(error)
+        };
+      }
+
+      if (!data.user || !data.session) {
+        return {
+          success: false,
+          error: 'Registration failed. Please try again.'
+        };
+      }
+
+      // Get user profile (created by trigger)
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('[AuthService] Profile fetch error:', profileError);
+        // Continue anyway, profile might not be created yet
+      }
+
+      const user = new User(
+        data.user.id,
+        data.user.email || request.email,
+        profile?.username || request.username,
+        new Date(data.user.created_at)
+      );
+
+      const session = new Session(
+        data.session.access_token,
+        user,
+        data.session.access_token,
+        new Date(data.session.expires_at! * 1000),
+        new Date()
+      );
+
+      return {
+        success: true,
+        session
+      };
+    } catch (error) {
+      console.error('[AuthService] Unexpected registration error:', error);
+      return {
+        success: false,
+        error: 'An unexpected error occurred. Please try again.'
+      };
+    }
   }
 
   /**
-   * Login with existing credentials
-   * STUB: This is a placeholder implementation
-   * TODO: Implement actual API call to backend
+   * Login with existing credentials using Supabase Auth
    */
   static async login(request: LoginRequest): Promise<AuthResponse> {
-    console.log('[AuthService] STUB: login called', { email: request.email });
+    console.log('[AuthService] Logging in user', { email: request.email });
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // STUB: Create mock user and session
-    const user = User.create(request.email, request.email.split('@')[0]);
-    const token = this.generateMockToken();
-    const session = Session.create(user, token);
-    
-    // Save session to local storage
-    this.saveSession(session);
-    
-    return {
-      success: true,
-      session
-    };
+    try {
+      // Sign in with Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: request.email,
+        password: request.password
+      });
+
+      if (error) {
+        console.error('[AuthService] Login error:', error);
+        return {
+          success: false,
+          error: this.getErrorMessage(error)
+        };
+      }
+
+      if (!data.user || !data.session) {
+        return {
+          success: false,
+          error: 'Login failed. Please try again.'
+        };
+      }
+
+      // Get user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('[AuthService] Profile fetch error:', profileError);
+      }
+
+      const user = new User(
+        data.user.id,
+        data.user.email || request.email,
+        profile?.username || data.user.email?.split('@')[0] || 'user',
+        new Date(data.user.created_at)
+      );
+
+      const session = new Session(
+        data.session.access_token,
+        user,
+        data.session.access_token,
+        new Date(data.session.expires_at! * 1000),
+        new Date()
+      );
+
+      return {
+        success: true,
+        session
+      };
+    } catch (error) {
+      console.error('[AuthService] Unexpected login error:', error);
+      return {
+        success: false,
+        error: 'An unexpected error occurred. Please try again.'
+      };
+    }
   }
 
   /**
    * Logout current user
-   * STUB: This is a placeholder implementation
-   * TODO: Implement actual API call to backend to invalidate session
    */
   static async logout(): Promise<void> {
-    console.log('[AuthService] STUB: logout called');
+    console.log('[AuthService] Logging out user');
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Clear session from local storage
-    this.clearSession();
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('[AuthService] Logout error:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('[AuthService] Unexpected logout error:', error);
+      throw error;
+    }
   }
 
   /**
-   * Get current session from local storage
+   * Get current session from Supabase
    */
-  static getSession(): Session | null {
-    const sessionJson = StorageService.get<any>(SESSION_STORAGE_KEY, null);
-    if (!sessionJson) {
-      return null;
-    }
-    
+  static async getSession(): Promise<Session | null> {
     try {
-      const session = Session.fromJson(sessionJson);
+      const { data, error } = await supabase.auth.getSession();
       
-      // Check if session is expired
-      if (session.isExpired()) {
-        this.clearSession();
+      if (error) {
+        console.error('[AuthService] Get session error:', error);
         return null;
       }
-      
+
+      if (!data.session) {
+        return null;
+      }
+
+      // Get user profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.session.user.id)
+        .single();
+
+      const user = new User(
+        data.session.user.id,
+        data.session.user.email || '',
+        profile?.username || data.session.user.email?.split('@')[0] || 'user',
+        new Date(data.session.user.created_at)
+      );
+
+      const session = new Session(
+        data.session.access_token,
+        user,
+        data.session.access_token,
+        new Date(data.session.expires_at! * 1000),
+        new Date()
+      );
+
       return session;
     } catch (error) {
-      console.error('[AuthService] Failed to parse session', error);
-      this.clearSession();
+      console.error('[AuthService] Unexpected get session error:', error);
       return null;
     }
   }
@@ -116,45 +228,52 @@ export class AuthService {
   /**
    * Check if user is authenticated
    */
-  static isAuthenticated(): boolean {
-    const session = this.getSession();
+  static async isAuthenticated(): Promise<boolean> {
+    const session = await this.getSession();
     return session !== null && !session.isExpired();
   }
 
   /**
-   * Save session to local storage
+   * Get current Supabase user
    */
-  private static saveSession(session: Session): void {
-    StorageService.set(SESSION_STORAGE_KEY, session.toJson());
-  }
-
-  /**
-   * Clear session from local storage
-   */
-  private static clearSession(): void {
-    StorageService.remove(SESSION_STORAGE_KEY);
-  }
-
-  /**
-   * Generate a mock authentication token
-   * STUB: In production, this would come from the backend
-   */
-  private static generateMockToken(): string {
-    return `mock_token_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  static async getCurrentUser(): Promise<SupabaseUser | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
   }
 
   /**
    * Validate session with backend
-   * STUB: This is a placeholder implementation
-   * TODO: Implement actual API call to backend to validate session
    */
   static async validateSession(session: Session): Promise<boolean> {
-    console.log('[AuthService] STUB: validateSession called', { sessionId: session.id });
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // STUB: Just check if session is expired locally
-    return !session.isExpired();
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error || !data.session) {
+        return false;
+      }
+
+      return !session.isExpired();
+    } catch (error) {
+      console.error('[AuthService] Session validation error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Convert Supabase auth error to user-friendly message
+   */
+  private static getErrorMessage(error: AuthError): string {
+    switch (error.message) {
+      case 'Invalid login credentials':
+        return 'Invalid email or password. Please try again.';
+      case 'User already registered':
+        return 'An account with this email already exists.';
+      case 'Email not confirmed':
+        return 'Please confirm your email address before logging in.';
+      case 'Password should be at least 6 characters':
+        return 'Password must be at least 6 characters long.';
+      default:
+        return error.message || 'An error occurred. Please try again.';
+    }
   }
 }

@@ -79,7 +79,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const initApp = async () => {
       // Check for existing session
-      const existingSession = AuthService.getSession();
+      const existingSession = await AuthService.getSession();
       if (existingSession) {
         setSession(existingSession);
       }

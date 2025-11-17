@@ -36,7 +36,7 @@ export class ApiKeyService {
     }
     
     // Check if user is authenticated and has API key in database
-    const session = AuthService.getSession();
+    const session = await AuthService.getSession();
     if (session) {
       const dbApiKey = await UserRepository.loadApiKey(session.user.id);
       if (dbApiKey && dbApiKey.length > 0) {
@@ -78,7 +78,7 @@ export class ApiKeyService {
     }
     
     // Check if user is authenticated and has API key in database
-    const session = AuthService.getSession();
+    const session = await AuthService.getSession();
     if (session) {
       const dbApiKey = await UserRepository.loadApiKey(session.user.id);
       if (dbApiKey && dbApiKey.length > 0) {
@@ -112,7 +112,7 @@ export class ApiKeyService {
     runtimeApiKey = apiKey;
     
     // Save to database if user is authenticated
-    const session = AuthService.getSession();
+    const session = await AuthService.getSession();
     if (session) {
       try {
         await UserRepository.saveApiKey(session.user.id, apiKey);
