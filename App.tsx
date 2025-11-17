@@ -6,6 +6,7 @@ import { ThemeService } from './services/ThemeService';
 import { CommandService } from './services/CommandService';
 import { BootSequenceService } from './services/BootSequenceService';
 import { MessageService } from './services/MessageService';
+import { TokenCountService } from './services/TokenCountService';
 import { HandleCommandUseCase } from './useCases/HandleCommandUseCase';
 import { SendMessageUseCase } from './useCases/SendMessageUseCase';
 import { ManageBootSequenceUseCase } from './useCases/ManageBootSequenceUseCase';
