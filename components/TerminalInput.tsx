@@ -231,7 +231,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
                 color: theme.accent,
                 opacity: disabled ? 0.3 : 1 
               }}
-              title={`Add image (${attachedImages.length}/${maxImages})`}
+              title={`Add more images (${attachedImages.length}/${maxImages}) - Hold Ctrl/Cmd to select multiple`}
             >
               +
             </button>
@@ -255,7 +255,13 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
           disabled={disabled || isMaxImages}
           className="mr-2 p-1 hover:opacity-80 transition-opacity relative"
           style={{ color: theme.accent, opacity: disabled || isMaxImages ? 0.3 : 1 }}
-          title={isMaxImages ? `Maximum ${maxImages} images` : 'Attach images (paste or click)'}
+          title={
+            isMaxImages 
+              ? `Maximum ${maxImages} images reached` 
+              : hasImages 
+              ? `Add more images (${attachedImages.length}/${maxImages}) - Hold Ctrl/Cmd to select multiple`
+              : 'Attach images - Hold Ctrl/Cmd to select multiple, or paste'
+          }
         >
           📎
           {hasImages && (
