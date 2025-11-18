@@ -1,4 +1,4 @@
-import { Message } from '../domain/Message';
+import { Message, MessageImage } from '../domain/Message';
 import { getCurrentTimestamp } from '../utils/dateUtils';
 import { createInitialMessages } from '../utils/messageUtils';
 
@@ -7,7 +7,15 @@ export class MessageService {
     return createInitialMessages();
   }
 
-  static createUserMessage(text: string): Message {
+  static createUserMessage(text: string, imageData?: string, imageMimeType?: string, images?: MessageImage[]): Message {
+    // Use new multi-image format if images array is provided
+    if (images && images.length > 0) {
+      return Message.create('user', text, getCurrentTimestamp(), undefined, undefined, undefined, undefined, images);
+    }
+    // Fallback to old single image format for backward compatibility
+    if (imageData && imageMimeType) {
+      return Message.create('user', text, getCurrentTimestamp(), undefined, imageData, undefined, imageMimeType);
+    }
     return Message.createUser(text, getCurrentTimestamp());
   }
 

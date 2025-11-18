@@ -13,7 +13,7 @@ import { ManageBootSequenceUseCase } from './useCases/ManageBootSequenceUseCase'
 import { ManageSettingsUseCase } from './useCases/ManageSettingsUseCase';
 import { TerminalHeader } from './components/TerminalHeader';
 import { MessageList } from './components/MessageList';
-import { TerminalInput } from './components/TerminalInput';
+import { TerminalInput, type AttachedImage } from './components/TerminalInput';
 import { BootScreen } from './components/BootScreen';
 import { PressToBootUI } from './components/PressToBootUI';
 import { ApiKeySelectionUI } from './components/ApiKeySelectionUI';
@@ -58,6 +58,7 @@ export const App: React.FC = () => {
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [loadingCharIndex, setLoadingCharIndex] = useState<number>(0);
   const [inputTokenCount, setInputTokenCount] = useState<number>(0);
+  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -341,9 +342,17 @@ export const App: React.FC = () => {
     setBooting(true);
   }, [settings]);
 
+  const handleImageAttach = useCallback((image: AttachedImage) => {
+    setAttachedImages(prev => [...prev, image]);
+  }, []);
+
+  const handleImageRemove = useCallback((index: number) => {
+    setAttachedImages(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
   const handleSendMessage = useCallback(async () => {
     const trimmedInput = input.trim();
-    if (trimmedInput === '' || isLoading || isStreaming) return;
+    if ((trimmedInput === '' && attachedImages.length === 0) || isLoading || isStreaming) return;
     
     const apiKey = await ApiKeyService.getApiKey();
     if (!apiKey) {
@@ -355,7 +364,21 @@ export const App: React.FC = () => {
       return;
     }
 
-    const userMessage = MessageService.createUserMessage(trimmedInput);
+    // Convert attached images to MessageImage format
+    const messageImages = attachedImages.length > 0 
+      ? attachedImages.map(img => ({
+          base64Data: img.base64Data,
+          mimeType: img.mimeType,
+          fileName: img.fileName,
+        }))
+      : undefined;
+
+    const userMessage = MessageService.createUserMessage(
+      trimmedInput || (attachedImages.length > 0 ? `Analyze ${attachedImages.length === 1 ? 'this image' : 'these images'}` : ''),
+      undefined,
+      undefined,
+      messageImages
+    );
     const modelNameInUse = settings.modelName;
     
     // Add to history
@@ -418,6 +441,7 @@ export const App: React.FC = () => {
     // Send message to Gemini
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setAttachedImages([]); // Clear attached images after sending
     setIsLoading(true);
 
     // Play keystroke sound
@@ -433,7 +457,7 @@ export const App: React.FC = () => {
         }
       );
       await sendUseCase.execute(
-      trimmedInput,
+      trimmedInput || (attachedImages.length > 0 ? `Analyze ${attachedImages.length === 1 ? 'this image' : 'these images'}` : ''),
       (chunkText, isFirstChunk) => {
         const isError = chunkText.startsWith('SYSTEM ERROR');
         const messageRole = isError ? 'system' : 'model';
@@ -485,14 +509,17 @@ export const App: React.FC = () => {
 
         setIsLoading(false);
         setIsStreaming(false);
-      }
+      },
+      undefined,
+      undefined,
+      messageImages
       );
     } catch (error) {
       setIsLoading(false);
       setIsStreaming(false);
       // Error handling is done in the execute callbacks
     }
-  }, [input, isLoading, isStreaming, messages, settings, isStudioEnv, commandHistory, handleSelectKey]);
+  }, [input, isLoading, isStreaming, messages, settings, isStudioEnv, commandHistory, handleSelectKey, attachedImages]);
 
   const handleSuggestionClick = useCallback((command: string) => {
     setInput(`/${command} `);
@@ -617,6 +644,10 @@ export const App: React.FC = () => {
             theme={theme}
             disabled={isLoading || isStreaming}
             autoFocus={true}
+            attachedImages={attachedImages}
+            onImageAttach={handleImageAttach}
+            onImageRemove={handleImageRemove}
+            maxImages={10}
           />
         )}
       </div>

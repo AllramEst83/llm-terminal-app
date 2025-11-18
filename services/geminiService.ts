@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import type { GenerateContentResponse } from "@google/genai";
-import type { Message, Source } from '../domain/Message';
+import type { Message, Source, MessageImage } from '../domain/Message';
 
 export interface GeminiUsageMetadata {
   promptTokenCount?: number;
@@ -18,10 +18,40 @@ function getAiInstance(apiKey: string) {
 function formatMessagesForGemini(messages: Message[]) {
   return messages
     .filter(msg => msg.role === 'user' || msg.role === 'model')
-    .map(msg => ({
-      role: msg.role,
-      parts: [{ text: msg.text }],
-    }));
+    .map(msg => {
+      const parts: any[] = [];
+      
+      // Add multiple images if present (new format)
+      if (msg.images && msg.images.length > 0) {
+        for (const image of msg.images) {
+          parts.push({
+            inlineData: {
+              data: image.base64Data,
+              mimeType: image.mimeType,
+            },
+          });
+        }
+      }
+      // Fallback to old single image format for backward compatibility
+      else if (msg.imageData && msg.imageMimeType) {
+        parts.push({
+          inlineData: {
+            data: msg.imageData,
+            mimeType: msg.imageMimeType,
+          },
+        });
+      }
+      
+      // Add text if present
+      if (msg.text) {
+        parts.push({ text: msg.text });
+      }
+      
+      return {
+        role: msg.role,
+        parts: parts.length > 0 ? parts : [{ text: msg.text }],
+      };
+    });
 }
 
 function extractUsageMetadata(rawMetadata: any): GeminiUsageMetadata | undefined {
@@ -53,7 +83,10 @@ export async function sendMessageToGemini(
   thinkingEnabled: boolean,
   thinkingBudget: number | undefined,
   onStream: (chunkText: string, isFirstChunk: boolean) => void,
-  onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata) => void
+  onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata) => void,
+  imageData?: string,
+  imageMimeType?: string,
+  images?: MessageImage[]
 ): Promise<void> {
   try {
     const ai = getAiInstance(apiKey);
@@ -73,7 +106,38 @@ export async function sendMessageToGemini(
       },
     });
 
-    const stream = await chat.sendMessageStream({ message: newMessage });
+    // Build message parts
+    const messageParts: any[] = [];
+    
+    // Add multiple images first if present (new format)
+    if (images && images.length > 0) {
+      for (const image of images) {
+        messageParts.push({
+          inlineData: {
+            data: image.base64Data,
+            mimeType: image.mimeType,
+          },
+        });
+      }
+    }
+    // Fallback to single image format for backward compatibility
+    else if (imageData && imageMimeType) {
+      messageParts.push({
+        inlineData: {
+          data: imageData,
+          mimeType: imageMimeType,
+        },
+      });
+    }
+    
+    // Add text
+    if (newMessage) {
+      messageParts.push({ text: newMessage });
+    }
+    
+    const stream = await chat.sendMessageStream({ 
+      message: messageParts.length > 0 ? messageParts : newMessage 
+    });
 
     let isFirst = true;
     const sources: Source[] = [];

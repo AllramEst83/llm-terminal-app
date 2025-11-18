@@ -3,6 +3,12 @@ export interface Source {
   uri: string;
 }
 
+export interface MessageImage {
+  base64Data: string;
+  mimeType: string;
+  fileName?: string;
+}
+
 export class Message {
   constructor(
     public readonly id: string,
@@ -11,7 +17,9 @@ export class Message {
     public readonly timestamp?: string,
     public readonly sources?: Source[],
     public readonly imageData?: string,
-    public readonly modelName?: string
+    public readonly modelName?: string,
+    public readonly imageMimeType?: string,
+    public readonly images?: MessageImage[]
   ) {}
 
   static create(
@@ -20,7 +28,9 @@ export class Message {
     timestamp?: string,
     sources?: Source[],
     imageData?: string,
-    modelName?: string
+    modelName?: string,
+    imageMimeType?: string,
+    images?: MessageImage[]
   ): Message {
     return new Message(
       Date.now().toString(),
@@ -29,7 +39,9 @@ export class Message {
       timestamp,
       sources,
       imageData,
-      modelName
+      modelName,
+      imageMimeType,
+      images
     );
   }
 
@@ -58,7 +70,9 @@ export class Message {
       this.timestamp,
       this.sources,
       this.imageData,
-      this.modelName
+      this.modelName,
+      this.imageMimeType,
+      this.images
     );
   }
 
@@ -70,11 +84,13 @@ export class Message {
       this.timestamp,
       sources,
       this.imageData,
-      this.modelName
+      this.modelName,
+      this.imageMimeType,
+      this.images
     );
   }
 
-  withImageData(imageData: string): Message {
+  withImageData(imageData: string, imageMimeType?: string): Message {
     return new Message(
       this.id,
       this.role,
@@ -82,7 +98,9 @@ export class Message {
       this.timestamp,
       this.sources,
       imageData,
-      this.modelName
+      this.modelName,
+      imageMimeType || this.imageMimeType,
+      this.images
     );
   }
 
@@ -94,7 +112,23 @@ export class Message {
       this.timestamp,
       this.sources,
       this.imageData,
-      modelName
+      modelName,
+      this.imageMimeType,
+      this.images
+    );
+  }
+
+  withImages(images: MessageImage[]): Message {
+    return new Message(
+      this.id,
+      this.role,
+      this.text,
+      this.timestamp,
+      this.sources,
+      this.imageData,
+      this.modelName,
+      this.imageMimeType,
+      images
     );
   }
 }

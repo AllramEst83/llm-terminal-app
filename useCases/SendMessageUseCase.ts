@@ -1,4 +1,4 @@
-import { Message } from '../domain/Message';
+import { Message, MessageImage } from '../domain/Message';
 import { Settings } from '../domain/Settings';
 import { sendMessageToGemini } from '../services/geminiService';
 import { MessageService } from '../services/MessageService';
@@ -19,9 +19,12 @@ export class SendMessageUseCase {
   async execute(
     inputText: string,
     onStreamCallback: (chunkText: string, isFirstChunk: boolean) => void,
-    onCompleteCallback: (result: CompletionResult) => void
+    onCompleteCallback: (result: CompletionResult) => void,
+    imageData?: string,
+    imageMimeType?: string,
+    images?: MessageImage[]
   ): Promise<Message> {
-    const userMessage = MessageService.createUserMessage(inputText);
+    const userMessage = MessageService.createUserMessage(inputText, imageData, imageMimeType, images);
 
     await sendMessageToGemini(
       this.currentMessages,
@@ -54,7 +57,10 @@ export class SendMessageUseCase {
           sources,
           warningMessage,
         });
-      }
+      },
+      imageData,
+      imageMimeType,
+      images
     );
 
     return userMessage;

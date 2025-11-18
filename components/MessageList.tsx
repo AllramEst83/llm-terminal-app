@@ -136,18 +136,83 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
               )}
             </div>
             
-            {/* Message Content - Hide if imageData exists to avoid duplicate text */}
-            {!msg.imageData && (
-              <div 
-                className={`${isSystem ? 'opacity-90' : ''}`}
-                style={isSystem ? { color: theme.system } : {}}
-              >
+            {/* Message Content */}
+            <div 
+              className={`${isSystem ? 'opacity-90' : ''}`}
+              style={isSystem ? { color: theme.system } : {}}
+            >
+              {/* Show text for user messages with images, or any message without imageData from /image command */}
+              {(isUser || !msg.imageData || (msg.imageData && msg.text && !msg.text.startsWith('Generated image for:'))) && (
                 <MessageContent text={msg.text} theme={theme} />
+              )}
+            </div>
+            
+            {/* Multiple Images Display - For user-attached images (new format) */}
+            {msg.images && msg.images.length > 0 && isUser && (
+              <div className="mt-2">
+                <div 
+                  className="text-xs font-bold mb-2 opacity-70"
+                  style={{ color: theme.accent }}
+                >
+                  {msg.images.length} IMAGE{msg.images.length > 1 ? 'S' : ''} ATTACHED:
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {msg.images.map((image, idx) => (
+                    <div key={idx} className="relative">
+                      <img 
+                        src={`data:${image.mimeType};base64,${image.base64Data}`}
+                        alt={image.fileName || `Image ${idx + 1}`}
+                        className="max-w-xs rounded border-2"
+                        style={{ borderColor: theme.accent }}
+                        onLoad={() => {
+                          requestAnimationFrame(() => {
+                            onImageLoad?.();
+                          });
+                        }}
+                      />
+                      <div 
+                        className="absolute top-1 left-1 px-2 py-0.5 rounded text-xs font-bold"
+                        style={{
+                          backgroundColor: `${theme.background}dd`,
+                          color: theme.accent,
+                          border: `1px solid ${theme.accent}`,
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
+                      {image.fileName && (
+                        <div 
+                          className="text-xs mt-1 opacity-70 truncate max-w-xs"
+                          style={{ color: theme.text }}
+                        >
+                          {image.fileName}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             
-            {/* Image Display */}
-            {msg.imageData && (
+            {/* Single Image Display - For user-attached images (old format - backward compatibility) */}
+            {msg.imageData && !msg.images && isUser && (
+              <div className="mt-2">
+                <img 
+                  src={`data:${msg.imageMimeType || 'image/png'};base64,${msg.imageData}`}
+                  alt="User attached image"
+                  className="max-w-xs rounded border-2"
+                  style={{ borderColor: theme.accent }}
+                  onLoad={() => {
+                    requestAnimationFrame(() => {
+                      onImageLoad?.();
+                    });
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Image Display - For generated images from /image command */}
+            {msg.imageData && !isUser && (
               <div className="mt-2">
                 <ImageDisplay base64Image={msg.imageData} prompt={msg.text} theme={theme} onImageLoad={onImageLoad} />
               </div>
