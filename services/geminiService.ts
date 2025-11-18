@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import type { GenerateContentResponse } from "@google/genai";
 import type { Message, Source } from '../domain/Message';
 
 export interface GeminiUsageMetadata {
@@ -78,7 +79,10 @@ export async function sendMessageToGemini(
     const sources: Source[] = [];
     let latestUsageMetadata: GeminiUsageMetadata | undefined;
 
+    let lastChunk: GenerateContentResponse | undefined;
+
     for await (const chunk of stream) {
+      lastChunk = chunk;
       const chunkText = chunk.text;
       if (chunkText) {
         onStream(chunkText, isFirst);
@@ -97,20 +101,14 @@ export async function sendMessageToGemini(
         }
       }
 
-      const chunkUsage =
-        extractUsageMetadata(chunk.usageMetadata) ||
-        extractUsageMetadata(chunk.candidates?.[0]?.usageMetadata);
+      const chunkUsage = extractUsageMetadata(chunk.usageMetadata);
       if (chunkUsage) {
         latestUsageMetadata = chunkUsage;
       }
     }
 
-    if (!latestUsageMetadata) {
-      const finalResponse = await stream.response;
-      latestUsageMetadata =
-        extractUsageMetadata(finalResponse?.usageMetadata) ||
-        extractUsageMetadata(finalResponse?.candidates?.[0]?.usageMetadata) ||
-        undefined;
+    if (!latestUsageMetadata && lastChunk) {
+      latestUsageMetadata = extractUsageMetadata(lastChunk.usageMetadata);
     }
 
     onComplete(sources.length > 0 ? sources : undefined, latestUsageMetadata);

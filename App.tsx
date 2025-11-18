@@ -467,7 +467,7 @@ export const App: React.FC = () => {
           });
         }
       },
-      (sources) => {
+      ({ sources, warningMessage } = {}) => {
         if (sources) {
           setMessages(prev => {
             return MessageService.updateLastMessage(prev, (msg) => {
@@ -478,6 +478,11 @@ export const App: React.FC = () => {
             });
           });
         }
+
+        if (warningMessage) {
+          setMessages(prev => [...prev, MessageService.createSystemMessage(warningMessage)]);
+        }
+
         setIsLoading(false);
         setIsStreaming(false);
       }

@@ -23,6 +23,7 @@ export class TokenCountService {
     'gemini-2.5-flash': 1_000_000,
     'gemini-2.5-pro': 2_000_000,
   };
+  static readonly TOKEN_WARNING_BUFFER = 50_000;
   static readonly NANO_BANANA_INPUT_LIMIT = 32_768;
 
   // Initialize session storage with empty counts
@@ -210,6 +211,37 @@ export class TokenCountService {
       return 'gemini-2.5-pro';
     }
     return modelName;
+  }
+
+  static getModelLimit(modelName: string): number {
+    const normalized = this.normalizeModelName(modelName);
+    return this.MODEL_LIMITS[normalized as keyof typeof this.MODEL_LIMITS] ?? 0;
+  }
+
+  static getModelDisplayName(modelName: string): string {
+    const normalized = this.normalizeModelName(modelName);
+    if (normalized === 'gemini-2.5-flash') {
+      return 'Gemini 2.5 Flash';
+    }
+    if (normalized === 'gemini-2.5-pro') {
+      return 'Gemini 2.5 Pro';
+    }
+    return modelName;
+  }
+
+  static isApproachingModelLimit(
+    modelName: string,
+    promptTokens?: number,
+    buffer: number = this.TOKEN_WARNING_BUFFER
+  ): boolean {
+    if (typeof promptTokens !== 'number' || promptTokens <= 0) {
+      return false;
+    }
+    const limit = this.getModelLimit(modelName);
+    if (!limit) {
+      return false;
+    }
+    return promptTokens >= Math.max(limit - buffer, 0);
   }
 
   // Clear token usage (for /clear command)
