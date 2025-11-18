@@ -393,12 +393,20 @@ export class HandleCommandUseCase {
         return { success: false, message };
       }
 
-      const imageData = await generateImage(prompt, apiKey, aspectRatio, imageModel);
+      const { imageData, usageMetadata } = await generateImage(prompt, apiKey, aspectRatio, imageModel);
       const aspectInfo = aspectRatio !== '1:1' ? ` (${aspectRatio})` : '';
       const modelInfo = imageModel !== 'nano-banana' ? ` [${imageModel}]` : '';
       const message = MessageService.createSystemMessage(
         `Generated image for: "${prompt}"${aspectInfo}${modelInfo}`
       ).withImageData(imageData);
+
+      if (imageModel === 'nano-banana') {
+        const imageTokenCount =
+          usageMetadata?.totalTokenCount ??
+          usageMetadata?.promptTokenCount ??
+          0;
+        TokenCountService.addImageTokens('gemini-2.5-flash', imageTokenCount);
+      }
 
       return {
         success: true,
@@ -410,7 +418,9 @@ export class HandleCommandUseCase {
       
       if (error instanceof Error) {
         const errorMsg = error.message.toLowerCase();
-        if (errorMsg.includes('invalid aspect ratio')) {
+        if (errorMsg.includes('exceeds') && (errorMsg.includes('token limit') || errorMsg.includes('nano banana'))) {
+          errorMessage = `SYSTEM ERROR: ${error.message}\n\nThe image prompt is too long. Nano Banana has a maximum input limit of 32,768 tokens.\n\nPlease shorten your prompt and try again.`;
+        } else if (errorMsg.includes('invalid aspect ratio')) {
           errorMessage = `SYSTEM ERROR: ${error.message}\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4\n\nExample: /image a cat --aspect 16:9`;
         } else if (errorMsg.includes('api key') || errorMsg.includes('permission') || errorMsg.includes('invalid')) {
           errorMessage = `SYSTEM ERROR: ${error.message}\n\nTroubleshooting:\n- Verify your API key is correct\n- Ensure Imagen API is enabled in Google AI Studio\n- Check that your API key has access to image generation\n- Try updating your key: /apikey <your_key>`;

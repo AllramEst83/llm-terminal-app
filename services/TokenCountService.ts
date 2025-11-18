@@ -1,6 +1,9 @@
+import type { GeminiUsageMetadata } from "./geminiService";
+
 export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
+  imageTokens: number;
 }
 
 export interface ModelTokenUsage {
@@ -10,18 +13,23 @@ export interface ModelTokenUsage {
 
 const SESSION_STORAGE_KEY = 'token_usage';
 
+function createEmptyUsage(): TokenUsage {
+  return { inputTokens: 0, outputTokens: 0, imageTokens: 0 };
+}
+
 export class TokenCountService {
   // Model token limits
   static readonly MODEL_LIMITS = {
     'gemini-2.5-flash': 1_000_000,
     'gemini-2.5-pro': 2_000_000,
   };
+  static readonly NANO_BANANA_INPUT_LIMIT = 32_768;
 
   // Initialize session storage with empty counts
   static initializeSessionStorage(): void {
     const initialUsage: ModelTokenUsage = {
-      'gemini-2.5-flash': { inputTokens: 0, outputTokens: 0 },
-      'gemini-2.5-pro': { inputTokens: 0, outputTokens: 0 },
+      'gemini-2.5-flash': createEmptyUsage(),
+      'gemini-2.5-pro': createEmptyUsage(),
     };
     sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(initialUsage));
   }
@@ -34,7 +42,18 @@ export class TokenCountService {
         this.initializeSessionStorage();
         return this.getTokenUsage();
       }
-      return JSON.parse(stored) as ModelTokenUsage;
+      const parsed = JSON.parse(stored) as ModelTokenUsage;
+      // Ensure newer fields exist even if the storage was created before update
+      Object.keys(parsed).forEach(key => {
+        const usage = parsed[key as keyof ModelTokenUsage] as TokenUsage;
+        parsed[key as keyof ModelTokenUsage] = {
+          inputTokens: usage?.inputTokens ?? 0,
+          outputTokens: usage?.outputTokens ?? 0,
+          imageTokens: usage?.imageTokens ?? 0,
+        };
+      });
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(parsed));
+      return parsed;
     } catch (error) {
       console.error('Error reading token usage from session storage:', error);
       this.initializeSessionStorage();
@@ -45,32 +64,71 @@ export class TokenCountService {
   // Update token usage for a specific model
   // inputTokens: total conversation tokens (replaces existing value)
   // outputTokens: new response tokens (adds to existing cumulative total)
+  // imageTokensDelta: new image tokens to add (cumulative)
   static updateTokenUsage(
     modelName: string,
-    inputTokens: number,
-    outputTokens: number
+    inputTokens?: number,
+    outputTokens?: number,
+    imageTokensDelta?: number
   ): void {
     const usage = this.getTokenUsage();
     const normalizedModel = this.normalizeModelName(modelName);
-    
+
     if (normalizedModel in usage) {
-      // Set input tokens (total conversation tokens, not cumulative)
-      usage[normalizedModel as keyof ModelTokenUsage].inputTokens = inputTokens;
-      // Add output tokens (cumulative total of all responses)
-      usage[normalizedModel as keyof ModelTokenUsage].outputTokens += outputTokens;
+      const modelUsage = usage[normalizedModel as keyof ModelTokenUsage];
+
+      if (typeof inputTokens === 'number') {
+        modelUsage.inputTokens = inputTokens;
+      }
+
+      if (typeof outputTokens === 'number') {
+        modelUsage.outputTokens += outputTokens;
+      }
+
+      if (typeof imageTokensDelta === 'number') {
+        modelUsage.imageTokens += imageTokensDelta;
+      }
+
       sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(usage));
     }
+  }
+
+  static updateTokenUsageFromMetadata(
+    modelName: string,
+    usageMetadata?: GeminiUsageMetadata
+  ): void {
+    if (!usageMetadata) {
+      return;
+    }
+
+    const inputTokens =
+      typeof usageMetadata.promptTokenCount === 'number'
+        ? usageMetadata.promptTokenCount
+        : undefined;
+    const outputTokens =
+      typeof usageMetadata.candidatesTokenCount === 'number'
+        ? usageMetadata.candidatesTokenCount
+        : undefined;
+
+    this.updateTokenUsage(modelName, inputTokens, outputTokens);
+  }
+
+  static addImageTokens(modelName: string, tokenCount?: number): void {
+    if (typeof tokenCount !== 'number' || tokenCount <= 0) {
+      return;
+    }
+
+    this.updateTokenUsage(modelName, undefined, undefined, tokenCount);
   }
 
   // Get token usage for the current model
   static getModelTokenUsage(modelName: string): TokenUsage {
     const usage = this.getTokenUsage();
     const normalizedModel = this.normalizeModelName(modelName);
-    return usage[normalizedModel as keyof ModelTokenUsage] || { inputTokens: 0, outputTokens: 0 };
+    return usage[normalizedModel as keyof ModelTokenUsage] || createEmptyUsage();
   }
 
-  // Count tokens via Gemini API
-  static async countTokens(
+  static async countTokensViaEndpoint(
     text: string,
     apiKey: string,
     modelName: string
@@ -82,7 +140,7 @@ export class TokenCountService {
         {
           parts: [
             {
-              text: text,
+              text,
             },
           ],
         },
@@ -109,50 +167,8 @@ export class TokenCountService {
       const data = await response.json();
       return data.totalTokens || 0;
     } catch (error) {
-      console.error('Error counting tokens:', error);
-      return 0;
-    }
-  }
-
-  // Count tokens for conversation history
-  static async countConversationTokens(
-    messages: Array<{ role: string; text: string }>,
-    apiKey: string,
-    modelName: string
-  ): Promise<number> {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:countTokens`;
-
-    const requestBody = {
-      contents: messages
-        .filter(msg => msg.role === 'user' || msg.role === 'model')
-        .map(msg => ({
-          role: msg.role,
-          parts: [{ text: msg.text }],
-        })),
-    };
-
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': apiKey,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          `HTTP ERROR! STATUS: ${response.status}, DETAIL: ${JSON.stringify(errorData)}`
-        );
-      }
-
-      const data = await response.json();
-      return data.totalTokens || 0;
-    } catch (error) {
-      console.error('Error counting conversation tokens:', error);
-      return 0;
+      console.error('Error counting Nano Banana tokens:', error);
+      throw error;
     }
   }
 
@@ -163,7 +179,7 @@ export class TokenCountService {
     const flashLimit = this.MODEL_LIMITS['gemini-2.5-flash'];
     const proLimit = this.MODEL_LIMITS['gemini-2.5-pro'];
 
-    const flashTotal = flashUsage.inputTokens + flashUsage.outputTokens;
+    const flashTotal = flashUsage.inputTokens + flashUsage.outputTokens + flashUsage.imageTokens;
     const proTotal = proUsage.inputTokens + proUsage.outputTokens;
 
     const flashPercent = ((flashUsage.inputTokens / flashLimit) * 100).toFixed(1);
@@ -174,6 +190,7 @@ export class TokenCountService {
 ### Gemini 2.5 Flash
 - **Input Tokens:** ${flashUsage.inputTokens.toLocaleString()} / ${flashLimit.toLocaleString()} (${flashPercent}%)
 - **Output Tokens:** ${flashUsage.outputTokens.toLocaleString()}
+- **Image Tokens:** ${flashUsage.imageTokens.toLocaleString()}
 - **Total Tokens:** ${flashTotal.toLocaleString()}
 
 ### Gemini 2.5 Pro
@@ -182,7 +199,7 @@ export class TokenCountService {
 - **Total Tokens:** ${proTotal.toLocaleString()}
 
 ---
-**Note:** Input tokens represent the conversation context sent to the model. Use \`/clear\` to reset the context and token counts.`;
+**Note:** Input tokens represent the conversation context sent to the model. Image tokens come from the separate Gemini 2.5 Flash Image pipeline (Nano Banana) and do **not** consume the flash chat context window. Use \`/clear\` to reset the context and token counts.`;
   }
 
   // Normalize model name to standard format
