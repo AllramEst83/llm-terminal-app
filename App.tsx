@@ -350,6 +350,12 @@ export const App: React.FC = () => {
     setAttachedImages(prev => prev.filter((_, i) => i !== index));
   }, []);
 
+  const handleImageError = useCallback((errorMessage: string) => {
+    const errorMsg = MessageService.createErrorMessage(`SYSTEM ERROR: ${errorMessage}`);
+    setMessages(prev => [...prev, errorMsg]);
+    playErrorBeep(settings.audioEnabled);
+  }, [settings.audioEnabled]);
+
   const handleSendMessage = useCallback(async () => {
     const trimmedInput = input.trim();
     if ((trimmedInput === '' && attachedImages.length === 0) || isLoading || isStreaming) return;
@@ -648,6 +654,7 @@ export const App: React.FC = () => {
             onImageAttach={handleImageAttach}
             onImageRemove={handleImageRemove}
             maxImages={10}
+            onError={handleImageError}
           />
         )}
       </div>

@@ -28,6 +28,7 @@ interface TerminalInputProps {
   onImageAttach?: (image: AttachedImage) => void;
   onImageRemove?: (index: number) => void;
   maxImages?: number;
+  onError?: (message: string) => void;
 }
 
 export const TerminalInput: React.FC<TerminalInputProps> = ({
@@ -48,12 +49,19 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   onImageAttach,
   onImageRemove,
   maxImages = 10,
+  onError,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const hasImages = attachedImages.length > 0;
   const isMaxImages = attachedImages.length >= maxImages;
+
+  // Helper function to validate image format
+  const isValidImageFormat = (mimeType: string): boolean => {
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+    return validTypes.includes(mimeType.toLowerCase());
+  };
 
   useEffect(() => {
     if (autoFocus && !disabled) {
@@ -73,31 +81,73 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const items = e.clipboardData?.items;
-    if (!items || !onImageAttach || isMaxImages) return;
+    if (!items || !onImageAttach) return;
 
+    // Collect all image items from clipboard
+    const imageItems: DataTransferItem[] = [];
     for (const item of Array.from(items)) {
       if (item.kind === 'file' && item.type.startsWith('image/')) {
-        e.preventDefault();
-        
-        const imageBlob = item.getAsFile();
-        if (!imageBlob) continue;
-
-        const reader = new FileReader();
-        reader.onload = (loadEvent) => {
-          const dataUrl = loadEvent.target?.result as string;
-          const base64String = dataUrl.split(',')[1];
-          
-          onImageAttach({
-            base64Data: base64String,
-            mimeType: imageBlob.type,
-            fileName: imageBlob.name || 'pasted-image.png',
-            dataUrl: dataUrl,
-          });
-        };
-        
-        reader.readAsDataURL(imageBlob);
-        break;
+        imageItems.push(item);
       }
+    }
+
+    if (imageItems.length === 0) return;
+
+    e.preventDefault();
+
+    // Calculate how many images we can still add
+    const remainingSlots = maxImages - attachedImages.length;
+    if (remainingSlots <= 0) {
+      onError?.(`Maximum ${maxImages} images reached. Please remove some images before adding more.`);
+      return;
+    }
+
+    const itemsToProcess = Math.min(imageItems.length, remainingSlots);
+    let processedCount = 0;
+    let errorCount = 0;
+
+    // Process all image items up to the limit
+    for (let i = 0; i < itemsToProcess; i++) {
+      const item = imageItems[i];
+      const imageBlob = item.getAsFile();
+      if (!imageBlob) continue;
+
+      // Validate image format
+      if (!isValidImageFormat(imageBlob.type)) {
+        errorCount++;
+        if (errorCount === 1) {
+          onError?.('Unsupported file format. Please use PNG, JPEG, GIF, or WebP images.');
+        }
+        continue;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        const dataUrl = loadEvent.target?.result as string;
+        const base64String = dataUrl.split(',')[1];
+        
+        onImageAttach({
+          base64Data: base64String,
+          mimeType: imageBlob.type,
+          fileName: imageBlob.name || 'pasted-image.png',
+          dataUrl: dataUrl,
+        });
+        processedCount++;
+      };
+      
+      reader.onerror = () => {
+        errorCount++;
+        if (errorCount === 1) {
+          onError?.('Failed to read image file. Please try again.');
+        }
+      };
+      
+      reader.readAsDataURL(imageBlob);
+    }
+
+    // If we had more images than slots, inform the user
+    if (imageItems.length > remainingSlots) {
+      onError?.(`Only ${remainingSlots} of ${imageItems.length} image(s) were added. Maximum ${maxImages} images allowed.`);
     }
   };
 
@@ -107,11 +157,41 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
 
     // Process multiple files up to the max limit
     const remainingSlots = maxImages - attachedImages.length;
-    const filesToProcess = Math.min(files.length, remainingSlots);
+    if (remainingSlots <= 0) {
+      onError?.(`Maximum ${maxImages} images reached. Please remove some images before adding more.`);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
 
-    for (let i = 0; i < filesToProcess; i++) {
+    const filesToProcess = Math.min(files.length, remainingSlots);
+    let processedCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      
+      // Skip non-image files
       if (!file.type.startsWith('image/')) {
+        continue;
+      }
+
+      // Check if we've reached the limit
+      if (processedCount >= remainingSlots) {
+        if (i < files.length - 1) {
+          onError?.(`Only ${remainingSlots} of ${files.length} image(s) were added. Maximum ${maxImages} images allowed.`);
+        }
+        break;
+      }
+
+      // Validate image format
+      if (!isValidImageFormat(file.type)) {
+        errorCount++;
+        if (errorCount === 1) {
+          onError?.('Unsupported file format. Please use PNG, JPEG, GIF, or WebP images.');
+        }
         continue;
       }
 
@@ -126,6 +206,14 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
           fileName: file.name,
           dataUrl: dataUrl,
         });
+        processedCount++;
+      };
+      
+      reader.onerror = () => {
+        errorCount++;
+        if (errorCount === 1) {
+          onError?.('Failed to read image file. Please try again.');
+        }
       };
       
       reader.readAsDataURL(file);
