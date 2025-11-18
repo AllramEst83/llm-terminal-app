@@ -3,6 +3,12 @@ export interface Source {
   uri: string;
 }
 
+export interface MessageImage {
+  base64Data: string;
+  mimeType: string;
+  fileName?: string;
+}
+
 export class Message {
   constructor(
     public readonly id: string,
@@ -12,7 +18,8 @@ export class Message {
     public readonly sources?: Source[],
     public readonly imageData?: string,
     public readonly modelName?: string,
-    public readonly imageMimeType?: string
+    public readonly imageMimeType?: string,
+    public readonly images?: MessageImage[]
   ) {}
 
   static create(
@@ -22,7 +29,8 @@ export class Message {
     sources?: Source[],
     imageData?: string,
     modelName?: string,
-    imageMimeType?: string
+    imageMimeType?: string,
+    images?: MessageImage[]
   ): Message {
     return new Message(
       Date.now().toString(),
@@ -32,7 +40,8 @@ export class Message {
       sources,
       imageData,
       modelName,
-      imageMimeType
+      imageMimeType,
+      images
     );
   }
 
@@ -62,7 +71,8 @@ export class Message {
       this.sources,
       this.imageData,
       this.modelName,
-      this.imageMimeType
+      this.imageMimeType,
+      this.images
     );
   }
 
@@ -75,7 +85,8 @@ export class Message {
       sources,
       this.imageData,
       this.modelName,
-      this.imageMimeType
+      this.imageMimeType,
+      this.images
     );
   }
 
@@ -88,7 +99,8 @@ export class Message {
       this.sources,
       imageData,
       this.modelName,
-      imageMimeType || this.imageMimeType
+      imageMimeType || this.imageMimeType,
+      this.images
     );
   }
 
@@ -101,7 +113,22 @@ export class Message {
       this.sources,
       this.imageData,
       modelName,
-      this.imageMimeType
+      this.imageMimeType,
+      this.images
+    );
+  }
+
+  withImages(images: MessageImage[]): Message {
+    return new Message(
+      this.id,
+      this.role,
+      this.text,
+      this.timestamp,
+      this.sources,
+      this.imageData,
+      this.modelName,
+      this.imageMimeType,
+      images
     );
   }
 }

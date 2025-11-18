@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import type { GenerateContentResponse } from "@google/genai";
-import type { Message, Source } from '../domain/Message';
+import type { Message, Source, MessageImage } from '../domain/Message';
 
 export interface GeminiUsageMetadata {
   promptTokenCount?: number;
@@ -21,8 +21,19 @@ function formatMessagesForGemini(messages: Message[]) {
     .map(msg => {
       const parts: any[] = [];
       
-      // Add image if present
-      if (msg.imageData && msg.imageMimeType) {
+      // Add multiple images if present (new format)
+      if (msg.images && msg.images.length > 0) {
+        for (const image of msg.images) {
+          parts.push({
+            inlineData: {
+              data: image.base64Data,
+              mimeType: image.mimeType,
+            },
+          });
+        }
+      }
+      // Fallback to old single image format for backward compatibility
+      else if (msg.imageData && msg.imageMimeType) {
         parts.push({
           inlineData: {
             data: msg.imageData,
@@ -74,7 +85,8 @@ export async function sendMessageToGemini(
   onStream: (chunkText: string, isFirstChunk: boolean) => void,
   onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata) => void,
   imageData?: string,
-  imageMimeType?: string
+  imageMimeType?: string,
+  images?: MessageImage[]
 ): Promise<void> {
   try {
     const ai = getAiInstance(apiKey);
@@ -97,8 +109,19 @@ export async function sendMessageToGemini(
     // Build message parts
     const messageParts: any[] = [];
     
-    // Add image first if present
-    if (imageData && imageMimeType) {
+    // Add multiple images first if present (new format)
+    if (images && images.length > 0) {
+      for (const image of images) {
+        messageParts.push({
+          inlineData: {
+            data: image.base64Data,
+            mimeType: image.mimeType,
+          },
+        });
+      }
+    }
+    // Fallback to single image format for backward compatibility
+    else if (imageData && imageMimeType) {
       messageParts.push({
         inlineData: {
           data: imageData,

@@ -58,7 +58,7 @@ export const App: React.FC = () => {
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [loadingCharIndex, setLoadingCharIndex] = useState<number>(0);
   const [inputTokenCount, setInputTokenCount] = useState<number>(0);
-  const [attachedImage, setAttachedImage] = useState<AttachedImage | null>(null);
+  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -343,16 +343,16 @@ export const App: React.FC = () => {
   }, [settings]);
 
   const handleImageAttach = useCallback((image: AttachedImage) => {
-    setAttachedImage(image);
+    setAttachedImages(prev => [...prev, image]);
   }, []);
 
-  const handleImageRemove = useCallback(() => {
-    setAttachedImage(null);
+  const handleImageRemove = useCallback((index: number) => {
+    setAttachedImages(prev => prev.filter((_, i) => i !== index));
   }, []);
 
   const handleSendMessage = useCallback(async () => {
     const trimmedInput = input.trim();
-    if ((trimmedInput === '' && !attachedImage) || isLoading || isStreaming) return;
+    if ((trimmedInput === '' && attachedImages.length === 0) || isLoading || isStreaming) return;
     
     const apiKey = await ApiKeyService.getApiKey();
     if (!apiKey) {
@@ -364,10 +364,20 @@ export const App: React.FC = () => {
       return;
     }
 
+    // Convert attached images to MessageImage format
+    const messageImages = attachedImages.length > 0 
+      ? attachedImages.map(img => ({
+          base64Data: img.base64Data,
+          mimeType: img.mimeType,
+          fileName: img.fileName,
+        }))
+      : undefined;
+
     const userMessage = MessageService.createUserMessage(
-      trimmedInput || (attachedImage ? 'Analyze this image' : ''),
-      attachedImage?.base64Data,
-      attachedImage?.mimeType
+      trimmedInput || (attachedImages.length > 0 ? `Analyze ${attachedImages.length === 1 ? 'this image' : 'these images'}` : ''),
+      undefined,
+      undefined,
+      messageImages
     );
     const modelNameInUse = settings.modelName;
     
@@ -431,7 +441,7 @@ export const App: React.FC = () => {
     // Send message to Gemini
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setAttachedImage(null); // Clear attached image after sending
+    setAttachedImages([]); // Clear attached images after sending
     setIsLoading(true);
 
     // Play keystroke sound
@@ -447,7 +457,7 @@ export const App: React.FC = () => {
         }
       );
       await sendUseCase.execute(
-      trimmedInput || 'Analyze this image',
+      trimmedInput || (attachedImages.length > 0 ? `Analyze ${attachedImages.length === 1 ? 'this image' : 'these images'}` : ''),
       (chunkText, isFirstChunk) => {
         const isError = chunkText.startsWith('SYSTEM ERROR');
         const messageRole = isError ? 'system' : 'model';
@@ -500,15 +510,16 @@ export const App: React.FC = () => {
         setIsLoading(false);
         setIsStreaming(false);
       },
-      attachedImage?.base64Data,
-      attachedImage?.mimeType
+      undefined,
+      undefined,
+      messageImages
       );
     } catch (error) {
       setIsLoading(false);
       setIsStreaming(false);
       // Error handling is done in the execute callbacks
     }
-  }, [input, isLoading, isStreaming, messages, settings, isStudioEnv, commandHistory, handleSelectKey, attachedImage]);
+  }, [input, isLoading, isStreaming, messages, settings, isStudioEnv, commandHistory, handleSelectKey, attachedImages]);
 
   const handleSuggestionClick = useCallback((command: string) => {
     setInput(`/${command} `);
@@ -633,9 +644,10 @@ export const App: React.FC = () => {
             theme={theme}
             disabled={isLoading || isStreaming}
             autoFocus={true}
-            attachedImage={attachedImage}
+            attachedImages={attachedImages}
             onImageAttach={handleImageAttach}
             onImageRemove={handleImageRemove}
+            maxImages={10}
           />
         )}
       </div>

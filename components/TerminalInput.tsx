@@ -24,9 +24,10 @@ interface TerminalInputProps {
   theme: ThemeColors;
   disabled?: boolean;
   autoFocus?: boolean;
-  attachedImage?: AttachedImage | null;
+  attachedImages?: AttachedImage[];
   onImageAttach?: (image: AttachedImage) => void;
-  onImageRemove?: () => void;
+  onImageRemove?: (index: number) => void;
+  maxImages?: number;
 }
 
 export const TerminalInput: React.FC<TerminalInputProps> = ({
@@ -43,12 +44,16 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   theme,
   disabled = false,
   autoFocus = true,
-  attachedImage,
+  attachedImages = [],
   onImageAttach,
   onImageRemove,
+  maxImages = 10,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const hasImages = attachedImages.length > 0;
+  const isMaxImages = attachedImages.length >= maxImages;
 
   useEffect(() => {
     if (autoFocus && !disabled) {
@@ -68,7 +73,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const items = e.clipboardData?.items;
-    if (!items || !onImageAttach) return;
+    if (!items || !onImageAttach || isMaxImages) return;
 
     for (const item of Array.from(items)) {
       if (item.kind === 'file' && item.type.startsWith('image/')) {
@@ -97,27 +102,34 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !onImageAttach) return;
+    const files = e.target.files;
+    if (!files || !onImageAttach) return;
 
-    if (!file.type.startsWith('image/')) {
-      return;
-    }
+    // Process multiple files up to the max limit
+    const remainingSlots = maxImages - attachedImages.length;
+    const filesToProcess = Math.min(files.length, remainingSlots);
 
-    const reader = new FileReader();
-    reader.onload = (loadEvent) => {
-      const dataUrl = loadEvent.target?.result as string;
-      const base64String = dataUrl.split(',')[1];
+    for (let i = 0; i < filesToProcess; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) {
+        continue;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        const dataUrl = loadEvent.target?.result as string;
+        const base64String = dataUrl.split(',')[1];
+        
+        onImageAttach({
+          base64Data: base64String,
+          mimeType: file.type,
+          fileName: file.name,
+          dataUrl: dataUrl,
+        });
+      };
       
-      onImageAttach({
-        base64Data: base64String,
-        mimeType: file.type,
-        fileName: file.name,
-        dataUrl: dataUrl,
-      });
-    };
-    
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    }
     
     // Reset file input
     if (fileInputRef.current) {
@@ -162,6 +174,71 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
 
   return (
     <div className="border-t-4" style={{ borderColor: theme.accent }}>
+      {/* Image thumbnails row - shown above input if images are attached */}
+      {hasImages && (
+        <div 
+          className="px-2 pt-2 pb-1 flex items-center gap-1 overflow-x-auto"
+          style={{ borderBottom: `1px solid ${theme.accent}40` }}
+        >
+          <span 
+            className="text-xs font-bold mr-1 whitespace-nowrap"
+            style={{ color: theme.accent }}
+          >
+            {attachedImages.length} IMG{attachedImages.length > 1 ? 'S' : ''}:
+          </span>
+          {attachedImages.map((image, index) => (
+            <div key={index} className="relative flex-shrink-0">
+              <img
+                src={image.dataUrl}
+                alt={`Image ${index + 1}`}
+                className="w-10 h-10 object-cover rounded border"
+                style={{ borderColor: theme.accent }}
+              />
+              {onImageRemove && (
+                <button
+                  onClick={() => onImageRemove(index)}
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center font-bold leading-none"
+                  style={{
+                    backgroundColor: theme.accent,
+                    color: theme.background,
+                    fontSize: '10px',
+                  }}
+                  title={`Remove ${image.fileName}`}
+                >
+                  ×
+                </button>
+              )}
+              <div 
+                className="absolute bottom-0 left-0 right-0 text-center text-xs font-bold"
+                style={{
+                  backgroundColor: `${theme.background}dd`,
+                  color: theme.accent,
+                  fontSize: '8px',
+                  lineHeight: '10px',
+                }}
+              >
+                {index + 1}
+              </div>
+            </div>
+          ))}
+          {attachedImages.length < maxImages && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled}
+              className="w-10 h-10 flex items-center justify-center rounded border border-dashed hover:opacity-80 transition-opacity flex-shrink-0"
+              style={{ 
+                borderColor: theme.accent,
+                color: theme.accent,
+                opacity: disabled ? 0.3 : 1 
+              }}
+              title={`Add image (${attachedImages.length}/${maxImages})`}
+            >
+              +
+            </button>
+          )}
+        </div>
+      )}
+      
       <div className="p-2 flex items-center relative">
         {showSuggestions && suggestions.length > 0 && (
           <CommandSuggestions
@@ -175,18 +252,31 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
         {/* Image attachment button */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          disabled={disabled}
-          className="mr-2 p-1 hover:opacity-80 transition-opacity"
-          style={{ color: theme.accent, opacity: disabled ? 0.3 : 1 }}
-          title="Attach image"
+          disabled={disabled || isMaxImages}
+          className="mr-2 p-1 hover:opacity-80 transition-opacity relative"
+          style={{ color: theme.accent, opacity: disabled || isMaxImages ? 0.3 : 1 }}
+          title={isMaxImages ? `Maximum ${maxImages} images` : 'Attach images (paste or click)'}
         >
           📎
+          {hasImages && (
+            <span 
+              className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center font-bold"
+              style={{
+                backgroundColor: theme.accent,
+                color: theme.background,
+                fontSize: '9px',
+              }}
+            >
+              {attachedImages.length}
+            </span>
+          )}
         </button>
         
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple
           onChange={handleFileSelect}
           className="hidden"
         />
@@ -204,40 +294,8 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
           autoFocus={autoFocus}
           readOnly={disabled}
           autoComplete="off"
+          placeholder={hasImages ? `${attachedImages.length} image${attachedImages.length > 1 ? 's' : ''} attached...` : ''}
         />
-        
-        {/* Image thumbnail */}
-        {attachedImage && (
-          <div className="ml-2 relative flex items-center">
-            <div className="relative">
-              <img
-                src={attachedImage.dataUrl}
-                alt="Attached"
-                className="w-12 h-12 object-cover rounded border-2"
-                style={{ borderColor: theme.accent }}
-              />
-              {onImageRemove && (
-                <button
-                  onClick={onImageRemove}
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs"
-                  style={{
-                    backgroundColor: theme.accent,
-                    color: theme.background,
-                  }}
-                  title="Remove image"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-            <span
-              className="ml-2 text-xs truncate max-w-[100px]"
-              style={{ color: theme.text, opacity: 0.7 }}
-            >
-              {attachedImage.fileName}
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );

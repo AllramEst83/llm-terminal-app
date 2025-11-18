@@ -1,9 +1,8 @@
-import { Message } from '../domain/Message';
+import { Message, MessageImage } from '../domain/Message';
 import { Settings } from '../domain/Settings';
 import { sendMessageToGemini } from '../services/geminiService';
 import { MessageService } from '../services/MessageService';
 import { TokenCountService } from '../services/TokenCountService';
-import { getCurrentTimestamp } from '../utils/dateUtils';
 
 interface CompletionResult {
   sources?: Array<{ title: string; uri: string }>;
@@ -22,9 +21,10 @@ export class SendMessageUseCase {
     onStreamCallback: (chunkText: string, isFirstChunk: boolean) => void,
     onCompleteCallback: (result: CompletionResult) => void,
     imageData?: string,
-    imageMimeType?: string
+    imageMimeType?: string,
+    images?: MessageImage[]
   ): Promise<Message> {
-    const userMessage = MessageService.createUserMessage(inputText, imageData, imageMimeType);
+    const userMessage = MessageService.createUserMessage(inputText, imageData, imageMimeType, images);
 
     await sendMessageToGemini(
       this.currentMessages,
@@ -59,7 +59,8 @@ export class SendMessageUseCase {
         });
       },
       imageData,
-      imageMimeType
+      imageMimeType,
+      images
     );
 
     return userMessage;
