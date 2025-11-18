@@ -387,24 +387,27 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  const handleRegister = useCallback(async (email: string, username: string, password: string) => {
+  const handleRegister = useCallback(async (email: string, username: string, password: string, apiKey: string) => {
     setAuthLoading(true);
     setAuthError('');
     
     try {
-      const response = await AuthService.register({ email, username, password });
+      const response = await AuthService.register({ email, username, password, apiKey });
       
       if (response.success && response.session) {
         setSession(response.session);
         setAuthView('login');
         
+        // Set API key in memory and mark as ready
+        await ApiKeyService.setApiKey(apiKey);
+        setIsKeyReady(true);
+        
         // Reload settings after registration
         const loadedSettings = await new ManageSettingsUseCase().loadSettings();
         setSettings(loadedSettings);
         
-        // Check if we now have an API key
-        const hasKey = await ApiKeyService.hasApiKey();
-        setIsKeyReady(hasKey);
+        // Start boot sequence immediately since we have the API key
+        setBooting(true);
       } else {
         setAuthError(response.error || 'Registration failed. Please try again.');
       }
@@ -669,11 +672,36 @@ export const App: React.FC = () => {
       }
     }
     
-    // Show API key input if authenticated but no key
+    // For authenticated users, API key should already exist
+    // If somehow they don't have one, they can use /apikey command
     if (!isKeyReady) {
-      return isStudioEnv 
-        ? <ApiKeySelectionUI theme={theme} onSelectKey={handleSelectKey} /> 
-        : <ApiKeyInputUI theme={theme} onApiKeySubmit={handleApiKeySubmit} />;
+      // This should rarely happen - only if registration failed to save key
+      // Show a message to use /apikey command
+      return (
+        <div className="p-4">
+          <div className="whitespace-pre-wrap">
+            <div style={{ color: theme.system }} className="mb-4">
+              SYSTEM: API Key not found.
+            </div>
+            <div style={{ color: theme.text }}>
+              Please use the /apikey command to set your Gemini API key.
+              {'\n\n'}
+              Type: /apikey YOUR_API_KEY
+              {'\n\n'}
+              You can get a key from{' '}
+              <a 
+                href="https://aistudio.google.com/app/apikey" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: theme.accent }}
+                className="underline"
+              >
+                Google AI Studio
+              </a>
+            </div>
+          </div>
+        </div>
+      );
     }
     
     if (booting) return <BootScreen sequence={bootSequence} theme={theme} />;

@@ -7,6 +7,7 @@ export interface RegisterRequest {
   email: string;
   username: string;
   password: string;
+  apiKey: string;
 }
 
 export interface LoginRequest {
@@ -64,6 +65,15 @@ export class AuthService {
       if (profileError) {
         console.error('[AuthService] Profile fetch error:', profileError);
         // Continue anyway, profile might not be created yet
+      }
+
+      // Save API key to database immediately after registration
+      const { UserRepository } = await import('../repositories/UserRepository');
+      const apiKeySaved = await UserRepository.saveApiKey(data.user.id, request.apiKey);
+      
+      if (!apiKeySaved) {
+        console.error('[AuthService] Failed to save API key during registration');
+        // Continue anyway - user can update it later via /apikey command
       }
 
       const user = new User(

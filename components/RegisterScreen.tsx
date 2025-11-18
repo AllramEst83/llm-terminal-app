@@ -3,7 +3,7 @@ import type { ThemeColors } from '../domain/Theme';
 
 interface RegisterScreenProps {
   theme: ThemeColors;
-  onRegister: (email: string, username: string, password: string) => Promise<void>;
+  onRegister: (email: string, username: string, password: string, apiKey: string) => Promise<void>;
   onSwitchToLogin: () => void;
   error?: string;
   isLoading?: boolean;
@@ -20,7 +20,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [apiKey, setApiKey] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
   const [validationError, setValidationError] = useState('');
   const emailInputRef = useRef<HTMLInputElement>(null);
 
@@ -29,7 +31,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   }, []);
 
   const validateForm = (): boolean => {
-    if (!email.trim() || !username.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!email.trim() || !username.trim() || !password.trim() || !confirmPassword.trim() || !apiKey.trim()) {
       setValidationError('All fields are required');
       return false;
     }
@@ -54,6 +56,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       return false;
     }
 
+    if (apiKey.length < 20) {
+      setValidationError('Invalid API key. Please enter a valid Gemini API key.');
+      return false;
+    }
+
     setValidationError('');
     return true;
   };
@@ -61,7 +68,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm() && !isLoading) {
-      await onRegister(email.trim(), username.trim(), password.trim());
+      await onRegister(email.trim(), username.trim(), password.trim(), apiKey.trim());
     }
   };
 
@@ -191,6 +198,55 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           </div>
         </div>
 
+        {/* API Key Input */}
+        <div className="flex flex-col space-y-1">
+          <label 
+            htmlFor="apiKey" 
+            style={{ color: theme.text, opacity: 0.7 }}
+            className="text-sm uppercase tracking-wide"
+          >
+            Gemini API Key
+          </label>
+          <div className="flex items-center border-b-2" style={{ borderColor: theme.accent, opacity: 0.5 }}>
+            <span style={{ color: theme.prompt }} className="mr-2">{'>'}</span>
+            <input
+              id="apiKey"
+              type={showApiKey ? 'text' : 'password'}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="bg-transparent border-none flex-1 focus:outline-none py-2"
+              style={{ color: theme.text }}
+              placeholder="AIzaSy..."
+              disabled={isLoading}
+              autoComplete="off"
+            />
+            <button
+              type="button"
+              onClick={() => setShowApiKey(!showApiKey)}
+              className="ml-2 text-xs uppercase hover:opacity-80"
+              style={{ color: theme.accent }}
+              disabled={isLoading}
+            >
+              {showApiKey ? '[HIDE]' : '[SHOW]'}
+            </button>
+          </div>
+          <div 
+            className="text-xs mt-1"
+            style={{ color: theme.text, opacity: 0.5 }}
+          >
+            Get your key from{' '}
+            <a 
+              href="https://aistudio.google.com/app/apikey" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: theme.accent }}
+              className="underline hover:opacity-80"
+            >
+              Google AI Studio
+            </a>
+          </div>
+        </div>
+
         {/* Error Message */}
         {displayError && (
           <div 
@@ -210,7 +266,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         <div className="flex items-center space-x-4 mt-6">
           <button
             type="submit"
-            disabled={isLoading || !email.trim() || !username.trim() || !password.trim() || !confirmPassword.trim()}
+            disabled={isLoading || !email.trim() || !username.trim() || !password.trim() || !confirmPassword.trim() || !apiKey.trim()}
             className="px-6 py-2 border-2 uppercase tracking-wide font-bold hover:opacity-80 disabled:opacity-40 transition-opacity"
             style={{ 
               borderColor: theme.accent,
