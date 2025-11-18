@@ -18,10 +18,29 @@ function getAiInstance(apiKey: string) {
 function formatMessagesForGemini(messages: Message[]) {
   return messages
     .filter(msg => msg.role === 'user' || msg.role === 'model')
-    .map(msg => ({
-      role: msg.role,
-      parts: [{ text: msg.text }],
-    }));
+    .map(msg => {
+      const parts: any[] = [];
+      
+      // Add image if present
+      if (msg.imageData && msg.imageMimeType) {
+        parts.push({
+          inlineData: {
+            data: msg.imageData,
+            mimeType: msg.imageMimeType,
+          },
+        });
+      }
+      
+      // Add text if present
+      if (msg.text) {
+        parts.push({ text: msg.text });
+      }
+      
+      return {
+        role: msg.role,
+        parts: parts.length > 0 ? parts : [{ text: msg.text }],
+      };
+    });
 }
 
 function extractUsageMetadata(rawMetadata: any): GeminiUsageMetadata | undefined {
@@ -53,7 +72,9 @@ export async function sendMessageToGemini(
   thinkingEnabled: boolean,
   thinkingBudget: number | undefined,
   onStream: (chunkText: string, isFirstChunk: boolean) => void,
-  onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata) => void
+  onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata) => void,
+  imageData?: string,
+  imageMimeType?: string
 ): Promise<void> {
   try {
     const ai = getAiInstance(apiKey);
@@ -73,7 +94,27 @@ export async function sendMessageToGemini(
       },
     });
 
-    const stream = await chat.sendMessageStream({ message: newMessage });
+    // Build message parts
+    const messageParts: any[] = [];
+    
+    // Add image first if present
+    if (imageData && imageMimeType) {
+      messageParts.push({
+        inlineData: {
+          data: imageData,
+          mimeType: imageMimeType,
+        },
+      });
+    }
+    
+    // Add text
+    if (newMessage) {
+      messageParts.push({ text: newMessage });
+    }
+    
+    const stream = await chat.sendMessageStream({ 
+      message: messageParts.length > 0 ? messageParts : newMessage 
+    });
 
     let isFirst = true;
     const sources: Source[] = [];

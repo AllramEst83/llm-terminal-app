@@ -7,8 +7,10 @@ export class MessageService {
     return createInitialMessages();
   }
 
-  static createUserMessage(text: string): Message {
-    return Message.createUser(text, getCurrentTimestamp());
+  static createUserMessage(text: string, imageData?: string, imageMimeType?: string): Message {
+    return imageData && imageMimeType
+      ? Message.create('user', text, getCurrentTimestamp(), undefined, imageData, undefined, imageMimeType)
+      : Message.createUser(text, getCurrentTimestamp());
   }
 
   static createModelMessage(text: string, modelName?: string): Message {

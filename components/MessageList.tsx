@@ -136,18 +136,36 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
               )}
             </div>
             
-            {/* Message Content - Hide if imageData exists to avoid duplicate text */}
-            {!msg.imageData && (
-              <div 
-                className={`${isSystem ? 'opacity-90' : ''}`}
-                style={isSystem ? { color: theme.system } : {}}
-              >
+            {/* Message Content */}
+            <div 
+              className={`${isSystem ? 'opacity-90' : ''}`}
+              style={isSystem ? { color: theme.system } : {}}
+            >
+              {/* Show text for user messages with images, or any message without imageData from /image command */}
+              {(isUser || !msg.imageData || (msg.imageData && msg.text && !msg.text.startsWith('Generated image for:'))) && (
                 <MessageContent text={msg.text} theme={theme} />
+              )}
+            </div>
+            
+            {/* Image Display - For user-attached images */}
+            {msg.imageData && isUser && (
+              <div className="mt-2">
+                <img 
+                  src={`data:${msg.imageMimeType || 'image/png'};base64,${msg.imageData}`}
+                  alt="User attached image"
+                  className="max-w-xs rounded border-2"
+                  style={{ borderColor: theme.accent }}
+                  onLoad={() => {
+                    requestAnimationFrame(() => {
+                      onImageLoad?.();
+                    });
+                  }}
+                />
               </div>
             )}
             
-            {/* Image Display */}
-            {msg.imageData && (
+            {/* Image Display - For generated images from /image command */}
+            {msg.imageData && !isUser && (
               <div className="mt-2">
                 <ImageDisplay base64Image={msg.imageData} prompt={msg.text} theme={theme} onImageLoad={onImageLoad} />
               </div>

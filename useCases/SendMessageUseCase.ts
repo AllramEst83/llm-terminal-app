@@ -3,6 +3,7 @@ import { Settings } from '../domain/Settings';
 import { sendMessageToGemini } from '../services/geminiService';
 import { MessageService } from '../services/MessageService';
 import { TokenCountService } from '../services/TokenCountService';
+import { getCurrentTimestamp } from '../utils/dateUtils';
 
 interface CompletionResult {
   sources?: Array<{ title: string; uri: string }>;
@@ -19,9 +20,11 @@ export class SendMessageUseCase {
   async execute(
     inputText: string,
     onStreamCallback: (chunkText: string, isFirstChunk: boolean) => void,
-    onCompleteCallback: (result: CompletionResult) => void
+    onCompleteCallback: (result: CompletionResult) => void,
+    imageData?: string,
+    imageMimeType?: string
   ): Promise<Message> {
-    const userMessage = MessageService.createUserMessage(inputText);
+    const userMessage = MessageService.createUserMessage(inputText, imageData, imageMimeType);
 
     await sendMessageToGemini(
       this.currentMessages,
@@ -54,7 +57,9 @@ export class SendMessageUseCase {
           sources,
           warningMessage,
         });
-      }
+      },
+      imageData,
+      imageMimeType
     );
 
     return userMessage;

@@ -11,7 +11,8 @@ export class Message {
     public readonly timestamp?: string,
     public readonly sources?: Source[],
     public readonly imageData?: string,
-    public readonly modelName?: string
+    public readonly modelName?: string,
+    public readonly imageMimeType?: string
   ) {}
 
   static create(
@@ -20,7 +21,8 @@ export class Message {
     timestamp?: string,
     sources?: Source[],
     imageData?: string,
-    modelName?: string
+    modelName?: string,
+    imageMimeType?: string
   ): Message {
     return new Message(
       Date.now().toString(),
@@ -29,7 +31,8 @@ export class Message {
       timestamp,
       sources,
       imageData,
-      modelName
+      modelName,
+      imageMimeType
     );
   }
 
@@ -58,7 +61,8 @@ export class Message {
       this.timestamp,
       this.sources,
       this.imageData,
-      this.modelName
+      this.modelName,
+      this.imageMimeType
     );
   }
 
@@ -70,11 +74,12 @@ export class Message {
       this.timestamp,
       sources,
       this.imageData,
-      this.modelName
+      this.modelName,
+      this.imageMimeType
     );
   }
 
-  withImageData(imageData: string): Message {
+  withImageData(imageData: string, imageMimeType?: string): Message {
     return new Message(
       this.id,
       this.role,
@@ -82,7 +87,8 @@ export class Message {
       this.timestamp,
       this.sources,
       imageData,
-      this.modelName
+      this.modelName,
+      imageMimeType || this.imageMimeType
     );
   }
 
@@ -94,7 +100,8 @@ export class Message {
       this.timestamp,
       this.sources,
       this.imageData,
-      modelName
+      modelName,
+      this.imageMimeType
     );
   }
 }
