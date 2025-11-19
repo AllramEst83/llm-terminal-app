@@ -3,7 +3,7 @@ import { Message } from '../domain/Message';
 import { MessageContent } from './MessageContent';
 import { ImageDisplay } from './ImageDisplay';
 import type { ThemeColors } from '../domain/Theme';
-import { getShortModelName } from '../utils/modelUtils';
+import { ModelService } from '../services/ModelService';
 
 interface MessageListProps {
   messages: Message[];
@@ -39,8 +39,8 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
           ? theme.ai 
           : theme.system;
         
-        const modelLabel = msg.modelName ?? 'Unknown Model';
-        const shortModelName = getShortModelName(msg.modelName);
+        const modelLabel = ModelService.getDisplayName(msg.modelName) ?? msg.modelName ?? 'Unknown Model';
+        const shortModelName = ModelService.getShortLabel(msg.modelName);
 
         return (
           <div 

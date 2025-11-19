@@ -9,6 +9,7 @@ import { generateImage, type ImageModel } from '../services/imageService';
 import { Message } from '../domain/Message';
 import type { CommandResult } from '../domain/CommandResult';
 import { TokenCountService } from '../services/TokenCountService';
+import { ModelService } from '../services/ModelService';
 
 export class HandleCommandUseCase {
   constructor(
@@ -246,31 +247,45 @@ export class HandleCommandUseCase {
   }
 
   private handleModel(args: string[]): CommandResult {
-    const requestedModel = args[0]?.toLowerCase();
-    
-    if (!requestedModel) {
+    const requestedModelRaw = args[0];
+    const availableModels = ModelService.listModels();
+
+    if (!requestedModelRaw) {
+      const modelList = availableModels
+        .map(model => `- **${model.shortLabel}** (${model.id})`)
+        .join('\n');
+      const shortcuts = availableModels
+        .map(model => `- ${model.shortLabel.toLowerCase()} → ${model.id}`)
+        .join('\n');
       const message = MessageService.createSystemMessage(
-        `Available models:\npro, flash\n\nUsage: /model <model_name>\n\nShortcuts:\n  pro   → gemini-2.5-pro\n  flash → gemini-2.5-flash`
+        `Available models:\n\n${modelList}\n\nUsage:\n- /model <model_name>\n\nShortcuts:\n\n${shortcuts}\n\nYou can also provide any Gemini model ID (e.g., gemini-2.0-flash).`
       );
       return { success: true, message };
     }
 
+    const requestedModel = requestedModelRaw.toLowerCase();
+    const resolvedModel = ModelService.resolveModel(requestedModel);
+
     let modelName: string;
-    if (requestedModel === 'pro') {
-      modelName = 'gemini-2.5-pro';
-    } else if (requestedModel === 'flash') {
-      modelName = 'gemini-2.5-flash';
+    let modelLabel: string;
+
+    if (resolvedModel) {
+      modelName = resolvedModel.id;
+      modelLabel = resolvedModel.displayName;
     } else if (requestedModel.startsWith('gemini-')) {
-      modelName = requestedModel;
+      modelName = requestedModelRaw;
+      modelLabel = modelName;
     } else {
       const message = MessageService.createErrorMessage(
-        `SYSTEM ERROR: Invalid model "${requestedModel}".\n\nUse "pro", "flash", or a full model name like "gemini-2.5-pro".`
+        `SYSTEM ERROR: Invalid model "${requestedModelRaw}".\n\nUse one of the shortcuts (${availableModels
+          .map(model => model.shortLabel.toLowerCase())
+          .join(', ')}) or provide a full Gemini model ID.`
       );
       return { success: false, message };
     }
 
     const message = MessageService.createSystemMessage(
-      `SYSTEM: Model set to ${modelName}.`
+      `SYSTEM: Model set to ${modelLabel}.`
     );
 
     return {
@@ -405,7 +420,7 @@ export class HandleCommandUseCase {
           usageMetadata?.totalTokenCount ??
           usageMetadata?.promptTokenCount ??
           0;
-        TokenCountService.addImageTokens('gemini-2.5-flash', imageTokenCount);
+        TokenCountService.addImageTokens(ModelService.getDefaultModel().id, imageTokenCount);
       }
 
       return {
