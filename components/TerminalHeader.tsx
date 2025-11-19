@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { ThemeColors } from '../domain/Theme';
 import { TokenCounter } from './TokenCounter';
+import { ModelService } from '../services/ModelService';
 
 interface TerminalHeaderProps {
   theme: ThemeColors;
@@ -14,8 +15,7 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
   const popupRef = useRef<HTMLDivElement>(null);
   const iconRef = useRef<HTMLButtonElement>(null);
 
-  // Get max tokens based on model
-  const maxTokens = modelName.includes('pro') ? 2_000_000 : 1_000_000;
+  const maxTokens = ModelService.getContextLimit(modelName) ?? ModelService.getDefaultModel().contextLimit;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {

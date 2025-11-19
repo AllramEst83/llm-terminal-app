@@ -1,5 +1,6 @@
 import type { ThemeName } from './Theme';
 import { Theme } from './Theme';
+import { ModelService } from '../services/ModelService';
 
 export class Settings {
   constructor(
@@ -15,7 +16,7 @@ export class Settings {
   static readonly DEFAULT_FONT_SIZE = 16;
   static readonly MIN_FONT_SIZE = 8;
   static readonly MAX_FONT_SIZE = 48;
-  static readonly DEFAULT_MODEL_NAME = 'gemini-2.5-flash';
+  static readonly DEFAULT_MODEL_NAME = ModelService.getDefaultModel().id;
   static readonly DEFAULT_THINKING_BUDGET = 8192;
 
   static createDefault(): Settings {
