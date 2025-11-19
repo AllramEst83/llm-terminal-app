@@ -8,9 +8,16 @@ interface TerminalHeaderProps {
   modelName: string;
   thinkingEnabled: boolean;
   inputTokenCount: number;
+  systemInfoVisible: boolean;
 }
 
-export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName, thinkingEnabled, inputTokenCount }) => {
+export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
+  theme,
+  modelName,
+  thinkingEnabled,
+  inputTokenCount,
+  systemInfoVisible,
+}) => {
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const iconRef = useRef<HTMLButtonElement>(null);
@@ -39,28 +46,37 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
     }
   }, [showPopup]);
 
+  useEffect(() => {
+    if (!systemInfoVisible && showPopup) {
+      setShowPopup(false);
+    }
+  }, [systemInfoVisible, showPopup]);
+
   return (
     <div 
       className="p-2 flex items-center justify-between border-b-2 header-lines relative"
       style={{ backgroundColor: theme.headerBg, color: theme.headerText, borderColor: theme.accent }}
     >
       <span className="text-lg">C:\\{'>'} GEMINI_CHAT.EXE</span>
-      <div className="hidden md:flex items-center space-x-3 text-sm">
-        <span style={{ color: theme.headerText, opacity: 0.8 }}>Model:</span>
-        <span style={{ color: theme.accent }}>{modelName}</span>
-        <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
-        <span style={{ color: theme.headerText, opacity: 0.8 }}>Thinking:</span>
-        <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
-        <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
-        <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
-      </div>
+      {systemInfoVisible && (
+        <div className="hidden md:flex items-center space-x-3 text-sm">
+          <span style={{ color: theme.headerText, opacity: 0.8 }}>Model:</span>
+          <span style={{ color: theme.accent }}>{modelName}</span>
+          <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
+          <span style={{ color: theme.headerText, opacity: 0.8 }}>Thinking:</span>
+          <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
+          <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
+          <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
+        </div>
+      )}
       <div className="md:hidden relative">
         <button
           ref={iconRef}
-          onClick={() => setShowPopup(!showPopup)}
+          onClick={() => systemInfoVisible && setShowPopup(!showPopup)}
           className="p-1 hover:opacity-80 transition-opacity"
-          style={{ color: theme.headerText }}
+          style={{ color: theme.headerText, opacity: systemInfoVisible ? 1 : 0.4 }}
           aria-label="Show model info"
+          disabled={!systemInfoVisible}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -77,7 +93,7 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({ theme, modelName
             />
           </svg>
         </button>
-        {showPopup && (
+        {showPopup && systemInfoVisible && (
           <div
             ref={popupRef}
             className="absolute right-0 top-full mt-2 rounded shadow-lg z-50 w-[280px]"

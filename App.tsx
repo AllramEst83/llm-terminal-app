@@ -601,6 +601,8 @@ export const App: React.FC = () => {
     );
   };
 
+  const systemInfoVisible = isKeyReady && booted;
+
   return (
     <div 
       className="flex flex-col p-2 sm:p-4"
@@ -627,7 +629,13 @@ export const App: React.FC = () => {
           overflow: 'hidden'
         }}
       >
-        <TerminalHeader theme={theme} modelName={settings.modelName} thinkingEnabled={settings.thinkingEnabled} inputTokenCount={inputTokenCount} />
+        <TerminalHeader
+          theme={theme}
+          modelName={settings.modelName}
+          thinkingEnabled={settings.thinkingEnabled}
+          inputTokenCount={inputTokenCount}
+          systemInfoVisible={systemInfoVisible}
+        />
         <div 
           ref={scrollRef}
           className="flex-1 p-4 overflow-y-auto relative scan-lines min-h-0"
