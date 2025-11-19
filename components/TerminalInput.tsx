@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { CommandDefinition } from '../domain/Command';
 import type { ThemeColors } from '../domain/Theme';
 import { CommandSuggestions } from './CommandSuggestions';
@@ -28,6 +28,7 @@ interface TerminalInputProps {
   onImageAttach?: (image: AttachedImage) => void;
   onImageRemove?: (index: number) => void;
   maxImages?: number;
+  onError?: (message: string) => void;
 }
 
 export const TerminalInput: React.FC<TerminalInputProps> = ({
@@ -48,18 +49,93 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   onImageAttach,
   onImageRemove,
   maxImages = 10,
+  onError,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounter = useRef(0);
+  const [isDragActive, setIsDragActive] = useState(false);
   
   const hasImages = attachedImages.length > 0;
   const isMaxImages = attachedImages.length >= maxImages;
+
+  // Helper function to validate image format
+  const isValidImageFormat = (mimeType: string): boolean => {
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+    return validTypes.includes(mimeType.toLowerCase());
+  };
 
   useEffect(() => {
     if (autoFocus && !disabled) {
       inputRef.current?.focus();
     }
   }, [autoFocus, disabled]);
+
+  const processImageFiles = useCallback(
+    (files: File[]) => {
+      if (!onImageAttach || files.length === 0) return;
+
+      const remainingSlots = maxImages - attachedImages.length;
+      if (remainingSlots <= 0) {
+        onError?.(`Maximum ${maxImages} images reached. Please remove some images before adding more.`);
+        return;
+      }
+
+      const imageFiles = files.filter((file) => file.type?.toLowerCase().startsWith('image/'));
+      if (imageFiles.length === 0) {
+        onError?.('Only image files can be attached. Please use PNG, JPEG, GIF, or WebP images.');
+        return;
+      }
+
+      const filesToProcess = imageFiles.slice(0, remainingSlots);
+      const skippedNonImages = files.length - imageFiles.length;
+      let invalidFormatCount = 0;
+      let readErrorCount = 0;
+
+      filesToProcess.forEach((file) => {
+        if (!isValidImageFormat(file.type)) {
+          invalidFormatCount++;
+          if (invalidFormatCount === 1) {
+            onError?.('Unsupported file format. Please use PNG, JPEG, GIF, or WebP images.');
+          }
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (loadEvent) => {
+          const dataUrl = loadEvent.target?.result as string;
+          const base64String = dataUrl.split(',')[1];
+
+          onImageAttach({
+            base64Data: base64String,
+            mimeType: file.type,
+            fileName: file.name || 'image.png',
+            dataUrl,
+          });
+        };
+
+        reader.onerror = () => {
+          readErrorCount++;
+          if (readErrorCount === 1) {
+            onError?.('Failed to read image file. Please try again.');
+          }
+        };
+
+        reader.readAsDataURL(file);
+      });
+
+      if (imageFiles.length > remainingSlots) {
+        onError?.(
+          `Only ${remainingSlots} of ${imageFiles.length} image(s) were added. Maximum ${maxImages} images allowed.`
+        );
+      }
+
+      if (skippedNonImages > 0) {
+        onError?.('Some files were skipped because they are not images.');
+      }
+    },
+    [attachedImages.length, maxImages, onError, onImageAttach]
+  );
 
   const handleSuggestionSelect = (command: string) => {
     onSuggestionSelect(command);
@@ -73,68 +149,80 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const items = e.clipboardData?.items;
-    if (!items || !onImageAttach || isMaxImages) return;
+    if (!items || !onImageAttach) return;
 
+    const imageFiles: File[] = [];
     for (const item of Array.from(items)) {
       if (item.kind === 'file' && item.type.startsWith('image/')) {
-        e.preventDefault();
-        
-        const imageBlob = item.getAsFile();
-        if (!imageBlob) continue;
-
-        const reader = new FileReader();
-        reader.onload = (loadEvent) => {
-          const dataUrl = loadEvent.target?.result as string;
-          const base64String = dataUrl.split(',')[1];
-          
-          onImageAttach({
-            base64Data: base64String,
-            mimeType: imageBlob.type,
-            fileName: imageBlob.name || 'pasted-image.png',
-            dataUrl: dataUrl,
-          });
-        };
-        
-        reader.readAsDataURL(imageBlob);
-        break;
+        const file = item.getAsFile();
+        if (file) {
+          imageFiles.push(file);
+        }
       }
     }
+
+    if (imageFiles.length === 0) return;
+
+    e.preventDefault();
+    processImageFiles(imageFiles);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || !onImageAttach) return;
 
-    // Process multiple files up to the max limit
-    const remainingSlots = maxImages - attachedImages.length;
-    const filesToProcess = Math.min(files.length, remainingSlots);
+    processImageFiles(Array.from(files));
 
-    for (let i = 0; i < filesToProcess; i++) {
-      const file = files[i];
-      if (!file.type.startsWith('image/')) {
-        continue;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        const dataUrl = loadEvent.target?.result as string;
-        const base64String = dataUrl.split(',')[1];
-        
-        onImageAttach({
-          base64Data: base64String,
-          mimeType: file.type,
-          fileName: file.name,
-          dataUrl: dataUrl,
-        });
-      };
-      
-      reader.readAsDataURL(file);
-    }
-    
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const hasSupportedImage = (items: DataTransferItemList | null | undefined) => {
+    if (!items) return false;
+    return Array.from(items).some(
+      (item) => item.kind === 'file' && (!item.type || item.type.toLowerCase().startsWith('image/'))
+    );
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current += 1;
+    if (hasSupportedImage(e.dataTransfer?.items) && !isDragActive) {
+      setIsDragActive(true);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    if (hasSupportedImage(e.dataTransfer?.items) && !isDragActive) {
+      setIsDragActive(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = Math.max(0, dragCounter.current - 1);
+    if (dragCounter.current === 0) {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    dragCounter.current = 0;
+
+    const files = e.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+
+    processImageFiles(Array.from(files));
+    e.dataTransfer?.clearData();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -239,7 +327,17 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
         </div>
       )}
       
-      <div className="p-2 flex items-center relative">
+      <div
+        className="p-2 flex items-center relative rounded transition-colors"
+        onDragEnter={disabled || isMaxImages ? undefined : handleDragEnter}
+        onDragOver={disabled || isMaxImages ? undefined : handleDragOver}
+        onDragLeave={disabled || isMaxImages ? undefined : handleDragLeave}
+        onDrop={disabled || isMaxImages ? undefined : handleDrop}
+        style={{
+          border: isDragActive ? `1px dashed ${theme.accent}` : '1px solid transparent',
+          backgroundColor: isDragActive ? `${theme.accent}15` : undefined,
+        }}
+      >
         {showSuggestions && suggestions.length > 0 && (
           <CommandSuggestions
             suggestions={suggestions}
@@ -256,11 +354,11 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
           className="mr-2 p-1 hover:opacity-80 transition-opacity relative"
           style={{ color: theme.accent, opacity: disabled || isMaxImages ? 0.3 : 1 }}
           title={
-            isMaxImages 
-              ? `Maximum ${maxImages} images reached` 
-              : hasImages 
-              ? `Add more images (${attachedImages.length}/${maxImages}) - Hold Ctrl/Cmd to select multiple`
-              : 'Attach images - Hold Ctrl/Cmd to select multiple, or paste'
+            isMaxImages
+              ? `Maximum ${maxImages} images reached`
+              : hasImages
+              ? `Add more images (${attachedImages.length}/${maxImages}) - drag & drop, paste, or use file picker`
+              : 'Attach images - drag & drop, paste, or use the file picker (Ctrl/Cmd for multi-select)'
           }
         >
           📎
@@ -300,7 +398,13 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
           autoFocus={autoFocus}
           readOnly={disabled}
           autoComplete="off"
-          placeholder={hasImages ? `${attachedImages.length} image${attachedImages.length > 1 ? 's' : ''} attached...` : ''}
+          placeholder={
+            hasImages
+              ? `${attachedImages.length} image${attachedImages.length > 1 ? 's' : ''} attached...`
+              : disabled
+              ? ''
+              : 'Type a command or drag & drop images...'
+          }
         />
       </div>
     </div>
