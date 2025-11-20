@@ -78,17 +78,40 @@ async function executeModelGeneration({
   apiKey,
   aspectRatio,
 }: ModelGenerationOptions): Promise<ImageGenerationResult> {
-  if (model.tokenCountModelId) {
-    const tokenCount = await TokenCountService.countTokensViaEndpoint(
-      prompt,
-      apiKey,
-      model.tokenCountModelId
-    );
+  // Validate token limits before making the API call
+  if (model.inputTokenLimit) {
+    if (model.tokenCountModelId) {
+      // Use countTokens endpoint if available
+      try {
+        const tokenCount = await TokenCountService.countTokensViaEndpoint(
+          prompt,
+          apiKey,
+          model.tokenCountModelId
+        );
 
-    if (model.inputTokenLimit && tokenCount > model.inputTokenLimit) {
-      throw new Error(
-        `Prompt exceeds ${model.displayName} token limit (${tokenCount.toLocaleString()} > ${model.inputTokenLimit.toLocaleString()}). Please shorten your prompt.`
-      );
+        if (tokenCount > model.inputTokenLimit) {
+          throw new Error(
+            `Prompt exceeds ${model.displayName} token limit (${tokenCount.toLocaleString()} > ${model.inputTokenLimit.toLocaleString()}). Please shorten your prompt.`
+          );
+        }
+      } catch (error) {
+        // If countTokens endpoint fails (e.g., not supported), log and continue
+        // The API will still enforce the limit and return an error if exceeded
+        console.warn(
+          `Failed to count tokens via endpoint for ${model.displayName}, continuing with request:`,
+          error
+        );
+      }
+    } else {
+      // For models without tokenCountModelId (like imagen-4.0), use character-based estimation
+      // Rough estimate: 1 token ≈ 4 characters (conservative estimate for imagen-4.0's 480 token limit)
+      const estimatedTokens = Math.ceil(prompt.length / 4);
+      
+      if (estimatedTokens > model.inputTokenLimit) {
+        throw new Error(
+          `Prompt appears to exceed ${model.displayName} token limit (estimated ${estimatedTokens.toLocaleString()} > ${model.inputTokenLimit.toLocaleString()} tokens). Please shorten your prompt.`
+        );
+      }
     }
   }
 
@@ -131,7 +154,7 @@ async function executeModelGeneration({
     const base64ImageBytes = response.generatedImages[0].image.imageBytes;
     return {
       imageData: base64ImageBytes,
-      usageMetadata: response.usageMetadata as GeminiUsageMetadata | undefined,
+      usageMetadata: (response as any).usageMetadata as GeminiUsageMetadata | undefined,
     };
   }
 

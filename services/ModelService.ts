@@ -100,6 +100,7 @@ const IMAGE_MODELS: Record<string, ImageModelDefinition> = {
     defaultAspectRatio: '1:1',
     inputTokenLimit: 32_768,
     tokenCountModelId: 'gemini-2.5-flash-image',
+    outputMimeType: 'image/png',
   },
   'imagen-4.0': {
     id: 'imagen-4.0',
@@ -112,8 +113,7 @@ const IMAGE_MODELS: Record<string, ImageModelDefinition> = {
     supportedAspectRatios: ['1:1', '3:4', '4:3', '16:9', '9:16'],
     defaultAspectRatio: '1:1',
     inputTokenLimit: 480,
-    tokenCountModelId: 'imagen-4.0-generate-001',
-    outputMimeType: 'image/png',
+    outputMimeType: 'image/jpeg',
   },
 };
 
