@@ -427,13 +427,7 @@ export class HandleCommandUseCase {
         `Generated image for: "${prompt}"${aspectInfo}${modelInfo}`
       ).withImageData(imageData);
 
-      if (selectedImageModel.tokenCountModelId) {
-        const imageTokenCount =
-          usageMetadata?.totalTokenCount ??
-          usageMetadata?.promptTokenCount ??
-          0;
-        TokenCountService.addImageTokens(ModelService.getDefaultModel().id, imageTokenCount);
-      }
+      TokenCountService.updateImageModelUsageFromMetadata(imageModelId, usageMetadata);
 
       return {
         success: true,
