@@ -632,7 +632,7 @@ export const App: React.FC = () => {
         <TerminalHeader
           theme={theme}
           modelName={settings.modelName}
-          thinkingEnabled={settings.thinkingEnabled}
+          thinkingEnabled={settings.getThinkingSettingsForModel(settings.modelName).enabled}
           inputTokenCount={inputTokenCount}
           systemInfoVisible={systemInfoVisible}
         />

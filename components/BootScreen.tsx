@@ -20,3 +20,4 @@ export const BootScreen: React.FC<BootScreenProps> = ({ sequence, theme }) => (
 
 
 
+
