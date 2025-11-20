@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">80s Terminal Chatbot</string>
+    <string name="title_activity_main">80s Terminal Chatbot</string>
+    <string name="package_name">com.terminalchatbot.app</string>
+    <string name="custom_url_scheme">com.terminalchatbot.app</string>
+</resources>
