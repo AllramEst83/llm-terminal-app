@@ -72,6 +72,10 @@ const CHAT_MODELS: Record<string, ModelDefinition> = {
   },
 };
 
+/*
+imagen-4.0-ultra-generate-001
+imagen-4.0-fast-generate-001
+*/
 const IMAGE_MODELS: Record<string, ImageModelDefinition> = {
   'nano-banana': {
     id: 'nano-banana',
