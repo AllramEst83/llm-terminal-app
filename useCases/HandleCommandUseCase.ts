@@ -1,4 +1,10 @@
-import { Settings } from '../domain/Settings';
+import {
+  Settings,
+  GEMINI_FLASH_MODEL_ID,
+  GEMINI_PRO_MODEL_ID,
+  GEMINI_3_PRO_MODEL_ID,
+  type ThinkingModelSettings,
+} from '../domain/Settings';
 import { Theme, type ThemeName } from '../domain/Theme';
 import { CommandService } from '../services/CommandService';
 import { ThemeService } from '../services/ThemeService';
@@ -10,10 +16,6 @@ import { Message } from '../domain/Message';
 import type { CommandResult } from '../domain/CommandResult';
 import { TokenCountService } from '../services/TokenCountService';
 import { ModelService, type ImageModelDefinition } from '../services/ModelService';
-
-const GEMINI_FLASH_MODEL_ID = 'gemini-2.5-flash';
-const GEMINI_PRO_MODEL_ID = 'gemini-2.5-pro';
-const GEMINI_3_PRO_MODEL_ID = 'gemini-3-pro-preview';
 
 const THINKING_BUDGET_MODEL_IDS = new Set([GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID]);
 const THINKING_MODEL_LABELS: Record<string, string> = {
@@ -27,7 +29,6 @@ const THINKING_MODEL_SHORTCUTS: Record<string, string> = {
   [GEMINI_3_PRO_MODEL_ID]: '3-pro',
 };
 const THINKING_SUPPORTED_MODELS_TEXT = `${THINKING_MODEL_SHORTCUTS[GEMINI_FLASH_MODEL_ID]}, ${THINKING_MODEL_SHORTCUTS[GEMINI_PRO_MODEL_ID]}, ${THINKING_MODEL_SHORTCUTS[GEMINI_3_PRO_MODEL_ID]}`;
-const SHARED_BUDGET_LABEL = 'Gemini 2.5 Flash & Pro';
 
 export class HandleCommandUseCase {
   constructor(
@@ -89,13 +90,7 @@ export class HandleCommandUseCase {
           ? `Configured (${this.currentSettings.apiKey.substring(0, 8)}...)`
           : 'Not configured');
 
-    const budgetDetail = this.currentSettings.thinkingBudget
-      ? `${this.currentSettings.thinkingBudget.toLocaleString()} tokens`
-      : `Default (${Settings.DEFAULT_THINKING_BUDGET.toLocaleString()} tokens)`;
-    const levelDetail = this.currentSettings.thinkingLevel.toUpperCase();
-    const thinkingStatus = this.currentSettings.thinkingEnabled
-      ? `Enabled (2.5 budget: ${budgetDetail}, 3-pro level: ${levelDetail})`
-      : 'Disabled';
+    const thinkingStatus = this.buildSettingsThinkingSummary();
 
     const audioStatus = this.currentSettings.audioEnabled ? 'Enabled' : 'Disabled';
 
@@ -224,9 +219,7 @@ export class HandleCommandUseCase {
         themeName: Theme.DEFAULT_THEME_NAME,
         apiKey: this.isStudioEnv ? this.currentSettings.apiKey : '',
         modelName: Settings.DEFAULT_MODEL_NAME,
-        thinkingEnabled: false,
-        thinkingBudget: undefined,
-        thinkingLevel: Settings.DEFAULT_THINKING_LEVEL,
+        thinkingSettings: Settings.createDefaultThinkingSettings(),
         audioEnabled: true,
       },
     };
@@ -354,38 +347,20 @@ export class HandleCommandUseCase {
   }
 
   private buildThinkingStatusMessage(): string {
-    const thinkingEnabled = this.currentSettings.thinkingEnabled;
-    const budgetDetail = this.currentSettings.thinkingBudget
-      ? `${this.currentSettings.thinkingBudget.toLocaleString()} tokens`
-      : `Default (${Settings.DEFAULT_THINKING_BUDGET.toLocaleString()} tokens)`;
-    const levelDetail = this.currentSettings.thinkingLevel.toUpperCase();
-    const budgetStatus = thinkingEnabled
-      ? `Enabled (${budgetDetail})`
-      : 'Disabled';
-    const levelStatus = thinkingEnabled
-      ? `Enabled (${levelDetail} level)`
-      : 'Disabled';
+    const flashSection = this.buildBudgetModelStatus(GEMINI_FLASH_MODEL_ID);
+    const proSection = this.buildBudgetModelStatus(GEMINI_PRO_MODEL_ID);
+    const threeSection = this.buildLevelModelStatus(GEMINI_3_PRO_MODEL_ID);
 
-    return `## THINKING STATUS
+    return `## CURRENT THINKING SETTINGS
 
-- **${THINKING_MODEL_LABELS[GEMINI_FLASH_MODEL_ID]}**
-  - Status: ${budgetStatus}
-  - Budget: ${budgetDetail}
+${flashSection}
 
-- **${THINKING_MODEL_LABELS[GEMINI_PRO_MODEL_ID]}**
-  - Status: ${budgetStatus}
-  - Budget: ${budgetDetail}
+${proSection}
 
-- **${THINKING_MODEL_LABELS[GEMINI_3_PRO_MODEL_ID]}**
-  - Status: ${levelStatus}
-  - Thinking level: ${levelDetail}
+${threeSection}
 
-- **Usage**
-  - /think flash <on|off|5000>
-  - /think 2.5-pro <on|off|5000>
-  - /think 3-pro <low|high|off>
 - **Notes**
-  - ${SHARED_BUDGET_LABEL} share the same thinking budget.
+  - Each model stores its own thinking budget or level.
   - Always include the model first: /think <model> <option>.
   - Supported models: ${THINKING_SUPPORTED_MODELS_TEXT}.`;
   }
@@ -424,18 +399,7 @@ export class HandleCommandUseCase {
   private createThinkUsageResponse(modelId: string): CommandResult {
     const label = THINKING_MODEL_LABELS[modelId];
     const shortcut = THINKING_MODEL_SHORTCUTS[modelId];
-    const usageLines = THINKING_BUDGET_MODEL_IDS.has(modelId)
-      ? [
-          `/think ${shortcut} on - Enable with default budget`,
-          `/think ${shortcut} off - Disable thinking`,
-          `/think ${shortcut} <tokens> - Enable with custom budget`,
-        ]
-      : [
-          `/think ${shortcut} high - Maximum reasoning depth`,
-          `/think ${shortcut} low - Lower latency & cost`,
-          `/think ${shortcut} off - Disable thinking`,
-        ];
-
+    const usageLines = this.getUsageLines(modelId);
     const usageBlock = usageLines.map(line => `  - ${line}`).join('\n');
 
     const message = MessageService.createSystemMessage(
@@ -452,34 +416,131 @@ ${usageBlock}
     return { success: false, message };
   }
 
+  private buildBudgetModelStatus(modelId: string): string {
+    const label = THINKING_MODEL_LABELS[modelId];
+    const config = this.currentSettings.getThinkingSettingsForModel(modelId);
+    const budgetValue = config.budget ?? Settings.DEFAULT_THINKING_BUDGET;
+    const budgetText = this.formatBudgetValue(budgetValue);
+    const status = config.enabled ? `Enabled (${budgetText})` : 'Disabled';
+    const usageBlock = this.buildUsageBlock(modelId);
+
+    return `${label}
+Status: ${status}
+Budget: ${budgetText}
+Usage:
+${usageBlock}`;
+  }
+
+  private buildLevelModelStatus(modelId: string): string {
+    const label = THINKING_MODEL_LABELS[modelId];
+    const config = this.currentSettings.getThinkingSettingsForModel(modelId);
+    const levelText = this.formatLevelValue(config.level);
+    const status = config.enabled ? `Enabled (${levelText} level)` : 'Disabled';
+    const usageBlock = this.buildUsageBlock(modelId);
+
+    return `${label}
+Status: ${status},
+Thinking level: ${levelText},
+Usage:
+${usageBlock}`;
+  }
+
+  private buildUsageBlock(modelId: string): string {
+    return this.getUsageLines(modelId)
+      .map(line => `  - ${line}`)
+      .join('\n');
+  }
+
+  private getUsageLines(modelId: string): string[] {
+    const shortcut = THINKING_MODEL_SHORTCUTS[modelId];
+    if (THINKING_BUDGET_MODEL_IDS.has(modelId)) {
+      return [
+        `/think ${shortcut} on - Enable with default budget`,
+        `/think ${shortcut} off - Disable thinking`,
+        `/think ${shortcut} <tokens> - Enable with custom budget`,
+      ];
+    }
+
+    return [
+      `/think ${shortcut} high - Maximum reasoning depth`,
+      `/think ${shortcut} low - Lower latency & cost`,
+      `/think ${shortcut} off - Disable thinking`,
+    ];
+  }
+
+  private updateThinkingSettingsMap(
+    modelId: string,
+    updater: (current: ThinkingModelSettings) => ThinkingModelSettings
+  ): Record<string, ThinkingModelSettings> {
+    const snapshot = this.currentSettings.getThinkingSettingsSnapshot();
+    const current = this.currentSettings.getThinkingSettingsForModel(modelId);
+    snapshot[modelId] = updater(current);
+    return snapshot;
+  }
+
+  private formatBudgetValue(budget: number): string {
+    const formatted = `${budget.toLocaleString()} tokens`;
+    return budget === Settings.DEFAULT_THINKING_BUDGET ? `Default (${formatted})` : formatted;
+  }
+
+  private formatLevelValue(level?: string): string {
+    return (level ?? Settings.DEFAULT_THINKING_LEVEL).toUpperCase();
+  }
+
+  private buildSettingsThinkingSummary(): string {
+    const flash = this.describeBudgetSummary(GEMINI_FLASH_MODEL_ID);
+    const pro = this.describeBudgetSummary(GEMINI_PRO_MODEL_ID);
+    const threePro = this.describeLevelSummary(GEMINI_3_PRO_MODEL_ID);
+    return `Flash ${flash} | 2.5-Pro ${pro} | 3-Pro ${threePro}`;
+  }
+
+  private describeBudgetSummary(modelId: string): string {
+    const config = this.currentSettings.getThinkingSettingsForModel(modelId);
+    const budget = this.formatBudgetValue(config.budget ?? Settings.DEFAULT_THINKING_BUDGET);
+    return config.enabled ? `ON (${budget})` : 'OFF';
+  }
+
+  private describeLevelSummary(modelId: string): string {
+    const config = this.currentSettings.getThinkingSettingsForModel(modelId);
+    const level = this.formatLevelValue(config.level);
+    return config.enabled ? `ON (${level})` : 'OFF';
+  }
+
   private applyThinkingBudget(rawArg: string, modelId: string): CommandResult {
     const normalized = rawArg.toLowerCase();
-    const budgetDisplayLabel = `${SHARED_BUDGET_LABEL}`;
+    const label = THINKING_MODEL_LABELS[modelId];
 
     if (normalized === 'off') {
+      const updatedSettings = this.updateThinkingSettingsMap(modelId, current => ({
+        ...current,
+        enabled: false,
+      }));
       const message = MessageService.createSystemMessage(
-        `SYSTEM: Thinking disabled for all models. ${budgetDisplayLabel} will no longer use extended reasoning.`
+        `SYSTEM: Thinking disabled for ${label}.`
       );
       return {
         success: true,
         message,
         settingsUpdate: {
-          thinkingEnabled: false,
-          thinkingBudget: undefined,
+          thinkingSettings: updatedSettings,
         },
       };
     }
 
     if (normalized === 'on') {
+      const updatedSettings = this.updateThinkingSettingsMap(modelId, current => ({
+        ...current,
+        enabled: true,
+        budget: current.budget ?? Settings.DEFAULT_THINKING_BUDGET,
+      }));
       const message = MessageService.createSystemMessage(
-        `SYSTEM: Thinking enabled for ${budgetDisplayLabel} with the default budget.`
+        `SYSTEM: Thinking enabled for ${label} with the default budget.`
       );
       return {
         success: true,
         message,
         settingsUpdate: {
-          thinkingEnabled: true,
-          thinkingBudget: undefined,
+          thinkingSettings: updatedSettings,
         },
       };
     }
@@ -492,15 +553,20 @@ ${usageBlock}
       return { success: false, message };
     }
 
+    const updatedSettings = this.updateThinkingSettingsMap(modelId, current => ({
+      ...current,
+      enabled: true,
+      budget,
+    }));
+
     const message = MessageService.createSystemMessage(
-      `SYSTEM: Thinking enabled for ${budgetDisplayLabel} with a budget of ${budget.toLocaleString()} tokens.`
+      `SYSTEM: Thinking enabled for ${label} with a budget of ${budget.toLocaleString()} tokens.`
     );
     return {
       success: true,
       message,
       settingsUpdate: {
-        thinkingEnabled: true,
-        thinkingBudget: budget,
+        thinkingSettings: updatedSettings,
       },
     };
   }
@@ -510,14 +576,18 @@ ${usageBlock}
     const label = THINKING_MODEL_LABELS[modelId];
 
     if (normalized === 'off') {
+      const updatedSettings = this.updateThinkingSettingsMap(modelId, current => ({
+        ...current,
+        enabled: false,
+      }));
       const message = MessageService.createSystemMessage(
-        `SYSTEM: Thinking disabled. ${label} will respond without extended reasoning.`
+        `SYSTEM: Thinking disabled for ${label}.`
       );
       return {
         success: true,
         message,
         settingsUpdate: {
-          thinkingEnabled: false,
+          thinkingSettings: updatedSettings,
         },
       };
     }
@@ -536,6 +606,12 @@ ${usageBlock}
       return { success: false, message };
     }
 
+    const updatedSettings = this.updateThinkingSettingsMap(modelId, current => ({
+      ...current,
+      enabled: true,
+      level,
+    }));
+
     const message = MessageService.createSystemMessage(
       `SYSTEM: Thinking enabled for ${label} with ${level.toUpperCase()} reasoning depth.`
     );
@@ -543,8 +619,7 @@ ${usageBlock}
       success: true,
       message,
       settingsUpdate: {
-        thinkingEnabled: true,
-        thinkingLevel: level,
+        thinkingSettings: updatedSettings,
       },
     };
   }

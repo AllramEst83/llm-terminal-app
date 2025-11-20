@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import type { GenerateContentResponse } from "@google/genai";
 import type { Message, Source, MessageImage } from '../domain/Message';
-import type { ThinkingLevel } from '../domain/Settings';
+import type { ThinkingModelSettings } from '../domain/Settings';
 import { ModelService } from './ModelService';
 
 export interface GeminiUsageMetadata {
@@ -78,15 +78,14 @@ function extractUsageMetadata(rawMetadata: any): GeminiUsageMetadata | undefined
 }
 
 const DEFAULT_THINKING_BUDGET = 8192;
+const DEFAULT_THINKING_LEVEL = 'high';
 const BUDGET_MODELS = new Set(['gemini-2.5-flash', 'gemini-2.5-pro']);
 
 function buildThinkingConfig(
   modelName: string,
-  thinkingEnabled: boolean,
-  thinkingBudget: number | undefined,
-  thinkingLevel: ThinkingLevel
+  thinkingSettings: ThinkingModelSettings
 ) {
-  if (!thinkingEnabled) {
+  if (!thinkingSettings?.enabled) {
     return undefined;
   }
 
@@ -95,7 +94,7 @@ function buildThinkingConfig(
   if (canonicalModelId === 'gemini-3-pro-preview') {
     return {
       thinkingConfig: {
-        thinkingLevel,
+        thinkingLevel: thinkingSettings.level ?? DEFAULT_THINKING_LEVEL,
       },
     };
   }
@@ -103,7 +102,7 @@ function buildThinkingConfig(
   if (BUDGET_MODELS.has(canonicalModelId)) {
     return {
       thinkingConfig: {
-        thinkingBudget: thinkingBudget || DEFAULT_THINKING_BUDGET,
+        thinkingBudget: thinkingSettings.budget ?? DEFAULT_THINKING_BUDGET,
       },
     };
   }
@@ -116,9 +115,7 @@ export async function sendMessageToGemini(
   newMessage: string,
   apiKey: string,
   modelName: string,
-  thinkingEnabled: boolean,
-  thinkingBudget: number | undefined,
-  thinkingLevel: ThinkingLevel,
+  thinkingSettings: ThinkingModelSettings,
   onStream: (chunkText: string, isFirstChunk: boolean) => void,
   onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata) => void,
   imageData?: string,
@@ -129,9 +126,7 @@ export async function sendMessageToGemini(
     const ai = getAiInstance(apiKey);
     const thinkingOverrides = buildThinkingConfig(
       modelName,
-      thinkingEnabled,
-      thinkingBudget,
-      thinkingLevel
+      thinkingSettings
     );
 
     const chat = ai.chats.create({

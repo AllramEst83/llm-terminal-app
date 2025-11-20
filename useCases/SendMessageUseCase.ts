@@ -26,14 +26,14 @@ export class SendMessageUseCase {
   ): Promise<Message> {
     const userMessage = MessageService.createUserMessage(inputText, imageData, imageMimeType, images);
 
+    const thinkingSettings = this.settings.getThinkingSettingsForModel(this.settings.modelName);
+
     await sendMessageToGemini(
       this.currentMessages,
       inputText,
       this.settings.apiKey,
       this.settings.modelName,
-      this.settings.thinkingEnabled,
-      this.settings.thinkingBudget,
-      this.settings.thinkingLevel,
+      thinkingSettings,
       (chunkText, isFirstChunk) => {
         onStreamCallback(chunkText, isFirstChunk);
       },

@@ -34,16 +34,8 @@ export class ManageSettingsUseCase {
       newSettings = newSettings.withModelName(updates.modelName);
     }
 
-    if (updates.thinkingEnabled !== undefined) {
-      newSettings = newSettings.withThinkingEnabled(updates.thinkingEnabled);
-    }
-
-    if (updates.thinkingBudget !== undefined) {
-      newSettings = newSettings.withThinkingBudget(updates.thinkingBudget);
-    }
-
-    if (updates.thinkingLevel !== undefined) {
-      newSettings = newSettings.withThinkingLevel(updates.thinkingLevel);
+    if (updates.thinkingSettings !== undefined) {
+      newSettings = newSettings.withThinkingSettingsMap(updates.thinkingSettings);
     }
 
     if (updates.audioEnabled !== undefined) {

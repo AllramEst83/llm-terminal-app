@@ -4,17 +4,29 @@ import { ModelService } from '../services/ModelService';
 
 export type ThinkingLevel = 'low' | 'high';
 
+export interface ThinkingModelSettings {
+  enabled: boolean;
+  budget?: number;
+  level?: ThinkingLevel;
+}
+
+export const GEMINI_FLASH_MODEL_ID = 'gemini-2.5-flash';
+export const GEMINI_PRO_MODEL_ID = 'gemini-2.5-pro';
+export const GEMINI_3_PRO_MODEL_ID = 'gemini-3-pro-preview';
+
+const BUDGET_MODEL_IDS = new Set<string>([GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID]);
+
 export class Settings {
   constructor(
     public readonly fontSize: number,
     public readonly themeName: ThemeName,
     public readonly apiKey: string,
     public readonly modelName: string,
-    public readonly thinkingEnabled: boolean,
-    public readonly thinkingBudget: number | undefined,
-    public readonly thinkingLevel: ThinkingLevel,
+    public readonly thinkingSettings: Record<string, ThinkingModelSettings>,
     public readonly audioEnabled: boolean = true
-  ) {}
+  ) {
+    this.thinkingSettings = Settings.normalizeThinkingSettings(thinkingSettings);
+  }
 
   static readonly DEFAULT_FONT_SIZE = 16;
   static readonly MIN_FONT_SIZE = 8;
@@ -29,9 +41,7 @@ export class Settings {
       Theme.DEFAULT_THEME_NAME,
       '',
       this.DEFAULT_MODEL_NAME,
-      false,
-      undefined,
-      this.DEFAULT_THINKING_LEVEL,
+      this.createDefaultThinkingSettings(),
       true
     );
   }
@@ -49,9 +59,7 @@ export class Settings {
       this.themeName,
       this.apiKey,
       this.modelName,
-      this.thinkingEnabled,
-      this.thinkingBudget,
-      this.thinkingLevel,
+      this.thinkingSettings,
       this.audioEnabled
     );
   }
@@ -65,9 +73,7 @@ export class Settings {
       themeName,
       this.apiKey,
       this.modelName,
-      this.thinkingEnabled,
-      this.thinkingBudget,
-      this.thinkingLevel,
+      this.thinkingSettings,
       this.audioEnabled
     );
   }
@@ -78,9 +84,7 @@ export class Settings {
       this.themeName,
       apiKey,
       this.modelName,
-      this.thinkingEnabled,
-      this.thinkingBudget,
-      this.thinkingLevel,
+      this.thinkingSettings,
       this.audioEnabled
     );
   }
@@ -91,48 +95,7 @@ export class Settings {
       this.themeName,
       this.apiKey,
       modelName,
-      this.thinkingEnabled,
-      this.thinkingBudget,
-      this.thinkingLevel,
-      this.audioEnabled
-    );
-  }
-
-  withThinkingEnabled(thinkingEnabled: boolean): Settings {
-    return new Settings(
-      this.fontSize,
-      this.themeName,
-      this.apiKey,
-      this.modelName,
-      thinkingEnabled,
-      this.thinkingBudget,
-      this.thinkingLevel,
-      this.audioEnabled
-    );
-  }
-
-  withThinkingBudget(thinkingBudget: number | undefined): Settings {
-    return new Settings(
-      this.fontSize,
-      this.themeName,
-      this.apiKey,
-      this.modelName,
-      this.thinkingEnabled,
-      thinkingBudget,
-      this.thinkingLevel,
-      this.audioEnabled
-    );
-  }
-
-  withThinkingLevel(thinkingLevel: ThinkingLevel): Settings {
-    return new Settings(
-      this.fontSize,
-      this.themeName,
-      this.apiKey,
-      this.modelName,
-      this.thinkingEnabled,
-      this.thinkingBudget,
-      thinkingLevel,
+      this.thinkingSettings,
       this.audioEnabled
     );
   }
@@ -143,15 +106,106 @@ export class Settings {
       this.themeName,
       this.apiKey,
       this.modelName,
-      this.thinkingEnabled,
-      this.thinkingBudget,
-      this.thinkingLevel,
+      this.thinkingSettings,
       audioEnabled
     );
   }
 
   reset(): Settings {
     return Settings.createDefault();
+  }
+
+  static createDefaultThinkingSettings(): Record<string, ThinkingModelSettings> {
+    return {
+      [GEMINI_FLASH_MODEL_ID]: { enabled: false, budget: this.DEFAULT_THINKING_BUDGET },
+      [GEMINI_PRO_MODEL_ID]: { enabled: false, budget: this.DEFAULT_THINKING_BUDGET },
+      [GEMINI_3_PRO_MODEL_ID]: { enabled: false, level: this.DEFAULT_THINKING_LEVEL },
+    };
+  }
+
+  get thinkingEnabled(): boolean {
+    return Object.values(this.thinkingSettings).some(setting => setting.enabled);
+  }
+
+  getThinkingSettingsSnapshot(): Record<string, ThinkingModelSettings> {
+    return Settings.cloneThinkingSettings(this.thinkingSettings);
+  }
+
+  withThinkingSettingsMap(thinkingSettings: Record<string, ThinkingModelSettings>): Settings {
+    return new Settings(
+      this.fontSize,
+      this.themeName,
+      this.apiKey,
+      this.modelName,
+      thinkingSettings,
+      this.audioEnabled
+    );
+  }
+
+  getThinkingSettingsForModel(modelName: string): ThinkingModelSettings {
+    const canonicalId = ModelService.getCanonicalModelId(modelName);
+    const settings = this.thinkingSettings[canonicalId];
+    if (settings) {
+      return { ...settings };
+    }
+
+    return Settings.createDefaultSettingsForModel(canonicalId);
+  }
+
+  private static normalizeThinkingSettings(
+    settings: Record<string, ThinkingModelSettings> | undefined
+  ): Record<string, ThinkingModelSettings> {
+    const normalized: Record<string, ThinkingModelSettings> = {};
+    const source = settings ?? {};
+
+    [GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID, GEMINI_3_PRO_MODEL_ID].forEach(id => {
+      normalized[id] = Settings.createNormalizedModelSettings(id, source[id]);
+    });
+
+    return normalized;
+  }
+
+  private static createNormalizedModelSettings(
+    modelId: string,
+    existing?: ThinkingModelSettings
+  ): ThinkingModelSettings {
+    const base = Settings.createDefaultSettingsForModel(modelId);
+    if (!existing) {
+      return base;
+    }
+
+    return {
+      enabled: existing.enabled ?? base.enabled,
+      budget: BUDGET_MODEL_IDS.has(modelId)
+        ? existing.budget ?? base.budget
+        : undefined,
+      level: !BUDGET_MODEL_IDS.has(modelId)
+        ? existing.level ?? base.level ?? this.DEFAULT_THINKING_LEVEL
+        : undefined,
+    };
+  }
+
+  private static createDefaultSettingsForModel(modelId: string): ThinkingModelSettings {
+    if (BUDGET_MODEL_IDS.has(modelId)) {
+      return {
+        enabled: false,
+        budget: this.DEFAULT_THINKING_BUDGET,
+      };
+    }
+
+    return {
+      enabled: false,
+      level: this.DEFAULT_THINKING_LEVEL,
+    };
+  }
+
+  private static cloneThinkingSettings(
+    settings: Record<string, ThinkingModelSettings>
+  ): Record<string, ThinkingModelSettings> {
+    return Object.entries(settings).reduce<Record<string, ThinkingModelSettings>>((acc, [key, value]) => {
+      acc[key] = { ...value };
+      return acc;
+    }, {});
   }
 }
 
