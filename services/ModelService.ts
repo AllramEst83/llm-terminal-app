@@ -112,6 +112,7 @@ const IMAGE_MODELS: Record<string, ImageModelDefinition> = {
     supportedAspectRatios: ['1:1', '3:4', '4:3', '16:9', '9:16'],
     defaultAspectRatio: '1:1',
     inputTokenLimit: 480,
+    tokenCountModelId: 'imagen-4.0-generate-001',
     outputMimeType: 'image/png',
   },
 };
