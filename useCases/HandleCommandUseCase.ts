@@ -5,11 +5,11 @@ import { ThemeService } from '../services/ThemeService';
 import { ApiKeyService } from '../services/ApiKeyService';
 import { MessageService } from '../services/MessageService';
 import { BrowserInfoService } from '../services/BrowserInfoService';
-import { generateImage, type ImageModel } from '../services/imageService';
+import { generateImage } from '../services/imageService';
 import { Message } from '../domain/Message';
 import type { CommandResult } from '../domain/CommandResult';
 import { TokenCountService } from '../services/TokenCountService';
-import { ModelService } from '../services/ModelService';
+import { ModelService, type ImageModelDefinition } from '../services/ModelService';
 
 export class HandleCommandUseCase {
   constructor(
@@ -356,17 +356,21 @@ export class HandleCommandUseCase {
   }
 
   private async handleImage(args: string[]): Promise<CommandResult> {
+    const defaultImageModel = ModelService.getDefaultImageModel();
+    const imageModels = ModelService.listImageModels();
+    const usageMessage = this.buildImageUsageMessage(imageModels, defaultImageModel);
+
     if (args.length === 0) {
       const message = MessageService.createErrorMessage(
-        'Usage: /image <prompt> [--aspect <ratio>] [--model <model>]\n\nExamples:\n  /image a cat\n  /image a cat --aspect 16:9\n  /image a cat --model nano-banana\n  /image a cat --aspect 9:16 --model imagen-4.0\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4\nSupported models: nano-banana (default), imagen-4.0'
+        usageMessage
       );
       return { success: false, message };
     }
 
     // Parse arguments: look for --aspect and --model flags
     let promptParts: string[] = [];
-    let aspectRatio = '1:1'; // default
-    let imageModel: ImageModel = 'nano-banana'; // default to Nano Banana
+    let aspectRatio: string = defaultImageModel.defaultAspectRatio;
+    let imageModelId: string = defaultImageModel.id;
     let i = 0;
 
     while (i < args.length) {
@@ -374,12 +378,13 @@ export class HandleCommandUseCase {
         aspectRatio = args[i + 1];
         i += 2;
       } else if (args[i] === '--model' && i + 1 < args.length) {
-        const modelArg = args[i + 1].toLowerCase();
-        if (modelArg === 'nano-banana' || modelArg === 'imagen-4.0') {
-          imageModel = modelArg as ImageModel;
+        const modelArg = args[i + 1];
+        const resolvedModel = ModelService.resolveImageModel(modelArg);
+        if (resolvedModel) {
+          imageModelId = resolvedModel.id;
         } else {
           const message = MessageService.createErrorMessage(
-            `Invalid model: "${args[i + 1]}"\n\nSupported models: nano-banana (default), imagen-4.0\n\nExample: /image a cat --model nano-banana`
+            `Invalid model: "${args[i + 1]}"\n\n${usageMessage}`
           );
           return { success: false, message };
         }
@@ -393,11 +398,12 @@ export class HandleCommandUseCase {
     const prompt = promptParts.join(' ').trim();
     
     if (!prompt) {
-      const message = MessageService.createErrorMessage(
-        'Usage: /image <prompt> [--aspect <ratio>] [--model <model>]\n\nExamples:\n  /image a cat\n  /image a cat --aspect 16:9\n  /image a cat --model nano-banana\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4\nSupported models: nano-banana (default), imagen-4.0'
-      );
+      const message = MessageService.createErrorMessage(usageMessage);
       return { success: false, message };
     }
+
+    const selectedImageModel =
+      ModelService.resolveImageModel(imageModelId) ?? defaultImageModel;
 
     try {
       const apiKey = await ApiKeyService.getApiKey();
@@ -408,14 +414,20 @@ export class HandleCommandUseCase {
         return { success: false, message };
       }
 
-      const { imageData, usageMetadata } = await generateImage(prompt, apiKey, aspectRatio, imageModel);
-      const aspectInfo = aspectRatio !== '1:1' ? ` (${aspectRatio})` : '';
-      const modelInfo = imageModel !== 'nano-banana' ? ` [${imageModel}]` : '';
+      const { imageData, usageMetadata } = await generateImage(
+        prompt,
+        apiKey,
+        aspectRatio,
+        imageModelId
+      );
+      const aspectInfo =
+        aspectRatio !== selectedImageModel.defaultAspectRatio ? ` (${aspectRatio})` : '';
+      const modelInfo = imageModelId !== defaultImageModel.id ? ` [${imageModelId}]` : '';
       const message = MessageService.createSystemMessage(
         `Generated image for: "${prompt}"${aspectInfo}${modelInfo}`
       ).withImageData(imageData);
 
-      if (imageModel === 'nano-banana') {
+      if (selectedImageModel.tokenCountModelId) {
         const imageTokenCount =
           usageMetadata?.totalTokenCount ??
           usageMetadata?.promptTokenCount ??
@@ -433,10 +445,13 @@ export class HandleCommandUseCase {
       
       if (error instanceof Error) {
         const errorMsg = error.message.toLowerCase();
-        if (errorMsg.includes('exceeds') && (errorMsg.includes('token limit') || errorMsg.includes('nano banana'))) {
-          errorMessage = `SYSTEM ERROR: ${error.message}\n\nThe image prompt is too long. Nano Banana has a maximum input limit of 32,768 tokens.\n\nPlease shorten your prompt and try again.`;
+        if (errorMsg.includes('exceeds') && errorMsg.includes('token limit')) {
+          const limit = selectedImageModel.inputTokenLimit ?? defaultImageModel.inputTokenLimit ?? 0;
+          errorMessage = `SYSTEM ERROR: ${error.message}\n\nThe image prompt is too long. ${selectedImageModel.displayName} has a maximum input limit of ${limit.toLocaleString()} tokens.\n\nPlease shorten your prompt and try again.`;
         } else if (errorMsg.includes('invalid aspect ratio')) {
-          errorMessage = `SYSTEM ERROR: ${error.message}\n\nSupported aspect ratios: 1:1 (default), 16:9, 9:16, 4:3, 3:4\n\nExample: /image a cat --aspect 16:9`;
+          const aspectList = selectedImageModel.supportedAspectRatios.join(', ');
+          const example = this.getImageModelExamples(selectedImageModel.id)[0] ?? '/image a cat';
+          errorMessage = `SYSTEM ERROR: ${error.message}\n\n${selectedImageModel.displayName} supports: ${aspectList}\n\nExample: ${example}`;
         } else if (errorMsg.includes('api key') || errorMsg.includes('permission') || errorMsg.includes('invalid')) {
           errorMessage = `SYSTEM ERROR: ${error.message}\n\nTroubleshooting:\n- Verify your API key is correct\n- Ensure Imagen API is enabled in Google AI Studio\n- Check that your API key has access to image generation\n- Try updating your key: /apikey <your_key>`;
         } else if (errorMsg.includes('quota') || errorMsg.includes('rate limit')) {
@@ -444,7 +459,9 @@ export class HandleCommandUseCase {
         } else if (errorMsg.includes('policy') || errorMsg.includes('violation')) {
           errorMessage = 'SYSTEM ERROR: Content policy violation. Please try a different prompt.';
         } else if (errorMsg.includes('not found') || errorMsg.includes('404')) {
-          errorMessage = `SYSTEM ERROR: Image generation API not available.\n\nThe ${imageModel === 'nano-banana' ? 'Gemini 2.5 Flash Image (Nano Banana)' : 'Imagen'} API may not be enabled for your API key or may not be available in your region.\n\nPlease check:\n- Enable the image generation API in Google AI Studio\n- Verify your API key has the necessary permissions\n- Try using a different model: /image <prompt> --model ${imageModel === 'nano-banana' ? 'imagen-4.0' : 'nano-banana'}`;
+          const fallbackModelId =
+            imageModels.find(model => model.id !== imageModelId)?.id ?? defaultImageModel.id;
+          errorMessage = `SYSTEM ERROR: Image generation API not available.\n\nThe ${selectedImageModel.displayName} API may not be enabled for your API key or may not be available in your region.\n\nPlease check:\n- Enable the image generation API in Google AI Studio\n- Verify your API key has the necessary permissions\n- Try using a different model: /image <prompt> --model ${fallbackModelId}`;
         } else {
           errorMessage = `SYSTEM ERROR: ${error.message}`;
         }
@@ -496,6 +513,43 @@ export class HandleCommandUseCase {
         `SYSTEM ERROR: Invalid audio setting "${arg}".\n\nUse "on" or "off" (e.g., /audio on).`
       );
       return { success: false, message };
+    }
+  }
+
+  private buildImageUsageMessage(
+    imageModels: ImageModelDefinition[],
+    defaultImageModel: ImageModelDefinition
+  ): string {
+    const modelSections = imageModels
+      .map(model => {
+        const defaultLabel = model.id === defaultImageModel.id ? ' (default)' : '';
+        const aspectList = model.supportedAspectRatios.join(', ');
+        const examples = this.getImageModelExamples(model.id);
+        const formattedExamples = examples.length
+          ? `\n  - Examples:\n${examples.map(example => `    - ${example}`).join('\n')}`
+          : '';
+        return `- **${model.displayName}** (${model.id}${defaultLabel})\n  - Aspect ratios: ${aspectList}${formattedExamples}`;
+      })
+      .join('\n');
+
+    return `Usage: /image <prompt> [--aspect <ratio>] [--model <model>]\n\nSupported models:\n${modelSections}`;
+  }
+
+  private getImageModelExamples(modelId: string): string[] {
+    switch (modelId) {
+      case 'nano-banana':
+        return [
+          '/image a cat',
+          '/image a cat --aspect 16:9',
+          '/image a cat --model nano-banana',
+        ];
+      case 'imagen-4.0':
+        return [
+          '/image a cat --model imagen-4.0',
+          '/image a cat --aspect 9:16 --model imagen-4.0',
+        ];
+      default:
+        return ['/image a cat', `/image a cat --model ${modelId}`];
     }
   }
 
