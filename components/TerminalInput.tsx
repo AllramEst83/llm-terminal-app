@@ -10,11 +10,21 @@ export interface AttachedImage {
   dataUrl: string;
 }
 
+// Mobile device detection
+const isMobileDevice = (): boolean => {
+  return (
+    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    (window.visualViewport && window.visualViewport.height < window.innerHeight * 0.9) ||
+    ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints > 0)
+  );
+};
+
 interface TerminalInputProps {
   input: string;
   onChange: (value: string) => void;
   onSend: () => void;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   suggestions: CommandDefinition[];
   showSuggestions: boolean;
   activeSuggestionIndex: number;
@@ -51,13 +61,34 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   maxImages = 10,
   onError,
 }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   const hasImages = attachedImages.length > 0;
   const isMaxImages = attachedImages.length >= maxImages;
+
+  // Detect mobile device on mount
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+  }, []);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+    // Set height based on scrollHeight, but cap at maxHeight
+    const scrollHeight = textarea.scrollHeight;
+    const maxHeight = 200; // pixels
+    const minHeight = 24; // pixels (1.5em at default font size)
+    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+    textarea.style.height = `${newHeight}px`;
+  }, [input]);
 
   // Helper function to validate image format
   const isValidImageFormat = (mimeType: string): boolean => {
@@ -147,7 +178,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
     }, 0);
   };
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = e.clipboardData?.items;
     if (!items || !onImageAttach) return;
 
@@ -225,7 +256,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
     e.dataTransfer?.clearData();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Handle suggestions navigation when suggestions are visible
     if (showSuggestions && suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
@@ -249,10 +280,25 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
       }
     }
 
-    // Handle Enter key for sending messages
+    // Handle Enter key behavior:
+    // - Desktop: Ctrl+Enter (or Cmd+Enter on Mac) submits, Enter adds newline
+    // - Mobile: Enter always adds newline (submit via button)
     if (e.key === 'Enter' && !showSuggestions) {
-      onSend();
-      return;
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      
+      // On desktop, Ctrl+Enter submits, Enter adds newline
+      if (!isMobile && isCtrlOrCmd) {
+        e.preventDefault();
+        onSend();
+        return;
+      }
+      
+      // On mobile, Enter always adds newline (no preventDefault)
+      // On desktop without Ctrl, Enter adds newline (default behavior)
+      if (!isMobile && !isCtrlOrCmd) {
+        // Allow default behavior (newline)
+        return;
+      }
     }
 
     // For arrow keys when suggestions are not shown, let parent handle history navigation
@@ -328,7 +374,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
       )}
       
       <div
-        className="p-2 flex items-center relative rounded transition-colors"
+        className="p-2 flex items-start relative rounded transition-colors"
         onDragEnter={disabled || isMaxImages ? undefined : handleDragEnter}
         onDragOver={disabled || isMaxImages ? undefined : handleDragOver}
         onDragLeave={disabled || isMaxImages ? undefined : handleDragLeave}
@@ -351,7 +397,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isMaxImages}
-          className="mr-2 p-1 hover:opacity-80 transition-opacity relative"
+          className="mr-2 p-1 hover:opacity-80 transition-opacity relative flex-shrink-0 mt-1"
           style={{ color: theme.accent, opacity: disabled || isMaxImages ? 0.3 : 1 }}
           title={
             isMaxImages
@@ -385,27 +431,61 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
           className="hidden"
         />
         
-        <span style={{ color: theme.prompt }} className="mr-2">{'>'}</span>
-        <input
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onPaste={handlePaste}
-          className="bg-transparent border-none flex-1 focus:outline-none"
-          style={{ color: theme.text, opacity: disabled ? 0.5 : 1 }}
-          autoFocus={autoFocus}
-          readOnly={disabled}
-          autoComplete="off"
-          placeholder={
-            hasImages
-              ? `${attachedImages.length} image${attachedImages.length > 1 ? 's' : ''} attached...`
-              : disabled
-              ? ''
-              : 'Type a command or drag & drop images...'
-          }
-        />
+        <span style={{ color: theme.prompt }} className="mr-2 flex-shrink-0 mt-1">{'>'}</span>
+        <div className="flex-1 flex items-end gap-2 min-w-0">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            className="bg-transparent border-none flex-1 focus:outline-none resize-none"
+            style={{ 
+              color: theme.text, 
+              opacity: disabled ? 0.5 : 1,
+              minHeight: '24px',
+              maxHeight: '200px',
+              lineHeight: '1.5em',
+              fontFamily: 'inherit',
+              fontSize: 'inherit',
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+            }}
+            autoFocus={autoFocus}
+            readOnly={disabled}
+            autoComplete="off"
+            placeholder={
+              hasImages
+                ? `${attachedImages.length} image${attachedImages.length > 1 ? 's' : ''} attached...`
+                : disabled
+                ? ''
+                : isMobile
+                ? 'Type a command or drag & drop images...'
+                : 'Type a command or drag & drop images... (Ctrl+Enter to send)'
+            }
+            rows={1}
+            wrap="soft"
+          />
+          {/* Submit button for mobile devices */}
+          {isMobile && (
+            <button
+              onClick={onSend}
+              disabled={disabled || (input.trim() === '' && attachedImages.length === 0)}
+              className="px-3 py-1 font-bold flex-shrink-0 transition-opacity"
+              style={{
+                backgroundColor: theme.accent,
+                color: theme.background,
+                opacity: disabled || (input.trim() === '' && attachedImages.length === 0) ? 0.3 : 1,
+                borderRadius: '2px',
+              }}
+              title="Send message"
+            >
+              SEND
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

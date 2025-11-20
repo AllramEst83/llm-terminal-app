@@ -550,7 +550,7 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Unlock audio on user interaction
     unlockAudio();
     
