@@ -7,6 +7,7 @@ const FONT_SIZE_STORAGE_KEY = 'terminal_fontSize';
 const MODEL_NAME_STORAGE_KEY = 'terminal_modelName';
 const THINKING_ENABLED_STORAGE_KEY = 'terminal_thinkingEnabled';
 const THINKING_BUDGET_STORAGE_KEY = 'terminal_thinkingBudget';
+const THINKING_LEVEL_STORAGE_KEY = 'terminal_thinkingLevel';
 const AUDIO_ENABLED_STORAGE_KEY = 'terminal_audioEnabled';
 
 export class SettingsRepository {
@@ -29,12 +30,25 @@ export class SettingsRepository {
       THINKING_BUDGET_STORAGE_KEY,
       undefined
     );
+    const thinkingLevel = StorageService.get(
+      THINKING_LEVEL_STORAGE_KEY,
+      Settings.DEFAULT_THINKING_LEVEL
+    );
     const audioEnabled = StorageService.get<boolean>(
       AUDIO_ENABLED_STORAGE_KEY,
       true
     );
 
-    return new Settings(fontSize, themeName, apiKey, modelName, thinkingEnabled, thinkingBudget, audioEnabled);
+    return new Settings(
+      fontSize,
+      themeName,
+      apiKey,
+      modelName,
+      thinkingEnabled,
+      thinkingBudget,
+      thinkingLevel,
+      audioEnabled
+    );
   }
 
   static async save(settings: Settings): Promise<void> {
@@ -46,9 +60,10 @@ export class SettingsRepository {
     const thinkingBudgetSaved = settings.thinkingBudget !== undefined
       ? StorageService.set(THINKING_BUDGET_STORAGE_KEY, settings.thinkingBudget)
       : (StorageService.remove(THINKING_BUDGET_STORAGE_KEY), true);
+    const thinkingLevelSaved = StorageService.set(THINKING_LEVEL_STORAGE_KEY, settings.thinkingLevel);
     const audioEnabledSaved = StorageService.set(AUDIO_ENABLED_STORAGE_KEY, settings.audioEnabled);
     
-    if (!fontSizeSaved || !themeSaved || !apiKeySaved || !modelNameSaved || !thinkingEnabledSaved || !thinkingBudgetSaved || !audioEnabledSaved) {
+    if (!fontSizeSaved || !themeSaved || !apiKeySaved || !modelNameSaved || !thinkingEnabledSaved || !thinkingBudgetSaved || !thinkingLevelSaved || !audioEnabledSaved) {
       console.warn('Some settings failed to save to localStorage:', {
         fontSize: fontSizeSaved,
         theme: themeSaved,
@@ -56,6 +71,7 @@ export class SettingsRepository {
         modelName: modelNameSaved,
         thinkingEnabled: thinkingEnabledSaved,
         thinkingBudget: thinkingBudgetSaved,
+        thinkingLevel: thinkingLevelSaved,
         audioEnabled: audioEnabledSaved
       });
     } else {
@@ -70,6 +86,7 @@ export class SettingsRepository {
     StorageService.remove(MODEL_NAME_STORAGE_KEY);
     StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
     StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
+    StorageService.remove(THINKING_LEVEL_STORAGE_KEY);
     StorageService.remove(AUDIO_ENABLED_STORAGE_KEY);
     return Settings.createDefault();
   }

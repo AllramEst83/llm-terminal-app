@@ -11,6 +11,24 @@ import type { CommandResult } from '../domain/CommandResult';
 import { TokenCountService } from '../services/TokenCountService';
 import { ModelService, type ImageModelDefinition } from '../services/ModelService';
 
+const GEMINI_FLASH_MODEL_ID = 'gemini-2.5-flash';
+const GEMINI_PRO_MODEL_ID = 'gemini-2.5-pro';
+const GEMINI_3_PRO_MODEL_ID = 'gemini-3-pro-preview';
+
+const THINKING_BUDGET_MODEL_IDS = new Set([GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID]);
+const THINKING_MODEL_LABELS: Record<string, string> = {
+  [GEMINI_FLASH_MODEL_ID]: 'Gemini 2.5 Flash',
+  [GEMINI_PRO_MODEL_ID]: 'Gemini 2.5 Pro',
+  [GEMINI_3_PRO_MODEL_ID]: 'Gemini 3 Pro Preview',
+};
+const THINKING_MODEL_SHORTCUTS: Record<string, string> = {
+  [GEMINI_FLASH_MODEL_ID]: 'flash',
+  [GEMINI_PRO_MODEL_ID]: '2.5-pro',
+  [GEMINI_3_PRO_MODEL_ID]: '3-pro',
+};
+const THINKING_SUPPORTED_MODELS_TEXT = `${THINKING_MODEL_SHORTCUTS[GEMINI_FLASH_MODEL_ID]}, ${THINKING_MODEL_SHORTCUTS[GEMINI_PRO_MODEL_ID]}, ${THINKING_MODEL_SHORTCUTS[GEMINI_3_PRO_MODEL_ID]}`;
+const SHARED_BUDGET_LABEL = 'Gemini 2.5 Flash & Pro';
+
 export class HandleCommandUseCase {
   constructor(
     private currentSettings: Settings,
@@ -71,8 +89,12 @@ export class HandleCommandUseCase {
           ? `Configured (${this.currentSettings.apiKey.substring(0, 8)}...)`
           : 'Not configured');
 
+    const budgetDetail = this.currentSettings.thinkingBudget
+      ? `${this.currentSettings.thinkingBudget.toLocaleString()} tokens`
+      : `Default (${Settings.DEFAULT_THINKING_BUDGET.toLocaleString()} tokens)`;
+    const levelDetail = this.currentSettings.thinkingLevel.toUpperCase();
     const thinkingStatus = this.currentSettings.thinkingEnabled
-      ? `Enabled${this.currentSettings.thinkingBudget ? ` (${this.currentSettings.thinkingBudget} tokens)` : ' (default budget)'}`
+      ? `Enabled (2.5 budget: ${budgetDetail}, 3-pro level: ${levelDetail})`
       : 'Disabled';
 
     const audioStatus = this.currentSettings.audioEnabled ? 'Enabled' : 'Disabled';
@@ -204,6 +226,7 @@ export class HandleCommandUseCase {
         modelName: Settings.DEFAULT_MODEL_NAME,
         thinkingEnabled: false,
         thinkingBudget: undefined,
+        thinkingLevel: Settings.DEFAULT_THINKING_LEVEL,
         audioEnabled: true,
       },
     };
@@ -296,33 +319,146 @@ export class HandleCommandUseCase {
   }
 
   private handleThink(args: string[]): CommandResult {
-    const arg = args[0]?.toLowerCase();
-    
-    if (!arg) {
-      const currentStatus = this.currentSettings.thinkingEnabled
-        ? `Enabled${this.currentSettings.thinkingBudget ? ` (${this.currentSettings.thinkingBudget} tokens)` : ' (default budget)'}`
-        : 'Disabled';
-      const message = MessageService.createSystemMessage(
-        `Thinking mode: ${currentStatus}\n\nUsage:\n  /think on        - Enable with default budget\n  /think off       - Disable\n  /think <number>  - Enable with custom budget (e.g., /think 5000)`
-      );
+    if (args.length === 0) {
+      const message = MessageService.createSystemMessage(this.buildThinkingStatusMessage());
       return { success: true, message };
     }
 
-    if (arg === 'on') {
-      const message = MessageService.createSystemMessage(
-        'SYSTEM: Thinking mode enabled with default budget.'
+    const [modelArgRaw, ...restArgs] = args;
+    const canonicalModelId = this.resolveThinkingModel(modelArgRaw);
+
+    if (!canonicalModelId) {
+      if (this.looksLikeLegacyThinkingValue(modelArgRaw)) {
+        const message = MessageService.createErrorMessage(
+          `SYSTEM ERROR: Specify a model before "${modelArgRaw}".\n\nExample: /think 3-pro high`
+        );
+        return { success: false, message };
+      }
+
+      const message = MessageService.createErrorMessage(
+        `SYSTEM ERROR: Unsupported thinking model "${modelArgRaw}".\n\nSupported models: ${THINKING_SUPPORTED_MODELS_TEXT}.`
       );
-      return {
-        success: true,
-        message,
-        settingsUpdate: {
-          thinkingEnabled: true,
-          thinkingBudget: undefined,
-        },
-      };
-    } else if (arg === 'off') {
+      return { success: false, message };
+    }
+
+    const actionArg = restArgs[0];
+    if (!actionArg) {
+      return this.createThinkUsageResponse(canonicalModelId);
+    }
+
+    if (THINKING_BUDGET_MODEL_IDS.has(canonicalModelId)) {
+      return this.applyThinkingBudget(actionArg, canonicalModelId);
+    }
+
+    return this.applyThinkingLevel(actionArg, canonicalModelId);
+  }
+
+  private buildThinkingStatusMessage(): string {
+    const thinkingEnabled = this.currentSettings.thinkingEnabled;
+    const budgetDetail = this.currentSettings.thinkingBudget
+      ? `${this.currentSettings.thinkingBudget.toLocaleString()} tokens`
+      : `Default (${Settings.DEFAULT_THINKING_BUDGET.toLocaleString()} tokens)`;
+    const levelDetail = this.currentSettings.thinkingLevel.toUpperCase();
+    const budgetStatus = thinkingEnabled
+      ? `Enabled (${budgetDetail})`
+      : 'Disabled';
+    const levelStatus = thinkingEnabled
+      ? `Enabled (${levelDetail} level)`
+      : 'Disabled';
+
+    return `## THINKING STATUS
+
+- **${THINKING_MODEL_LABELS[GEMINI_FLASH_MODEL_ID]}**
+  - Status: ${budgetStatus}
+  - Budget: ${budgetDetail}
+
+- **${THINKING_MODEL_LABELS[GEMINI_PRO_MODEL_ID]}**
+  - Status: ${budgetStatus}
+  - Budget: ${budgetDetail}
+
+- **${THINKING_MODEL_LABELS[GEMINI_3_PRO_MODEL_ID]}**
+  - Status: ${levelStatus}
+  - Thinking level: ${levelDetail}
+
+- **Usage**
+  - /think flash <on|off|5000>
+  - /think 2.5-pro <on|off|5000>
+  - /think 3-pro <low|high|off>
+- **Notes**
+  - ${SHARED_BUDGET_LABEL} share the same thinking budget.
+  - Always include the model first: /think <model> <option>.
+  - Supported models: ${THINKING_SUPPORTED_MODELS_TEXT}.`;
+  }
+
+  private resolveThinkingModel(input?: string): string | undefined {
+    if (!input) {
+      return undefined;
+    }
+
+    const normalized = input.toLowerCase();
+    const resolved = ModelService.resolveModel(normalized);
+    const candidate =
+      resolved?.id ?? (normalized.startsWith('gemini-') ? normalized : undefined);
+
+    if (candidate && (THINKING_BUDGET_MODEL_IDS.has(candidate) || candidate === GEMINI_3_PRO_MODEL_ID)) {
+      return candidate;
+    }
+
+    return undefined;
+  }
+
+  private looksLikeLegacyThinkingValue(value?: string): boolean {
+    if (!value) {
+      return false;
+    }
+
+    const normalized = value.toLowerCase();
+    if (normalized === 'on' || normalized === 'off' || normalized === 'low' || normalized === 'high') {
+      return true;
+    }
+
+    const parsed = parseInt(normalized, 10);
+    return !Number.isNaN(parsed);
+  }
+
+  private createThinkUsageResponse(modelId: string): CommandResult {
+    const label = THINKING_MODEL_LABELS[modelId];
+    const shortcut = THINKING_MODEL_SHORTCUTS[modelId];
+    const usageLines = THINKING_BUDGET_MODEL_IDS.has(modelId)
+      ? [
+          `/think ${shortcut} on - Enable with default budget`,
+          `/think ${shortcut} off - Disable thinking`,
+          `/think ${shortcut} <tokens> - Enable with custom budget`,
+        ]
+      : [
+          `/think ${shortcut} high - Maximum reasoning depth`,
+          `/think ${shortcut} low - Lower latency & cost`,
+          `/think ${shortcut} off - Disable thinking`,
+        ];
+
+    const usageBlock = usageLines.map(line => `  - ${line}`).join('\n');
+
+    const message = MessageService.createSystemMessage(
+      `## THINK COMMAND
+
+- **Model:** ${label}
+- **Usage**
+${usageBlock}
+- **Tip**
+  - Always include the model first: /think <model> <option>.
+  - Supported models: ${THINKING_SUPPORTED_MODELS_TEXT}.`
+    );
+
+    return { success: false, message };
+  }
+
+  private applyThinkingBudget(rawArg: string, modelId: string): CommandResult {
+    const normalized = rawArg.toLowerCase();
+    const budgetDisplayLabel = `${SHARED_BUDGET_LABEL}`;
+
+    if (normalized === 'off') {
       const message = MessageService.createSystemMessage(
-        'SYSTEM: Thinking mode disabled.'
+        `SYSTEM: Thinking disabled for all models. ${budgetDisplayLabel} will no longer use extended reasoning.`
       );
       return {
         success: true,
@@ -332,27 +468,85 @@ export class HandleCommandUseCase {
           thinkingBudget: undefined,
         },
       };
-    } else {
-      const budget = parseInt(arg, 10);
-      if (isNaN(budget) || budget <= 0) {
-        const message = MessageService.createErrorMessage(
-          `SYSTEM ERROR: Invalid thinking budget "${arg}".\n\nUse a positive number (e.g., /think 5000).`
-        );
-        return { success: false, message };
-      }
+    }
 
+    if (normalized === 'on') {
       const message = MessageService.createSystemMessage(
-        `SYSTEM: Thinking mode enabled with budget of ${budget} tokens.`
+        `SYSTEM: Thinking enabled for ${budgetDisplayLabel} with the default budget.`
       );
       return {
         success: true,
         message,
         settingsUpdate: {
           thinkingEnabled: true,
-          thinkingBudget: budget,
+          thinkingBudget: undefined,
         },
       };
     }
+
+    const budget = parseInt(rawArg, 10);
+    if (Number.isNaN(budget) || budget <= 0) {
+      const message = MessageService.createErrorMessage(
+        `SYSTEM ERROR: Invalid thinking budget "${rawArg}".\n\nUse a positive number (e.g., /think ${THINKING_MODEL_SHORTCUTS[modelId]} 5000).`
+      );
+      return { success: false, message };
+    }
+
+    const message = MessageService.createSystemMessage(
+      `SYSTEM: Thinking enabled for ${budgetDisplayLabel} with a budget of ${budget.toLocaleString()} tokens.`
+    );
+    return {
+      success: true,
+      message,
+      settingsUpdate: {
+        thinkingEnabled: true,
+        thinkingBudget: budget,
+      },
+    };
+  }
+
+  private applyThinkingLevel(rawArg: string, modelId: string): CommandResult {
+    const normalized = rawArg.toLowerCase();
+    const label = THINKING_MODEL_LABELS[modelId];
+
+    if (normalized === 'off') {
+      const message = MessageService.createSystemMessage(
+        `SYSTEM: Thinking disabled. ${label} will respond without extended reasoning.`
+      );
+      return {
+        success: true,
+        message,
+        settingsUpdate: {
+          thinkingEnabled: false,
+        },
+      };
+    }
+
+    let level: 'low' | 'high' | undefined;
+    if (normalized === 'on' || normalized === 'high') {
+      level = 'high';
+    } else if (normalized === 'low') {
+      level = 'low';
+    }
+
+    if (!level) {
+      const message = MessageService.createErrorMessage(
+        `SYSTEM ERROR: Invalid thinking level "${rawArg}".\n\nUse one of: low, high, off.`
+      );
+      return { success: false, message };
+    }
+
+    const message = MessageService.createSystemMessage(
+      `SYSTEM: Thinking enabled for ${label} with ${level.toUpperCase()} reasoning depth.`
+    );
+    return {
+      success: true,
+      message,
+      settingsUpdate: {
+        thinkingEnabled: true,
+        thinkingLevel: level,
+      },
+    };
   }
 
   private async handleImage(args: string[]): Promise<CommandResult> {

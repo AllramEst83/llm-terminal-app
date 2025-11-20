@@ -33,6 +33,7 @@ export class SendMessageUseCase {
       this.settings.modelName,
       this.settings.thinkingEnabled,
       this.settings.thinkingBudget,
+      this.settings.thinkingLevel,
       (chunkText, isFirstChunk) => {
         onStreamCallback(chunkText, isFirstChunk);
       },

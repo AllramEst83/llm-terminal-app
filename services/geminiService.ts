@@ -1,6 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import type { GenerateContentResponse } from "@google/genai";
 import type { Message, Source, MessageImage } from '../domain/Message';
+import type { ThinkingLevel } from '../domain/Settings';
+import { ModelService } from './ModelService';
 
 export interface GeminiUsageMetadata {
   promptTokenCount?: number;
@@ -75,6 +77,40 @@ function extractUsageMetadata(rawMetadata: any): GeminiUsageMetadata | undefined
   };
 }
 
+const DEFAULT_THINKING_BUDGET = 8192;
+const BUDGET_MODELS = new Set(['gemini-2.5-flash', 'gemini-2.5-pro']);
+
+function buildThinkingConfig(
+  modelName: string,
+  thinkingEnabled: boolean,
+  thinkingBudget: number | undefined,
+  thinkingLevel: ThinkingLevel
+) {
+  if (!thinkingEnabled) {
+    return undefined;
+  }
+
+  const canonicalModelId = ModelService.getCanonicalModelId(modelName);
+
+  if (canonicalModelId === 'gemini-3-pro-preview') {
+    return {
+      thinkingConfig: {
+        thinkingLevel,
+      },
+    };
+  }
+
+  if (BUDGET_MODELS.has(canonicalModelId)) {
+    return {
+      thinkingConfig: {
+        thinkingBudget: thinkingBudget || DEFAULT_THINKING_BUDGET,
+      },
+    };
+  }
+
+  return undefined;
+}
+
 export async function sendMessageToGemini(
   currentMessages: Message[],
   newMessage: string,
@@ -82,6 +118,7 @@ export async function sendMessageToGemini(
   modelName: string,
   thinkingEnabled: boolean,
   thinkingBudget: number | undefined,
+  thinkingLevel: ThinkingLevel,
   onStream: (chunkText: string, isFirstChunk: boolean) => void,
   onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata) => void,
   imageData?: string,
@@ -90,6 +127,12 @@ export async function sendMessageToGemini(
 ): Promise<void> {
   try {
     const ai = getAiInstance(apiKey);
+    const thinkingOverrides = buildThinkingConfig(
+      modelName,
+      thinkingEnabled,
+      thinkingBudget,
+      thinkingLevel
+    );
 
     const chat = ai.chats.create({
       model: modelName,
@@ -98,11 +141,7 @@ export async function sendMessageToGemini(
         systemInstruction:
           'You are a helpful assistant in a retro 1980s computer terminal. Respond like you are from that era with the vocabulary and style of the 1980s, but do not add terminal prompts, cursors (like >█), or command-line symbols to your responses. Keep responses concise. Always use valid Markdown formatting: **bold** (double asterisk, no spaces), *italic* (single asterisk), ***bold and italic*** (triple asterisk, no spaces), code blocks with ```language, lists with proper bullets, etc. You now have access to the "World Wide Web" via Google Search for up-to-date information. If a query requires recent information or the user uses the /search command, use this tool. The user can use commands like /help, /settings, /font, /sound, /clear, and /search, but you should not attempt to execute them; the system handles them.',
         tools: [{ googleSearch: {} }],
-        ...(thinkingEnabled && {
-          thinkingConfig: {
-            thinkingBudget: thinkingBudget || 8192,
-          },
-        }),
+        ...(thinkingOverrides ?? {}),
       },
     });
 
