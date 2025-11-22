@@ -22,99 +22,97 @@ alwaysApply: false
 
 ## Project Overview
 
-This is a React 19.2.0 + TypeScript code editor application that allows users to browse, edit, and manage GitHub repositories through a web interface. It uses Supabase for authentication and Octokit for GitHub API interactions.
+This guide provides best practices for React + TypeScript applications following Clean Architecture principles. The structure and patterns described here are adaptable to any React project, regardless of its specific domain or external dependencies.
 
 ## Technology Stack
 
-- **Frontend Framework**: React 19.2.0 with TypeScript
-- **Build Tool**: Vite 7.2.4
-- **Authentication**: Supabase (GitHub OAuth)
-- **GitHub API**: Octokit 5.0.5
-- **Code Editor**: Monaco Editor (@monaco-editor/react)
-- **UI Icons**: Lucide React
-- **Notifications**: react-hot-toast
-- **Markdown**: react-markdown with react-syntax-highlighter
+Common technologies used in React + TypeScript projects (adapt to your project):
+
+- **Frontend Framework**: React with TypeScript
+- **Build Tool**: Vite, Create React App, or Next.js
+- **State Management**: React Context, Zustand, Redux, or Jotai (as needed)
+- **Styling**: CSS Modules, Tailwind CSS, styled-components, or inline styles with CSS variables
+- **UI Libraries**: Material-UI, Chakra UI, Ant Design, or custom components
+- **HTTP Client**: Fetch API, Axios, or React Query
+- **Form Handling**: React Hook Form, Formik, or controlled components
+- **Routing**: React Router, Next.js Router, or TanStack Router
 
 ## Project Structure
 
-This project follows **Clean Architecture** principles with a hybrid folder-by-layer approach:
+This project follows **Clean Architecture** principles with a hybrid folder-by-layer approach. The structure is flexible and can be adapted based on project needs:
 
 ```
 src/
 ├── domain/                    # Core business entities (NO framework dependencies)
-│   ├── entities/
-│   │   ├── repository.ts      # Repository domain entity
-│   │   ├── branch.ts          # Branch domain entity
-│   │   ├── file.ts            # File domain entity
-│   │   └── tree-node.ts       # TreeNode domain entity & utilities
-│   ├── interfaces/
-│   │   └── repository.interface.ts  # Domain repository interfaces
-│   └── index.ts               # Barrel exports
+│   ├── entities/             # Domain entities (e.g., User, Product, Order)
+│   │   ├── user.ts
+│   │   ├── product.ts
+│   │   └── order.ts
+│   ├── interfaces/           # Domain repository interfaces
+│   │   ├── user-repository.interface.ts
+│   │   └── product-repository.interface.ts
+│   ├── services/             # Domain services (optional, pure business logic)
+│   └── index.ts              # Barrel exports
 │
 ├── application/              # Use cases and application services
-│   ├── use-cases/
-│   │   ├── fetch-repositories.ts
-│   │   ├── fetch-branches.ts
-│   │   ├── create-branch.ts
-│   │   ├── fetch-file-tree.ts
-│   │   ├── fetch-file-content.ts
-│   │   ├── update-file-content.ts
-│   │   └── delete-repository.ts
+│   ├── use-cases/            # Application use cases
+│   │   ├── create-user.ts
+│   │   ├── fetch-products.ts
+│   │   ├── update-order.ts
+│   │   └── delete-item.ts
+│   ├── dto/                  # Data Transfer Objects (optional)
 │   └── index.ts              # Barrel exports
 │
 ├── infrastructure/           # External services and implementations
-│   ├── github/
-│   │   ├── github-client.ts
-│   │   ├── github-repository.ts
-│   │   ├── github-branch-repository.ts
-│   │   ├── github-file-repository.ts
-│   │   ├── github-repository-deletion.ts
-│   │   └── index.ts
-│   ├── supabase/
-│   │   ├── supabase-client.ts
-│   │   └── index.ts
-│   ├── utils/
-│   │   └── file-utils.ts      # File utility functions
+│   ├── api/                  # API clients (REST, GraphQL, etc.)
+│   │   ├── api-client.ts
+│   │   └── endpoints/
+│   ├── storage/              # Storage implementations (localStorage, IndexedDB, etc.)
+│   │   └── local-storage.ts
+│   ├── auth/                 # Authentication implementations
+│   │   └── auth-service.ts
+│   ├── utils/                # Utility functions
+│   │   ├── date-utils.ts
+│   │   └── validation-utils.ts
 │   └── index.ts              # Barrel exports
 │
 ├── presentation/             # React-specific code (UI layer)
 │   ├── components/
-│   │   ├── common/            # Shared/reusable components
+│   │   ├── common/           # Shared/reusable components
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── Modal.tsx
 │   │   │   ├── Spinner.tsx
-│   │   │   ├── Layout.tsx
-│   │   │   ├── Header.tsx
-│   │   │   ├── Sidebar.tsx
-│   │   │   └── UserMenu.tsx
-│   │   └── features/          # Feature-specific components
-│   │       ├── RepoList.tsx
-│   │       ├── FileTree.tsx
-│   │       ├── CodeEditor.tsx
-│   │       ├── BranchSelector.tsx
-│   │       ├── CommitModal.tsx
-│   │       ├── CreateBranchModal.tsx
-│   │       ├── DeleteRepoModal.tsx
-│   │       └── DeleteAccountModal.tsx
+│   │   │   └── Layout.tsx
+│   │   └── features/         # Feature-specific components
+│   │       ├── UserProfile.tsx
+│   │       ├── ProductList.tsx
+│   │       └── OrderForm.tsx
 │   ├── context/              # React Context providers
-│   │   ├── AuthContext.tsx    # Authentication state
-│   │   ├── GithubContext.tsx  # GitHub API client and state
-│   │   └── ThemeContext.tsx   # Theme management (dark/light)
-│   ├── hooks/                # Custom React hooks (can be added here)
+│   │   ├── AuthContext.tsx
+│   │   ├── ThemeContext.tsx
+│   │   └── AppContext.tsx
+│   ├── hooks/                # Custom React hooks
+│   │   ├── useAuth.ts
+│   │   └── useApi.ts
 │   └── pages/                # Page-level components
+│       ├── Home.tsx
 │       ├── Login.tsx
-│       ├── Profile.tsx
-│       └── Settings.tsx
+│       └── Dashboard.tsx
 │
 ├── types/                    # TypeScript types organized by layer
 │   ├── domain/               # Domain entity types
 │   ├── application/          # Application DTOs and use case types
 │   ├── infrastructure/       # External API types
-│   │   └── github.ts         # GitHub API types
+│   │   └── api-types.ts
 │   └── ui/                   # UI-specific types
-│       ├── context.ts        # Context types
-│       └── theme.ts          # Theme types
+│       ├── context.ts
+│       └── component-props.ts
 │
-└── assets/                   # Static assets (images, icons)
+└── assets/                   # Static assets (images, icons, fonts)
 ```
+
+**Note**: Not all projects need all layers. Smaller projects may combine layers or skip some. Adapt the structure to your project's complexity and needs.
 
 ### Architecture Layers
 
@@ -142,15 +140,15 @@ infrastructure → domain
 
 ```typescript
 // ✅ Good: Explicit interface with clear naming
-interface CodeEditorProps {
-  code: string;
-  language: string;
-  onChange: (value: string | undefined) => void;
-  path: string;
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary" | "danger";
+  disabled?: boolean;
 }
 
 // ❌ Bad: Inline types or any
-function CodeEditor(props: any) { ... }
+function Button(props: any) { ... }
 ```
 
 #### Context Types
@@ -158,13 +156,17 @@ function CodeEditor(props: any) { ... }
 ```typescript
 // ✅ Good: Types defined in src/types/ui/context.ts
 // src/types/ui/context.ts
-import type { Session, User } from "@supabase/supabase-js";
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+}
 
 export interface AuthContextType {
-  session: Session | null;
   user: User | null;
   loading: boolean;
-  signInWithGithub: () => Promise<void>;
+  isAuthenticated: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -208,7 +210,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 
 // Internal imports
-import { Component } from "./Component";
+import { Button } from "../common/Button";
+import { Spinner } from "../common/Spinner";
 
 // 2. Type definitions
 interface ComponentProps {
@@ -257,8 +260,8 @@ export const Component: React.FC<ComponentProps> = ({ prop1, prop2 }) => {
 
 ### Component Naming
 
-- Components: PascalCase (`CodeEditor`, `RepoList`)
-- Files: Match component name exactly (`CodeEditor.tsx`)
+- Components: PascalCase (`UserProfile`, `ProductList`, `OrderForm`)
+- Files: Match component name exactly (`UserProfile.tsx`)
 - One component per file (with exceptions for related sub-components)
 - Export as named export: `export const Component`
 
@@ -268,8 +271,9 @@ export const Component: React.FC<ComponentProps> = ({ prop1, prop2 }) => {
 
 ```typescript
 // ✅ Good: Explicit type, meaningful name
-const [fileContent, setFileContent] = useState<string>("");
-const [isDirty, setIsDirty] = useState<boolean>(false);
+const [userName, setUserName] = useState<string>("");
+const [isLoading, setIsLoading] = useState<boolean>(false);
+const [items, setItems] = useState<Item[]>([]);
 
 // ❌ Bad: Implicit any, unclear name
 const [data, setData] = useState(null);
@@ -300,15 +304,16 @@ useEffect(() => {
 
 ```typescript
 // ✅ Good: Custom hook with clear purpose
-export function useFileContent(filePath: string) {
-  const [content, setContent] = useState<string>("");
+export function useFetchData<T>(url: string) {
+  const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     // Fetch logic
-  }, [filePath]);
+  }, [url]);
 
-  return { content, loading };
+  return { data, loading, error };
 }
 ```
 
@@ -356,20 +361,25 @@ export const useContext = () => {
 
 ## Styling Standards
 
-### CSS Variables (Theme System)
+### Styling Approaches
 
-All styling uses CSS variables defined in `src/index.css`:
+Choose a styling approach that fits your project:
 
-- `--bg-primary`, `--bg-secondary` - Background colors
-- `--text-primary`, `--text-secondary` - Text colors
-- `--accent-color` - Primary accent color
-- `--danger-color` - Error/danger color
-- `--border-color` - Border color
-
-### Inline Styles Pattern
+**Option 1: CSS Variables (Recommended for theme systems)**
 
 ```typescript
-// ✅ Good: Theme-aware inline styles
+// Define in global CSS file (e.g., src/index.css)
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --accent-color: #007bff;
+  --danger-color: #dc3545;
+  --border-color: #dee2e6;
+}
+
+// Use in components
 const styles = {
   container: {
     backgroundColor: "var(--bg-primary)",
@@ -377,26 +387,48 @@ const styles = {
     border: "1px solid var(--border-color)",
     padding: "20px",
   },
-  button: {
-    backgroundColor: "var(--accent-color)",
-    color: "white",
-    border: "none",
-    borderRadius: "4px",
-    padding: "8px 16px",
-  },
 };
+```
 
-// Use theme hook for dynamic theming
-const { theme } = useTheme();
-const editorTheme = theme === "dark" ? "vs-dark" : "light";
+**Option 2: CSS Modules**
+
+```typescript
+// Component.module.css
+.container {
+  background-color: var(--bg-primary);
+  padding: 20px;
+}
+
+// Component.tsx
+import styles from './Component.module.css';
+<div className={styles.container}>...</div>
+```
+
+**Option 3: Styled Components / CSS-in-JS**
+
+```typescript
+import styled from "styled-components";
+
+const Container = styled.div`
+  background-color: ${(props) => props.theme.bgPrimary};
+  padding: 20px;
+`;
+```
+
+**Option 4: Utility-first (Tailwind CSS)**
+
+```typescript
+<div className="bg-white p-5 border border-gray-300">Content</div>
 ```
 
 ### Styling Rules
 
-- Use inline styles with CSS variables (not CSS modules)
-- Keep styles co-located with components
-- Use theme hook for dynamic theming
-- Ensure accessibility (contrast, focus states)
+- Choose one primary styling approach and be consistent
+- Keep styles co-located with components when possible
+- Use theme system for dynamic theming (dark/light mode)
+- Ensure accessibility (contrast ratios, focus states, ARIA labels)
+- Prefer CSS variables for theme values
+- Use responsive design patterns (mobile-first recommended)
 
 ## Error Handling Patterns
 
@@ -423,10 +455,11 @@ const handleAction = async () => {
 
 ### Error Display
 
-- Use `react-hot-toast` for user notifications
+- Use a notification library (react-hot-toast, react-toastify, etc.) or custom error UI
 - Display errors in UI when appropriate
-- Log errors to console for debugging
+- Log errors to console for debugging (use proper logging in production)
 - Never silently swallow errors
+- Provide user-friendly error messages
 
 ## State Management
 
@@ -438,20 +471,22 @@ const handleAction = async () => {
 
 ### Global State
 
-- Use Context for global state (Auth, GitHub, Theme)
+- Use Context for global state (Auth, Theme, App-wide settings)
+- Consider state management libraries (Zustand, Redux, Jotai) for complex state
 - Don't overuse Context (avoid prop drilling, but prefer props for local state)
 - Consider extracting to custom hooks for complex logic
+- Keep global state minimal - only what truly needs to be shared
 
 ### State Patterns
 
 ```typescript
 // ✅ Good: Clear state structure
-interface FileState {
-  content: string;
-  originalContent: string;
-  sha: string;
-  isDirty: boolean;
-  loading: boolean;
+interface FormState {
+  values: Record<string, string>;
+  errors: Record<string, string>;
+  touched: Record<string, boolean>;
+  isSubmitting: boolean;
+  isValid: boolean;
 }
 
 // Use discriminated unions for complex state
@@ -515,27 +550,23 @@ export const Modal: React.FC<ModalProps> = ({
 
 ```typescript
 // ✅ Good: Use case in application layer
-// src/application/use-cases/fetch-file-content.ts
-import type { File } from "../../domain/entities/file";
-import type { FileRepository } from "../../domain/interfaces/repository.interface";
+// src/application/use-cases/fetch-user.ts
+import type { User } from "../../domain/entities/user";
+import type { UserRepository } from "../../domain/interfaces/user-repository.interface";
 
-export class FetchFileContentUseCase {
-  private fileRepo: FileRepository;
+export class FetchUserUseCase {
+  private userRepo: UserRepository;
 
-  constructor(fileRepo: FileRepository) {
-    this.fileRepo = fileRepo;
+  constructor(userRepo: UserRepository) {
+    this.userRepo = userRepo;
   }
 
-  async execute(
-    request: FetchFileContentRequest
-  ): Promise<FetchFileContentResponse> {
-    const file = await this.fileRepo.getFileContent(
-      request.owner,
-      request.repo,
-      request.path,
-      request.branch
-    );
-    return { file };
+  async execute(request: { userId: string }): Promise<User> {
+    const user = await this.userRepo.findById(request.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    return user;
   }
 }
 ```
@@ -544,45 +575,23 @@ export class FetchFileContentUseCase {
 
 ```typescript
 // ✅ Good: Infrastructure implements domain interface
-// src/infrastructure/github/github-file-repository.ts
-import type { FileRepository } from "../../domain/interfaces/repository.interface";
-import type { File } from "../../domain/entities/file";
+// src/infrastructure/api/user-api-repository.ts
+import type { UserRepository } from "../../domain/interfaces/user-repository.interface";
+import type { User } from "../../domain/entities/user";
 
-export class GitHubFileRepository implements FileRepository {
-  private octokit: Octokit;
+export class UserApiRepository implements UserRepository {
+  private apiClient: ApiClient;
 
-  constructor(octokit: Octokit) {
-    this.octokit = octokit;
+  constructor(apiClient: ApiClient) {
+    this.apiClient = apiClient;
   }
 
-  async getFileContent(
-    owner: string,
-    repo: string,
-    path: string,
-    branch: string
-  ): Promise<File> {
-    const { data } = await this.octokit.rest.repos.getContent({
-      owner,
-      repo,
-      path,
-      ref: branch,
-    });
-
-    if (!("content" in data)) {
-      throw new Error("Invalid file data");
-    }
-
-    let content = Buffer.from(data.content, "base64").toString("utf-8");
-    if (content.charCodeAt(0) === 0xfeff) {
-      content = content.slice(1);
-    }
-
+  async findById(userId: string): Promise<User> {
+    const response = await this.apiClient.get(`/users/${userId}`);
     return {
-      path: data.path,
-      name: data.name,
-      type: "blob",
-      sha: data.sha,
-      content,
+      id: response.data.id,
+      email: response.data.email,
+      name: response.data.name,
     };
   }
 }
@@ -592,25 +601,23 @@ export class GitHubFileRepository implements FileRepository {
 
 ```typescript
 // ✅ Good: Component uses use case
-// src/presentation/components/features/FileTree.tsx
-import { FetchFileContentUseCase } from "../../../application/use-cases/fetch-file-content";
-import { GitHubFileRepository } from "../../../infrastructure/github/github-file-repository";
-import { useGithub } from "../../context/GithubContext";
+// src/presentation/components/features/UserProfile.tsx
+import { FetchUserUseCase } from "../../../application/use-cases/fetch-user";
+import { UserApiRepository } from "../../../infrastructure/api/user-api-repository";
+import { useApiClient } from "../../hooks/useApiClient";
 
-const handleSelectFile = async (node: TreeNode) => {
-  if (!octokit) return;
+const UserProfile: React.FC<{ userId: string }> = ({ userId }) => {
+  const apiClient = useApiClient();
+  const [user, setUser] = useState<User | null>(null);
 
-  const fileRepo = new GitHubFileRepository(octokit);
-  const useCase = new FetchFileContentUseCase(fileRepo);
+  useEffect(() => {
+    const userRepo = new UserApiRepository(apiClient);
+    const useCase = new FetchUserUseCase(userRepo);
 
-  const { file } = await useCase.execute({
-    owner: selectedRepo.owner,
-    repo: selectedRepo.name,
-    path: node.path,
-    branch: currentBranch,
-  });
+    useCase.execute({ userId }).then(setUser).catch(console.error);
+  }, [userId, apiClient]);
 
-  setFileContent(file.content || "");
+  return user ? <div>{user.name}</div> : <Spinner />;
 };
 ```
 
@@ -620,54 +627,44 @@ const handleSelectFile = async (node: TreeNode) => {
 - **Application layer**: Use cases orchestrate domain logic
 - **Infrastructure layer**: Implement domain interfaces, handle external APIs
 - **Presentation layer**: Use use cases, don't call infrastructure directly
-- Always check for client existence before API calls
-- Handle API errors gracefully
-- Use appropriate GitHub API scopes
-- Base64 encode/decode file content using Buffer
-- Track file SHA for updates
+- Always check for client/service existence before API calls
+- Handle API errors gracefully with proper error types
+- Use proper HTTP methods and status codes
+- Implement request/response interceptors for common concerns (auth, errors)
+- Consider using React Query or SWR for data fetching and caching
+- Handle loading and error states consistently
 
-## File Operations
+## Data Operations
 
-### File Loading Pattern
+### Data Fetching Pattern
 
 ```typescript
-const handleSelectFile = async (node: TreeNode) => {
-  if (node.type === "tree") return;
+const handleFetchData = async (id: string) => {
+  setLoading(true);
+  setError(null);
 
-  setLoadingFile(true);
   try {
-    const { data } = await octokit.rest.repos.getContent({
-      owner: selectedRepo.owner.login,
-      repo: selectedRepo.name,
-      path: node.path,
-      ref: currentBranch,
-    });
-
-    if (!Array.isArray(data) && "content" in data) {
-      let content = Buffer.from(data.content, "base64").toString("utf-8");
-      // Strip BOM if present
-      if (content.charCodeAt(0) === 0xfeff) {
-        content = content.slice(1);
-      }
-      setFileContent(content);
-      setOriginalContent(content);
-      setFileSha(data.sha);
-    }
-  } catch (error) {
-    console.error("Failed to load file:", error);
-    toast.error("Failed to load file");
+    const data = await apiService.fetchById(id);
+    setData(data);
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error("Unknown error");
+    console.error("Failed to fetch data:", error);
+    setError(error.message);
+    // Show user-friendly error message
   } finally {
-    setLoadingFile(false);
+    setLoading(false);
   }
 };
 ```
 
-### File Type Handling
+### Data Handling Best Practices
 
-- Check for binary files by extension
-- Support markdown rendering for `.md` files
-- Handle different language syntax highlighting
-- Track dirty state for unsaved changes
+- Always handle loading and error states
+- Validate data before using it
+- Use type guards for runtime type checking
+- Handle edge cases (empty data, null values, etc.)
+- Implement proper error boundaries
+- Consider caching strategies for frequently accessed data
 
 ## Performance Optimization
 
@@ -733,32 +730,35 @@ describe("Component", () => {
 import React, { useState, useEffect } from "react";
 
 // 2. External libraries
-import { Octokit } from "octokit";
-import { Buffer } from "buffer";
+import axios from "axios";
+import { format } from "date-fns";
 
 // 3. Domain layer (business entities)
-import type { Repository, Branch, File, TreeNode } from "../../domain";
-import type { RepositoryRepository } from "../../domain/interfaces/repository.interface";
+import type { User, Product, Order } from "../../domain";
+import type { UserRepository } from "../../domain/interfaces/user-repository.interface";
 
 // 4. Application layer (use cases)
-import { FetchRepositoriesUseCase } from "../../application/use-cases/fetch-repositories";
+import { FetchUserUseCase } from "../../application/use-cases/fetch-user";
+import { CreateOrderUseCase } from "../../application/use-cases/create-order";
 
 // 5. Infrastructure layer (external services)
-import { GitHubRepository } from "../../infrastructure/github/github-repository";
-import { supabase } from "../../infrastructure/supabase";
+import { UserApiRepository } from "../../infrastructure/api/user-api-repository";
+import { apiClient } from "../../infrastructure/api/api-client";
 import {
-  getLanguageFromPath,
-  isBinaryFile,
-} from "../../infrastructure/utils/file-utils";
+  formatDate,
+  validateEmail,
+} from "../../infrastructure/utils/validation-utils";
 
 // 6. Presentation layer (context, components)
 import { useAuth } from "../../context/AuthContext";
-import { useGithub } from "../../context/GithubContext";
-import { Spinner } from "../common/Spinner";
-import { Modal } from "../features/Modal";
+import { useTheme } from "../../context/ThemeContext";
+import { Button } from "../common/Button";
+import { Modal } from "../common/Modal";
+import { UserCard } from "../features/UserCard";
 
 // 7. Types (UI-specific types)
 import type { AuthContextType } from "../../types/ui/context";
+import type { ButtonProps } from "../../types/ui/component-props";
 ```
 
 ## Common Patterns
@@ -825,7 +825,7 @@ if (loading || initializing) {
 
 **Infrastructure Layer (`src/infrastructure/`):**
 
-- External services: `src/infrastructure/github/`, `src/infrastructure/supabase/`
+- External services: `src/infrastructure/api/`, `src/infrastructure/storage/`, `src/infrastructure/auth/`
 - Utilities: `src/infrastructure/utils/`
 - Implements domain interfaces
 
@@ -851,7 +851,7 @@ if (loading || initializing) {
 - ❌ Don't use `any` types
 - ❌ Don't ignore TypeScript errors
 - ❌ Don't forget to handle loading/error states
-- ❌ Don't use inline styles without CSS variables
+- ❌ Don't use inline styles without a consistent styling approach
 - ❌ Don't create deeply nested components
 - ❌ Don't duplicate code (extract to utilities)
 - ❌ Don't use console.log in production code
@@ -871,7 +871,7 @@ Before submitting frontend code:
 - [ ] Components follow structure pattern
 - [ ] Error handling is comprehensive
 - [ ] Loading states are handled
-- [ ] Theme-aware styling used
+- [ ] Consistent styling approach used (CSS variables, CSS modules, etc.)
 - [ ] No code duplication
 - [ ] Meaningful names used
 - [ ] Functions are small and focused
