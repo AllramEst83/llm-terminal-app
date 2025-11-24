@@ -16,9 +16,12 @@ interface MessageListProps {
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize, onImageLoad }) => {
   const headerFontSizeMultiplier = 0.9;
-  const commandInputFontSizeMultiplier = 0.8;
+  const commandLabelFontSizeMultiplier = 0.8;
+  const commandInputFontSizeMultiplier = 0.7;
+
   const headerFontSize = fontSize * headerFontSizeMultiplier;
   const commandInputFontSize = fontSize * commandInputFontSizeMultiplier;
+  const commandLabelFontSize = fontSize * commandLabelFontSizeMultiplier;
 
   return (
     <>
@@ -146,10 +149,11 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <span
-                      className="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider"
+                      className="px-2 py-0.5 rounded font-bold uppercase tracking-wider"
                       style={{
                         backgroundColor: theme.accent,
-                        color: theme.background
+                        color: theme.background,
+                        fontSize: `${commandLabelFontSize}px`
                       }}
                     >
                       {commandLabel}
