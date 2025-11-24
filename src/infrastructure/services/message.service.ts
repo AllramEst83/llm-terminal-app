@@ -28,6 +28,10 @@ export class MessageService {
   static createErrorMessage(text: string): Message {
     return Message.createSystem(text, getCurrentTimestamp());
   }
+  
+  static createCommandExecutionMessage(commandInput: string, commandName: string): Message {
+    return Message.createCommand(commandName, commandInput, getCurrentTimestamp());
+  }
 
   static updateLastMessage(
     messages: Message[],

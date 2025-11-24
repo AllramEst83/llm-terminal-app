@@ -19,7 +19,9 @@ export class Message {
     public readonly imageData?: string,
     public readonly modelName?: string,
     public readonly imageMimeType?: string,
-    public readonly images?: MessageImage[]
+    public readonly images?: MessageImage[],
+    public readonly command?: string,
+    public readonly commandInput?: string
   ) {}
 
   static create(
@@ -30,7 +32,9 @@ export class Message {
     imageData?: string,
     modelName?: string,
     imageMimeType?: string,
-    images?: MessageImage[]
+    images?: MessageImage[],
+    command?: string,
+    commandInput?: string
   ): Message {
     return new Message(
       Date.now().toString(),
@@ -41,7 +45,9 @@ export class Message {
       imageData,
       modelName,
       imageMimeType,
-      images
+      images,
+      command,
+      commandInput
     );
   }
 
@@ -62,6 +68,10 @@ export class Message {
     return Message.create('system', text, timestamp);
   }
 
+  static createCommand(command: string, commandInput: string, timestamp?: string): Message {
+    return Message.create('system', '', timestamp, undefined, undefined, undefined, undefined, undefined, command, commandInput);
+  }
+
   withUpdatedText(newText: string): Message {
     return new Message(
       this.id,
@@ -72,7 +82,9 @@ export class Message {
       this.imageData,
       this.modelName,
       this.imageMimeType,
-      this.images
+      this.images,
+      this.command,
+      this.commandInput
     );
   }
 
@@ -86,7 +98,9 @@ export class Message {
       this.imageData,
       this.modelName,
       this.imageMimeType,
-      this.images
+      this.images,
+      this.command,
+      this.commandInput
     );
   }
 
@@ -100,7 +114,9 @@ export class Message {
       imageData,
       this.modelName,
       imageMimeType || this.imageMimeType,
-      this.images
+      this.images,
+      this.command,
+      this.commandInput
     );
   }
 
@@ -114,7 +130,9 @@ export class Message {
       this.imageData,
       modelName,
       this.imageMimeType,
-      this.images
+      this.images,
+      this.command,
+      this.commandInput
     );
   }
 
@@ -128,7 +146,9 @@ export class Message {
       this.imageData,
       this.modelName,
       this.imageMimeType,
-      images
+      images,
+      this.command,
+      this.commandInput
     );
   }
 }

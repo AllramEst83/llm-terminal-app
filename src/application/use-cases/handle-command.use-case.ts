@@ -17,6 +17,7 @@ import { generateImage } from '../../infrastructure/services/image.service';
 import { TokenCountService } from '../../infrastructure/services/token-count.service';
 import { ModelService, type ImageModelDefinition } from '../../infrastructure/services/model.service';
 import { GrammarService } from '../../infrastructure/services/grammar.service';
+import { SearchService } from '../../infrastructure/services/search.service';
 
 const THINKING_BUDGET_MODEL_IDS = new Set([GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID]);
 const THINKING_MODEL_LABELS: Record<string, string> = {
@@ -68,6 +69,8 @@ export class HandleCommandUseCase {
         return await this.handleImage(args);
       case 'audio':
         return this.handleAudio(args);
+      case 'search':
+        return await this.handleSearch(args);
       case 'help':
       case '':
         return this.handleHelp();
@@ -777,6 +780,53 @@ ${usageBlock}`;
         `SYSTEM ERROR: Invalid audio setting "${arg}".\n\nUse "on" or "off" (e.g., /audio on).`
       );
       return { success: false, message };
+    }
+  }
+
+  private async handleSearch(args: string[]): Promise<CommandResult> {
+    const query = args.join(' ').trim();
+    if (!query) {
+      const message = MessageService.createErrorMessage(
+        'SYSTEM ERROR: Provide a search query.\nUsage: /search <keywords or question>'
+      );
+      return { success: false, message };
+    }
+
+    try {
+      const apiKey = await ApiKeyService.getApiKey();
+      if (!apiKey) {
+        const message = MessageService.createErrorMessage(
+          'SYSTEM ERROR: API key is missing. Configure it with /apikey <your_key>.'
+        );
+        return { success: false, message };
+      }
+
+      const result = await SearchService.performSearch(
+        query,
+        apiKey,
+        this.currentSettings.modelName
+      );
+
+      let message = MessageService.createSystemMessage(result.text);
+      if (result.sources.length > 0) {
+        message = message.withSources(result.sources);
+      }
+
+      return {
+        success: true,
+        message,
+      };
+    } catch (error) {
+      console.error('Error executing search:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unexpected error while searching.';
+      const message = MessageService.createErrorMessage(
+        `SYSTEM ERROR: Search failed.\n\nDetails: ${errorMessage}`
+      );
+      return {
+        success: false,
+        message,
+      };
     }
   }
 

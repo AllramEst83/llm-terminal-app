@@ -1,30 +1,30 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Message, Settings } from './domain';
-import { 
-  ApiKeyService, 
-  ThemeService, 
-  CommandService, 
-  BootSequenceService, 
-  MessageService, 
-  TokenCountService 
+import {
+  ApiKeyService,
+  ThemeService,
+  CommandService,
+  BootSequenceService,
+  MessageService,
+  TokenCountService
 } from './infrastructure/services';
-import { 
-  HandleCommandUseCase, 
-  SendMessageUseCase, 
-  ManageBootSequenceUseCase, 
-  ManageSettingsUseCase 
+import {
+  HandleCommandUseCase,
+  SendMessageUseCase,
+  ManageBootSequenceUseCase,
+  ManageSettingsUseCase
 } from './application';
 import { getCurrentTimestamp } from './infrastructure/utils/date.utils';
 import { playKeystrokeSound, playErrorBeep, playBootSound, unlockAudio } from './infrastructure/services/audio.service';
-import { 
-  TerminalHeader, 
-  MessageList, 
-  TerminalInput, 
-  BootScreen, 
-  PressToBoot, 
-  ApiKeySelection, 
+import {
+  TerminalHeader,
+  MessageList,
+  TerminalInput,
+  BootScreen,
+  PressToBoot,
+  ApiKeySelection,
   ApiKeyInput,
-  type AttachedImage 
+  type AttachedImage
 } from './presentation/components/features';
 
 // Tell TypeScript that hljs is available globally.
@@ -34,10 +34,10 @@ const loadingChars = ['|', '/', '-', '\\'];
 
 // Detect if device is mobile
 const isMobileDevice = (): boolean => {
-  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-         (window.visualViewport && window.visualViewport.height < window.innerHeight * 0.9) ||
-         ('ontouchstart' in window) ||
-         (navigator.maxTouchPoints > 0);
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    (window.visualViewport && window.visualViewport.height < window.innerHeight * 0.9) ||
+    ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints > 0);
 };
 
 export const App: React.FC = () => {
@@ -45,21 +45,21 @@ export const App: React.FC = () => {
   const [input, setInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
-  
+
   const [isStudioEnv, setIsStudioEnv] = useState(false);
   const [isKeyReady, setIsKeyReady] = useState(false);
-  
+
   const [booting, setBooting] = useState<boolean>(false);
   const [booted, setBooted] = useState<boolean>(false);
   const [bootSequence, setBootSequence] = useState<string[]>([]);
-  
+
   const [settings, setSettings] = useState<Settings>(Settings.createDefault());
   const [theme, setTheme] = useState(ThemeService.getDefaultTheme());
-  
+
   const [suggestions, setSuggestions] = useState<typeof CommandService.getAllCommands extends () => infer R ? R : never>([]);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number>(0);
-  
+
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [loadingCharIndex, setLoadingCharIndex] = useState<number>(0);
@@ -86,10 +86,10 @@ export const App: React.FC = () => {
       const loadedTheme = ThemeService.getTheme(loadedSettings.themeName);
       setTheme(loadedTheme);
       ThemeService.applyTheme(loadedTheme);
-      
+
       // Initialize token counting for the session
       TokenCountService.initializeSessionStorage();
-      
+
       // Mark as initialized after loading settings
       isInitializedRef.current = true;
     };
@@ -101,7 +101,7 @@ export const App: React.FC = () => {
     if (!isInitializedRef.current) {
       return; // Don't save during initial load
     }
-    
+
     const saveSettings = async () => {
       const settingsUseCase = new ManageSettingsUseCase();
       await settingsUseCase.saveSettings(settings);
@@ -117,7 +117,7 @@ export const App: React.FC = () => {
     if (!isInitializedRef.current || !booted) {
       return;
     }
-    
+
     // Only update token count from session storage when model switches
     // (not on every message change, as that will be handled by the callback)
     const usage = TokenCountService.getModelTokenUsage(settings.modelName);
@@ -135,7 +135,7 @@ export const App: React.FC = () => {
       window.removeEventListener('keydown', startBootProcess);
       window.removeEventListener('click', startBootProcess);
     };
-    
+
     window.addEventListener('keydown', startBootProcess);
     window.addEventListener('click', startBootProcess);
 
@@ -144,7 +144,7 @@ export const App: React.FC = () => {
       window.removeEventListener('click', startBootProcess);
     };
   }, [isKeyReady, booting, booted]);
-  
+
   // Boot sequence animation
   useEffect(() => {
     if (!booting) return;
@@ -154,7 +154,7 @@ export const App: React.FC = () => {
 
     const bootMessages = BootSequenceService.getBootMessages();
     let currentTimeout: number;
-    
+
     const runBootSequence = (index = 0) => {
       if (index < bootMessages.length) {
         currentTimeout = window.setTimeout(() => {
@@ -169,7 +169,7 @@ export const App: React.FC = () => {
         }, 500);
       }
     };
-    
+
     runBootSequence();
     return () => clearTimeout(currentTimeout);
   }, [booting, settings.audioEnabled]);
@@ -190,14 +190,14 @@ export const App: React.FC = () => {
       // Scroll within the message container, not the whole page
       // This prevents page scroll when keyboard is open on mobile
       const container = scrollRef.current;
-      
+
       // Use requestAnimationFrame to ensure DOM has updated before scrolling
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           // Scroll all the way to the bottom by using scrollHeight
           // This ensures we always scroll to the absolute bottom, not just enough to show a target element
           const maxScrollTop = container.scrollHeight - container.clientHeight;
-          
+
           container.scrollTo({
             top: maxScrollTop,
             behavior: 'smooth'
@@ -288,10 +288,10 @@ export const App: React.FC = () => {
 
     const handleViewportChange = () => {
       if (!window.visualViewport) return;
-      
+
       // Check if keyboard is likely open (viewport height reduced significantly)
       const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.75;
-      
+
       if (isKeyboardOpen) {
         // Small delay to ensure layout has updated
         setTimeout(() => {
@@ -299,12 +299,12 @@ export const App: React.FC = () => {
           if (input) {
             // Scroll the input into view, but don't scroll the page
             input.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' });
-            
+
             // Also ensure the terminal container shows the input
             if (terminalContainerRef.current) {
               const inputRect = input.getBoundingClientRect();
               const containerRect = terminalContainerRef.current.getBoundingClientRect();
-              
+
               // If input is below visible area, scroll it into view
               if (inputRect.bottom > containerRect.bottom) {
                 input.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -340,7 +340,7 @@ export const App: React.FC = () => {
     setIsKeyReady(true);
     setBooting(true);
   }, []);
-  
+
   const handleApiKeySubmit = useCallback((submittedKey: string) => {
     const newSettings = settings.withApiKey(submittedKey);
     setSettings(newSettings);
@@ -365,7 +365,7 @@ export const App: React.FC = () => {
   const handleSendMessage = useCallback(async () => {
     const trimmedInput = input.trim();
     if ((trimmedInput === '' && attachedImages.length === 0) || isLoading || isStreaming) return;
-    
+
     const apiKey = await ApiKeyService.getApiKey();
     if (!apiKey) {
       const errorMsg = MessageService.createErrorMessage(
@@ -377,12 +377,12 @@ export const App: React.FC = () => {
     }
 
     // Convert attached images to MessageImage format
-    const messageImages = attachedImages.length > 0 
+    const messageImages = attachedImages.length > 0
       ? attachedImages.map(img => ({
-          base64Data: img.base64Data,
-          mimeType: img.mimeType,
-          fileName: img.fileName,
-        }))
+        base64Data: img.base64Data,
+        mimeType: img.mimeType,
+        fileName: img.fileName,
+      }))
       : undefined;
 
     const userMessage = MessageService.createUserMessage(
@@ -392,7 +392,7 @@ export const App: React.FC = () => {
       messageImages
     );
     const modelNameInUse = settings.modelName;
-    
+
     // Add to history
     if (trimmedInput !== commandHistory[0]) {
       setCommandHistory(prev => [trimmedInput, ...prev].slice(0, 50));
@@ -402,16 +402,22 @@ export const App: React.FC = () => {
     // Handle commands
     if (CommandService.isCommand(trimmedInput)) {
       const parsed = CommandService.parseCommand(trimmedInput);
-      if (parsed && parsed.command !== 'search') {
-           // Clear input immediately for all commands
-           setInput('');
+      if (parsed) {
+        // Clear input immediately for all commands
+        setInput('');
 
         // Show loading state for all commands
         setIsLoading(true);
-        
+
+        const commandEchoMessage = MessageService.createCommandExecutionMessage(
+          trimmedInput,
+          parsed.command
+        );
+        setMessages(prev => [...prev, commandEchoMessage]);
+
         const commandUseCase = new HandleCommandUseCase(settings, isStudioEnv);
         const result = await commandUseCase.execute(parsed.command, parsed.args);
-        
+
         // Clear loading state after command execution
         setIsLoading(false);
 
@@ -457,7 +463,7 @@ export const App: React.FC = () => {
 
     try {
       const sendUseCase = new SendMessageUseCase(
-        messages, 
+        messages,
         settings,
         (newInputTokenCount) => {
           // Update token count in UI after tokens are counted
@@ -465,62 +471,62 @@ export const App: React.FC = () => {
         }
       );
       await sendUseCase.execute(
-      trimmedInput || (attachedImages.length > 0 ? `Analyze ${attachedImages.length === 1 ? 'this image' : 'these images'}` : ''),
-      (chunkText, isFirstChunk) => {
-        const isError = chunkText.startsWith('SYSTEM ERROR');
-        const messageRole = isError ? 'system' : 'model';
-        
-        if (isFirstChunk) {
-          setIsLoading(false);
-          setIsStreaming(true);
-          const messageId = (Date.now() + 1).toString();
-          const newMessage = Message.create(
-            messageRole,
-            chunkText,
-            getCurrentTimestamp(),
-            undefined,
-            undefined,
-            messageRole === 'model' ? modelNameInUse : undefined
-          );
-          setMessages(prev => [...prev, newMessage]);
-          
-          // Play error beep if error
-          if (isError) {
-            playErrorBeep(settings.audioEnabled);
+        trimmedInput || (attachedImages.length > 0 ? `Analyze ${attachedImages.length === 1 ? 'this image' : 'these images'}` : ''),
+        (chunkText, isFirstChunk) => {
+          const isError = chunkText.startsWith('SYSTEM ERROR');
+          const messageRole = isError ? 'system' : 'model';
+
+          if (isFirstChunk) {
+            setIsLoading(false);
+            setIsStreaming(true);
+            const messageId = (Date.now() + 1).toString();
+            const newMessage = Message.create(
+              messageRole,
+              chunkText,
+              getCurrentTimestamp(),
+              undefined,
+              undefined,
+              messageRole === 'model' ? modelNameInUse : undefined
+            );
+            setMessages(prev => [...prev, newMessage]);
+
+            // Play error beep if error
+            if (isError) {
+              playErrorBeep(settings.audioEnabled);
+            }
+          } else {
+            setMessages(prev => {
+              return MessageService.updateLastMessage(prev, (msg) => {
+                if (msg.role === messageRole || (isError && msg.role === 'system')) {
+                  return msg.withUpdatedText(msg.text + chunkText);
+                }
+                return msg;
+              });
+            });
           }
-        } else {
-          setMessages(prev => {
-            return MessageService.updateLastMessage(prev, (msg) => {
-              if (msg.role === messageRole || (isError && msg.role === 'system')) {
-                return msg.withUpdatedText(msg.text + chunkText);
-              }
-              return msg;
+        },
+        ({ sources, warningMessage } = {}) => {
+          if (sources) {
+            setMessages(prev => {
+              return MessageService.updateLastMessage(prev, (msg) => {
+                if (msg.role === 'model') {
+                  return msg.withSources(sources);
+                }
+                return msg;
+              });
             });
-          });
-        }
-      },
-      ({ sources, warningMessage } = {}) => {
-        if (sources) {
-          setMessages(prev => {
-            return MessageService.updateLastMessage(prev, (msg) => {
-              if (msg.role === 'model') {
-                return msg.withSources(sources);
-              }
-              return msg;
-            });
-          });
-        }
+          }
 
-        if (warningMessage) {
-          setMessages(prev => [...prev, MessageService.createSystemMessage(warningMessage)]);
-        }
+          if (warningMessage) {
+            setMessages(prev => [...prev, MessageService.createSystemMessage(warningMessage)]);
+          }
 
-        setIsLoading(false);
-        setIsStreaming(false);
-      },
-      undefined,
-      undefined,
-      messageImages
+          setIsLoading(false);
+          setIsStreaming(false);
+        },
+        undefined,
+        undefined,
+        messageImages
       );
     } catch (error) {
       setIsLoading(false);
@@ -533,11 +539,11 @@ export const App: React.FC = () => {
     setInput(`/${command} `);
     setShowSuggestions(false);
   }, []);
-  
+
   const handleInputChange = useCallback((value: string) => {
     // Unlock audio on user interaction
     unlockAudio();
-    
+
     setInput(value);
     setHistoryIndex(-1);
 
@@ -555,13 +561,13 @@ export const App: React.FC = () => {
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     // Unlock audio on user interaction
     unlockAudio();
-    
+
     // Command History Navigation (only when suggestions are not shown)
     if (!showSuggestions && commandHistory.length > 0) {
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        const newIndex = historyIndex === -1 
-          ? 0 
+        const newIndex = historyIndex === -1
+          ? 0
           : Math.min(historyIndex + 1, commandHistory.length - 1);
         setHistoryIndex(newIndex);
         setInput(commandHistory[newIndex]);
@@ -581,8 +587,8 @@ export const App: React.FC = () => {
 
   const renderContent = () => {
     if (!isKeyReady) {
-      return isStudioEnv 
-        ? <ApiKeySelection theme={theme} onSelectKey={handleSelectKey} /> 
+      return isStudioEnv
+        ? <ApiKeySelection theme={theme} onSelectKey={handleSelectKey} />
         : <ApiKeyInput theme={theme} onApiKeySubmit={handleApiKeySubmit} />;
     }
     if (booting) return <BootScreen sequence={bootSequence} theme={theme} />;
@@ -606,9 +612,9 @@ export const App: React.FC = () => {
   const systemInfoVisible = isKeyReady && booted;
 
   return (
-    <div 
+    <div
       className="flex flex-col p-2 sm:p-4"
-      style={{ 
+      style={{
         height: '100%',
         maxHeight: '100%',
         overflow: 'hidden',
@@ -617,10 +623,10 @@ export const App: React.FC = () => {
         flexDirection: 'column'
       }}
     >
-      <div 
+      <div
         ref={terminalContainerRef}
         className="w-full shadow-lg flex flex-col relative border-4 crt-screen flex-1 min-h-0"
-        style={{ 
+        style={{
           fontSize: `${settings.fontSize}px`,
           backgroundColor: theme.background,
           color: theme.text,
@@ -638,7 +644,7 @@ export const App: React.FC = () => {
           inputTokenCount={inputTokenCount}
           systemInfoVisible={systemInfoVisible}
         />
-        <div 
+        <div
           ref={scrollRef}
           className="flex-1 p-4 overflow-y-auto relative scan-lines min-h-0"
           style={{ overflowY: 'auto' }}
