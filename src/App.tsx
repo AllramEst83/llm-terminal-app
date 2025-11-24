@@ -409,12 +409,6 @@ export const App: React.FC = () => {
         // Show loading state for all commands
         setIsLoading(true);
 
-        const commandEchoMessage = MessageService.createCommandExecutionMessage(
-          trimmedInput,
-          parsed.command
-        );
-        setMessages(prev => [...prev, commandEchoMessage]);
-
         const commandUseCase = new HandleCommandUseCase(settings, isStudioEnv);
         const result = await commandUseCase.execute(parsed.command, parsed.args);
 
@@ -426,11 +420,19 @@ export const App: React.FC = () => {
           playErrorBeep(settings.audioEnabled);
         }
 
+        // Handle clear command - don't add echo since we're clearing everything
         if (result.shouldClearMessages) {
           setMessages(MessageService.getInitialMessages());
           setInputTokenCount(0);
           return;
         }
+
+        // Add command echo message after checking for clear (so it doesn't get cleared)
+        const commandEchoMessage = MessageService.createCommandExecutionMessage(
+          trimmedInput,
+          parsed.command
+        );
+        setMessages(prev => [...prev, commandEchoMessage]);
 
         if (result.shouldOpenKeySelector) {
           await handleSelectKey();
