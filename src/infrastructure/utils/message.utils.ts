@@ -6,7 +6,7 @@ export function createInitialMessage(): Message {
   const buildNumber = import.meta.env.VITE_APP_BUILD || '1';
   
   return Message.createSystem(
-    `* Google Gemini v1.5 (Flash Edition) *\n* APP VERSION: ${appVersion} (Build ${buildNumber}) *\n* MEMORY: 640K RAM OK *\n* SYSTEM READY. *\n\nAwaiting your command...`
+    `* Google Gemini v1.5 (Mainframe Edition) *\n* APP VERSION: ${appVersion} (Build ${buildNumber}) *\n* MEMORY: 640K RAM OK *\n* SYSTEM READY. *\n\nAwaiting your command...`
   );
 }
 

@@ -406,18 +406,14 @@ export const App: React.FC = () => {
            // Clear input immediately for all commands
            setInput('');
 
-        // Show loading state for async commands like image
-        if (parsed.command === 'image') {
-          setIsLoading(true);
-        }
+        // Show loading state for all commands
+        setIsLoading(true);
         
         const commandUseCase = new HandleCommandUseCase(settings, isStudioEnv);
         const result = await commandUseCase.execute(parsed.command, parsed.args);
         
         // Clear loading state after command execution
-        if (parsed.command === 'image') {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
 
         // Play error beep if command failed
         if (!result.success) {
