@@ -16,7 +16,9 @@ interface MessageListProps {
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize, onImageLoad }) => {
   const headerFontSizeMultiplier = 0.9;
+  const commandInputFontSizeMultiplier = 0.8;
   const headerFontSize = fontSize * headerFontSizeMultiplier;
+  const commandInputFontSize = fontSize * commandInputFontSizeMultiplier;
 
   return (
     <>
@@ -154,7 +156,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
                     </span>
                   </div>
                   {msg.commandInput && (
-                    <div className="pl-2 border-l-2 font-mono text-sm" style={{ borderColor: `${theme.accent}40`, color: theme.text }}>
+                    <div className="pl-2 border-l-2 font-mono" style={{ borderColor: `${theme.accent}40`, color: theme.text, fontSize: `${commandInputFontSize}px` }}>
                       <span style={{ color: theme.prompt }}>{'>'} </span>
                       {msg.commandInput}
                     </div>
