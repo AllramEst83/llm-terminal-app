@@ -40,8 +40,8 @@ export class Theme {
       headerText: '#F7FBFF',
       system: '#AFC7FF',
       ai: '#E8B5FF',
-      userCardBg: '#1D2C27',
-      aiCardBg: '#231A2C',
+      userCardBg: '#1A3228',
+      aiCardBg: '#2A1635',
       systemCardBg: '#1A2433'
     },
     classic: { 
@@ -54,8 +54,8 @@ export class Theme {
       headerText: '#E0FFE3', 
       system: '#A4F4C7',
       ai: '#8ADFFF',
-      userCardBg: '#14261C',
-      aiCardBg: '#142429',
+      userCardBg: '#143323',
+      aiCardBg: '#211A2B',
       systemCardBg: '#1A2220'
     },
     amber: { 
@@ -68,8 +68,8 @@ export class Theme {
       headerText: '#FFEED6', 
       system: '#FFD98E',
       ai: '#FF8F70',
-      userCardBg: '#2B1A10',
-      aiCardBg: '#2B1410',
+      userCardBg: '#2F2312',
+      aiCardBg: '#341116',
       systemCardBg: '#261A0F'
     },
     'mono-blue': { 
@@ -82,8 +82,8 @@ export class Theme {
       headerText: '#E6F7FF', 
       system: '#9FD2FF',
       ai: '#6EE7FF',
-      userCardBg: '#112535',
-      aiCardBg: '#0F2432',
+      userCardBg: '#103247',
+      aiCardBg: '#0E1D32',
       systemCardBg: '#0F1E32'
     },
     hacker: { 
@@ -96,8 +96,8 @@ export class Theme {
       headerText: '#EBFFEE', 
       system: '#B5FFCD',
       ai: '#7CFFE9',
-      userCardBg: '#132417',
-      aiCardBg: '#122422',
+      userCardBg: '#0E2F1A',
+      aiCardBg: '#0D1F2F',
       systemCardBg: '#112118'
     },
     vt100: { 
@@ -110,8 +110,8 @@ export class Theme {
       headerText: '#FDFDFD', 
       system: '#C5F36A',
       ai: '#7FE7FF',
-      userCardBg: '#131313',
-      aiCardBg: '#111A1D',
+      userCardBg: '#1C1C1C',
+      aiCardBg: '#0F1E2A',
       systemCardBg: '#171311'
     },
     unicorn: { 
@@ -124,8 +124,8 @@ export class Theme {
       headerText: '#FFF3FF', 
       system: '#BDE0FF',
       ai: '#FF9FE5',
-      userCardBg: '#361236',
-      aiCardBg: '#331636',
+      userCardBg: '#3D1444',
+      aiCardBg: '#2A1F4A',
       systemCardBg: '#2D1C3E'
     },
     dos: { 
@@ -138,8 +138,8 @@ export class Theme {
       headerText: '#FFFFFF', 
       system: '#F6E177',
       ai: '#8ED7FF',
-      userCardBg: '#11116A',
-      aiCardBg: '#0B136C',
+      userCardBg: '#18187A',
+      aiCardBg: '#0A1F70',
       systemCardBg: '#1B1B6D'
     },
     cga: { 
@@ -152,8 +152,8 @@ export class Theme {
       headerText: '#FDF6FF', 
       system: '#FFB0FF',
       ai: '#8BFFB8',
-      userCardBg: '#161616',
-      aiCardBg: '#132516',
+      userCardBg: '#1E1E1E',
+      aiCardBg: '#0F2F1E',
       systemCardBg: '#261427'
     },
     'rose-pine': { 
@@ -166,8 +166,8 @@ export class Theme {
       headerText: '#FCE8F5', 
       system: '#BFD8FF',
       ai: '#FFE39F',
-      userCardBg: '#231B31',
-      aiCardBg: '#261B2C',
+      userCardBg: '#291D37',
+      aiCardBg: '#241228',
       systemCardBg: '#1F2034'
     },
     'harvest-70s': { 
@@ -180,8 +180,8 @@ export class Theme {
       headerText: '#FFF4DE', 
       system: '#B1E6B1',
       ai: '#FF9BCB',
-      userCardBg: '#2E2214',
-      aiCardBg: '#2E1A16',
+      userCardBg: '#352515',
+      aiCardBg: '#2C1422',
       systemCardBg: '#261F14'
     },
     'neon-80s': { 
@@ -194,8 +194,8 @@ export class Theme {
       headerText: '#FDF2FF', 
       system: '#A7FFCD',
       ai: '#FF9FD5',
-      userCardBg: '#191024',
-      aiCardBg: '#1A0F1F',
+      userCardBg: '#1F1433',
+      aiCardBg: '#250D24',
       systemCardBg: '#101A1B'
     },
     'synthwave-80s': { 
@@ -208,8 +208,8 @@ export class Theme {
       headerText: '#F9EAFE', 
       system: '#C7B3FF',
       ai: '#FFD484',
-      userCardBg: '#1C1332',
-      aiCardBg: '#1B0F28',
+      userCardBg: '#24153F',
+      aiCardBg: '#1A0B2A',
       systemCardBg: '#160F2F'
     },
   };
