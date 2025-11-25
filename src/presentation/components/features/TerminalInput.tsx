@@ -354,8 +354,10 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isMaxImages}
-          className="mr-2 p-1 hover:opacity-80 transition-opacity relative"
-          style={{ color: theme.accent, opacity: disabled || isMaxImages ? 0.3 : 1 }}
+          className="terminal-input-attach-btn"
+          style={{ 
+            color: theme.accent
+          }}
           title={
             isMaxImages
               ? `Maximum ${maxImages} images reached`
@@ -364,14 +366,13 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
               : 'Attach images - drag & drop, paste, or use the file picker (Ctrl/Cmd for multi-select)'
           }
         >
-          {ATTACH_ICON}
+          <span className="terminal-input-attach-icon">{ATTACH_ICON}</span>
           {hasImages && (
             <span 
-              className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center font-bold"
+              className="terminal-input-attach-badge"
               style={{
                 backgroundColor: theme.accent,
                 color: theme.background,
-                fontSize: '9px',
               }}
             >
               {attachedImages.length}

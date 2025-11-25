@@ -51,3 +51,47 @@
   }
 }
 
+/* Terminal Input Attach Button */
+.terminal-input-attach-btn {
+  margin-right: 0.5rem;
+  padding: 0.25rem;
+  position: relative;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.terminal-input-attach-btn:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.terminal-input-attach-btn:active {
+  transform: scale(0.95);
+  opacity: 0.7;
+}
+
+.terminal-input-attach-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.terminal-input-attach-icon {
+  display: inline-block;
+  user-select: none;
+}
+
+.terminal-input-attach-badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 9px;
+}
+
