@@ -3,6 +3,9 @@ import type { CommandDefinition } from '../../../domain/entities/command';
 import type { ThemeColors } from '../../../domain/entities/theme';
 import { CommandSuggestions } from './CommandSuggestions';
 
+// Using ASCII-safe icon to avoid parser issues with emoji in WebContainer
+const ATTACH_ICON = '[+]';
+
 export interface AttachedImage {
   base64Data: string;
   mimeType: string;
@@ -361,7 +364,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
               : 'Attach images - drag & drop, paste, or use the file picker (Ctrl/Cmd for multi-select)'
           }
         >
-          📎
+          {ATTACH_ICON}
           {hasImages && (
             <span 
               className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center font-bold"
