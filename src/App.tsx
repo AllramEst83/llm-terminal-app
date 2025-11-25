@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Message, Settings } from './domain';
+import { CommandNames, Message, Settings } from './domain';
 import {
   ApiKeyService,
   ThemeService,
@@ -406,6 +406,16 @@ export const App: React.FC = () => {
         // Clear input immediately for all commands
         setInput('');
 
+        // Add command echo message immediately (unless it's a clear command)
+        // This prevents race conditions where a long-running command might add its echo after a subsequent /clear
+        if (parsed.command !== CommandNames.CLEAR) {
+          const commandEchoMessage = MessageService.createCommandExecutionMessage(
+            trimmedInput,
+            parsed.command
+          );
+          setMessages(prev => [...prev, commandEchoMessage]);
+        }
+
         // Show loading state for all commands
         setIsLoading(true);
 
@@ -426,13 +436,6 @@ export const App: React.FC = () => {
           setInputTokenCount(0);
           return;
         }
-
-        // Add command echo message after checking for clear (so it doesn't get cleared)
-        const commandEchoMessage = MessageService.createCommandExecutionMessage(
-          trimmedInput,
-          parsed.command
-        );
-        setMessages(prev => [...prev, commandEchoMessage]);
 
         if (result.shouldOpenKeySelector) {
           await handleSelectKey();

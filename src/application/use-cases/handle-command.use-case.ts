@@ -8,6 +8,7 @@ import {
 import { Theme, type ThemeName } from '../../domain/entities/theme';
 import type { CommandResult } from '../../domain/entities/command-result';
 import type { Message } from '../../domain/entities/message';
+import { CommandNames } from '../../domain/entities/command';
 import { CommandService } from '../../infrastructure/services/command.service';
 import { ThemeService } from '../../infrastructure/services/theme.service';
 import { ApiKeyService } from '../../infrastructure/services/api-key.service';
@@ -43,35 +44,35 @@ export class HandleCommandUseCase {
     args: string[]
   ): Promise<CommandResult> {
     switch (command) {
-      case 'clear':
+      case CommandNames.CLEAR:
         return this.handleClear();
-      case 'settings':
+      case CommandNames.SETTINGS:
         return this.handleSettings();
-      case 'tokens':
+      case CommandNames.TOKENS:
         return this.handleTokens();
-      case 'font':
+      case CommandNames.FONT:
         return this.handleFont(args);
-      case 'theme':
+      case CommandNames.THEME:
         return this.handleTheme(args);
-      case 'apikey':
+      case CommandNames.API_KEY:
         return await this.handleApiKey(args);
-      case 'reset':
+      case CommandNames.RESET:
         return await this.handleReset();
-      case 'info':
+      case CommandNames.INFO:
         return await this.handleInfo();
-      case 'model':
+      case CommandNames.MODEL:
         return this.handleModel(args);
-      case 'think':
+      case CommandNames.THINK:
         return this.handleThink(args);
-      case 'grammar':
+      case CommandNames.GRAMMAR:
         return await this.handleGrammar(args);
-      case 'image':
+      case CommandNames.IMAGE:
         return await this.handleImage(args);
-      case 'audio':
+      case CommandNames.AUDIO:
         return this.handleAudio(args);
-      case 'search':
+      case CommandNames.SEARCH:
         return await this.handleSearch(args);
-      case 'help':
+      case CommandNames.HELP:
       case '':
         return this.handleHelp();
       default:

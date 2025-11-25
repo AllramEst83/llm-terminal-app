@@ -1,26 +1,48 @@
+export const CommandNames = {
+  CLEAR: 'clear',
+  SEARCH: 'search',
+  SETTINGS: 'settings',
+  TOKENS: 'tokens',
+  FONT: 'font',
+  THEME: 'theme',
+  API_KEY: 'apikey',
+  RESET: 'reset',
+  INFO: 'info',
+  MODEL: 'model',
+  THINK: 'think',
+  GRAMMAR: 'grammar',
+  IMAGE: 'image',
+  AUDIO: 'audio',
+  HELP: 'help',
+} as const;
+
+export type CommandName = typeof CommandNames[keyof typeof CommandNames];
+
 export interface CommandDefinition {
-  name: string;
+  name: CommandName;
   description: string;
 }
 
+const COMMANDS: CommandDefinition[] = [
+  { name: CommandNames.CLEAR, description: 'Clears the terminal screen.' },
+  { name: CommandNames.SEARCH, description: 'Searches the web (e.g., /search latest news).' },
+  { name: CommandNames.SETTINGS, description: 'Displays current settings.' },
+  { name: CommandNames.TOKENS, description: 'Shows token usage for the current session grouped by model.' },
+  { name: CommandNames.FONT, description: 'Sets font size (e.g., /font 18).' },
+  { name: CommandNames.THEME, description: 'Changes color scheme (e.g., /theme amber).' },
+  { name: CommandNames.API_KEY, description: 'Sets or updates the API key (e.g., /apikey <your_key>).' },
+  { name: CommandNames.RESET, description: 'Resets all settings to their default values.' },
+  { name: CommandNames.INFO, description: 'Displays browser and system information.' },
+  { name: CommandNames.MODEL, description: 'Switch between models (e.g., /model pro or /model flash).' },
+  { name: CommandNames.THINK, description: 'Configure thinking per model (e.g., /think flash 5000, /think 3-pro high).' },
+  { name: CommandNames.GRAMMAR, description: 'Fix grammar and slightly improve provided text.' },
+  { name: CommandNames.IMAGE, description: 'Generates an image from a prompt using Nano Banana (default) or Imagen 4.0 (e.g., /image a cat [--aspect 16:9] [--model nano-banana]).' },
+  { name: CommandNames.AUDIO, description: 'Toggle audio effects (e.g., /audio on, /audio off).' },
+  { name: CommandNames.HELP, description: 'Shows this list of commands.' },
+];
+
 export class Command {
-  static readonly COMMANDS: CommandDefinition[] = [
-    { name: 'clear', description: 'Clears the terminal screen.' },
-    { name: 'search', description: 'Searches the web (e.g., /search latest news).' },
-    { name: 'settings', description: 'Displays current settings.' },
-    { name: 'tokens', description: 'Shows token usage for the current session grouped by model.' },
-    { name: 'font', description: 'Sets font size (e.g., /font 18).' },
-    { name: 'theme', description: 'Changes color scheme (e.g., /theme amber).' },
-    { name: 'apikey', description: 'Sets or updates the API key (e.g., /apikey <your_key>).' },
-    { name: 'reset', description: 'Resets all settings to their default values.' },
-    { name: 'info', description: 'Displays browser and system information.' },
-    { name: 'model', description: 'Switch between models (e.g., /model pro or /model flash).' },
-    { name: 'think', description: 'Configure thinking per model (e.g., /think flash 5000, /think 3-pro high).' },
-    { name: 'grammar', description: 'Fix grammar and slightly improve provided text.' },
-    { name: 'image', description: 'Generates an image from a prompt using Nano Banana (default) or Imagen 4.0 (e.g., /image a cat [--aspect 16:9] [--model nano-banana]).' },
-    { name: 'audio', description: 'Toggle audio effects (e.g., /audio on, /audio off).' },
-    { name: 'help', description: 'Shows this list of commands.' },
-  ];
+  static readonly COMMANDS: CommandDefinition[] = COMMANDS;
 
   static getAllCommands(): CommandDefinition[] {
     return [...this.COMMANDS];
