@@ -6,6 +6,10 @@
 - The signup and login screen have to be accessible and follow WCAG 2.1 guidelines.
 - Always follow best coding practices and principles.
 - WebApp has to be production safe and secure when it comes to authentication.
+- **Security Principle:** Always prefer the most secure option.
+  - Default to server-side execution (Supabase Edge Functions) for anything involving secrets, tokens, or third-party APIs.
+  - Client should never directly handle long-lived secrets or call Gemini APIs with raw API keys.
+  - When in doubt, move logic to a function and keep the client as thin as possible.
 
 ### Backend
 
