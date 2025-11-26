@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { CommandNames, Message, Settings } from './domain';
 import {
   ApiKeyService,
@@ -433,8 +434,16 @@ export const App: React.FC = () => {
         // Handle clear command - don't add echo since we're clearing everything
         if (result.shouldClearMessages) {
           // Explicitly clear all messages by replacing with initial messages
-          // This ensures all message types (user, model, system, command echoes) are cleared
-          setMessages(() => MessageService.getInitialMessages());
+          // Use flushSync to ensure this happens immediately and synchronously,
+          // preventing any race conditions with batched state updates that might
+          // add messages after the clear. Create a new array reference explicitly
+          // to ensure React sees this as a complete replacement.
+          // This ensures all message types (user, model, system, command echoes) are cleared.
+          const freshInitialMessages = MessageService.getInitialMessages();
+          flushSync(() => {
+            // Use a function form to ensure we're not relying on any closure
+            setMessages(() => freshInitialMessages);
+          });
           setInputTokenCount(0);
           return;
         }
