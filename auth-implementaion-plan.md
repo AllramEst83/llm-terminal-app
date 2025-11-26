@@ -16,7 +16,7 @@
     - login
     - logout
     - reset password
-    - delete account
+    - delete account (via secure Edge Function - server-side only)
     - listen for auth state changes and direct user accordingly.
   - Use Supabase to to store the user set settings and preferences.
   - Enable row level security on `profiles`, `user_settings`, `api_keys`, and any future auth-related tables; define policies per role (anon vs authenticated vs service) and keep them versioned with migrations.
@@ -24,9 +24,42 @@
   - Use crypto to store api key in table instead of plain text.
     - Use 32 bit salt to decrypt api key before storing it and decrypt before using it. Stored in "supabase/.env.local", API_KEY_ENCRYPTION_SECRET.
     - Always use crypto to encrypt and decrypt data.
-    - Never store api key in localStorage.
+    - Never store api key in localStorage unencrypted.
   - Check if user settings is in localStorage, if not, get it from Supabase.
-    - Whne settings are changed, update localStorage and Supabase.
+    - When settings are changed, update localStorage and Supabase.
+  - **CRITICAL**: Load settings (including API key) BEFORE checking if API key exists.
+    - This ensures authenticated users don't get prompted for API key on every login.
+    - Order: Load settings from Supabase → Decrypt API key → Then check if key ready.
+
+#### Gemini API Security (Edge Functions)
+
+- **ALL Gemini API interactions MUST happen server-side via Supabase Edge Functions**.
+  - Never call Gemini API directly from client - API keys must never be exposed to browser.
+  - Create Edge Functions for all Gemini operations:
+    - `gemini-chat` - Handle chat conversations with streaming
+    - `gemini-image` - Generate images
+    - `gemini-search` - Web search functionality
+    - `gemini-grammar` - Text improvement
+  - Edge Functions will:
+    - Authenticate user via JWT token
+    - Retrieve encrypted API key from database
+    - Decrypt API key server-side using environment secrets
+    - Make API call to Gemini
+    - Stream response back to client
+    - Never log or expose decrypted API keys
+  - Client services should call Edge Functions, not Gemini API directly.
+  - Implement rate limiting to prevent abuse.
+  - Track usage server-side for analytics.
+
+#### Server-Side Operations
+
+- **Delete User Account** - Must use Edge Function (`delete-user`)
+  - Client calls Edge Function with JWT token
+  - Server verifies authentication
+  - Server uses service role to delete user account
+  - Handles cascading deletion of all user data
+  - Returns success/error to client
+  - Never allow client-side user deletion
 
 #### Supabase environment clarity
 
@@ -57,15 +90,20 @@
 ### UI
 
 - Create a Signup and Login screen.
-- Add signout command to commnads list to logout user.
-  - Push user to login screen when signout command is executed on successfull logout.
-- show logout in far right of the header, next to token infoirmation.
+- Add signout command to commands list to logout user.
+  - Push user to login screen when signout command is executed on successful logout.
+- Show logout in far right of the header, next to token information.
 - Implement Route guards to protect routes from unauthorized access.
 - Show loading spinner when authentication is in progress.
 - Show error message when authentication fails.
 - Show success message when authentication succeeds.
   - Show warning message when authentication is not configured.
-  - Show warning message when authentication is not configured.
+- **API Key Detection**: Do NOT prompt for API key if user is authenticated and has saved one.
+  - Load user settings first (includes encrypted API key from Supabase)
+  - Decrypt and cache API key in memory
+  - Check if API key exists AFTER loading settings
+  - Only show API key prompt if no key found after settings load
+  - This prevents asking for API key on every login
 
 #### Auth state handling strategy
 
@@ -96,25 +134,33 @@
   - Ensure all interactions work via keyboard only (tab order, Enter to submit, Esc to close).
   - Maintain minimum 4.5:1 contrast inside retro terminal palette.
 
-### Documentaion
+### Documentation
 
-- Cerate a step by step guide how to run porject especially supabase with all the necessary steps and commands.
+- Create a step by step guide how to run project especially supabase with all the necessary steps and commands.
+- Document Edge Functions setup and deployment.
+- Include security considerations for API key handling.
+- Document the importance of server-side operations for sensitive data.
 
   - npx supabase start
   - npx supabase stop
   - npx supabase login
   - npx supabase link
   - npx supabase status
-  - npx supabase functions deploy
+  - npx supabase functions deploy [function-name]
   - npx supabase functions serve
-  - npx supa base migrations list
-  - npm supabase db push
-  - npm supabase db reset
-  - npm supabase db seed
-  - npm supabase db generate
+  - npx supabase functions logs [function-name]
+  - npx supabase migrations list
+  - npx supabase db push
+  - npx supabase db reset
+  - npx supabase db seed
+  - npx supabase secrets set KEY=value
 
 - Add prerequisites: Node version, npm, Supabase CLI install, Docker (for Postgres), env var setup steps.
 - For each command above, include expected output snippets plus troubleshooting tips (e.g., port already in use, auth login failures).
+- Document Edge Functions deployment and testing procedures.
 - Document automated auth tests: `npm run test auth` for unit/mocks; integration tests require `npx supabase start`.
 - Provide seeding guidance (`supabase/seed.sql`) for demo users/API keys and how to sanitize before committing logs.
 - Include secret-sharing policy (internal vault) and revocation steps.
+- Document server-side API key handling and why client should never call Gemini API directly.
+- Include Edge Functions guide with migration steps for moving Gemini API calls to server-side.
+- Explain API key detection flow: Settings load → Decrypt API key → Check existence → Only prompt if missing.
