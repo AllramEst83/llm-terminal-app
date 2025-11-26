@@ -432,7 +432,9 @@ export const App: React.FC = () => {
 
         // Handle clear command - don't add echo since we're clearing everything
         if (result.shouldClearMessages) {
-          setMessages(MessageService.getInitialMessages());
+          // Explicitly clear all messages by replacing with initial messages
+          // This ensures all message types (user, model, system, command echoes) are cleared
+          setMessages(() => MessageService.getInitialMessages());
           setInputTokenCount(0);
           return;
         }
