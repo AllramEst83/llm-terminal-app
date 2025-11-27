@@ -70,6 +70,8 @@ export const App: React.FC = () => {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const isInitializedRef = useRef<boolean>(false);
   const terminalContainerRef = useRef<HTMLDivElement>(null);
+  const clearCounterRef = useRef<number>(0);
+  const messagesRef = useRef<Message[]>([]);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
 
   // Initialize app
@@ -165,7 +167,9 @@ export const App: React.FC = () => {
         currentTimeout = window.setTimeout(() => {
           setBooting(false);
           setBooted(true);
-          setMessages(MessageService.getInitialMessages());
+          const initialMessages = MessageService.getInitialMessages();
+          setMessages(initialMessages);
+          messagesRef.current = initialMessages;
         }, 500);
       }
     };
@@ -174,6 +178,11 @@ export const App: React.FC = () => {
     return () => clearTimeout(currentTimeout);
   }, [booting, settings.audioEnabled]);
 
+
+  // Sync messages ref with state
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // Syntax highlighting
   useEffect(() => {
@@ -402,13 +411,21 @@ export const App: React.FC = () => {
     // Handle commands
     if (CommandService.isCommand(trimmedInput)) {
       const parsed = CommandService.parseCommand(trimmedInput);
-      if (parsed) {
+      if (!parsed) {
+        return;
+      }
+
+      try {
         // Clear input immediately for all commands
         setInput('');
 
-        // Add command echo message immediately (unless it's a clear command)
-        // This prevents race conditions where a long-running command might add its echo after a subsequent /clear
-        if (parsed.command !== CommandNames.CLEAR) {
+        // Track clear counter at command start to detect if clear happens during async execution
+        const commandStartClearCounter = clearCounterRef.current;
+
+        // Add command echo immediately (before async execution) for instant user feedback
+        // Skip echo for CLEAR command since we're clearing everything anyway
+        if (parsed.command !== CommandNames.CLEAR && 
+            clearCounterRef.current === commandStartClearCounter) {
           const commandEchoMessage = MessageService.createCommandExecutionMessage(
             trimmedInput,
             parsed.command
@@ -416,27 +433,33 @@ export const App: React.FC = () => {
           setMessages(prev => [...prev, commandEchoMessage]);
         }
 
-        // Show loading state for all commands
+        // Execute command
         setIsLoading(true);
-
         const commandUseCase = new HandleCommandUseCase(settings, isStudioEnv);
         const result = await commandUseCase.execute(parsed.command, parsed.args);
-
-        // Clear loading state after command execution
         setIsLoading(false);
 
-        // Play error beep if command failed
+        // Handle command result
         if (!result.success) {
           playErrorBeep(settings.audioEnabled);
         }
 
-        // Handle clear command - don't add echo since we're clearing everything
+        // Handle clear command - must happen before any other message updates
         if (result.shouldClearMessages) {
-          setMessages(MessageService.getInitialMessages());
+          clearCounterRef.current += 1;
+          const initialMessages = MessageService.getInitialMessages();
+          setMessages(() => initialMessages);
+          messagesRef.current = initialMessages;
           setInputTokenCount(0);
           return;
         }
 
+        // If a clear happened while this command was executing, don't add result messages
+        if (clearCounterRef.current !== commandStartClearCounter) {
+          return;
+        }
+
+        // Process command results
         if (result.shouldOpenKeySelector) {
           await handleSelectKey();
         }
@@ -448,15 +471,21 @@ export const App: React.FC = () => {
         }
 
         if (result.message) {
-          // Only add the system response, not the user command message
-          // Commands should not be part of the conversation history sent to the LLM
           setMessages(prev => [...prev, result.message!]);
         }
-
-        return;
+      } catch (error) {
+        setIsLoading(false);
+        console.error('Command execution error:', error);
+        const errorMessage = MessageService.createErrorMessage(
+          `SYSTEM ERROR: Command execution failed. ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+        setMessages(prev => [...prev, errorMessage]);
+        playErrorBeep(settings.audioEnabled);
       }
-    }
 
+      return;
+    }
+    
     // Send message to Gemini
     setMessages(prev => [...prev, userMessage]);
     setInput('');

@@ -9,6 +9,9 @@ export interface MessageImage {
   fileName?: string;
 }
 
+// Counter to ensure unique message IDs even when created in the same millisecond
+let messageIdCounter = 0;
+
 export class Message {
   constructor(
     public readonly id: string,
@@ -36,8 +39,10 @@ export class Message {
     command?: string,
     commandInput?: string
   ): Message {
+    // Use timestamp + counter + random to ensure uniqueness
+    const uniqueId = `${Date.now()}-${++messageIdCounter}-${Math.random().toString(36).substring(2, 9)}`;
     return new Message(
-      Date.now().toString(),
+      uniqueId,
       role,
       text,
       timestamp,
