@@ -20,12 +20,12 @@
 - Show error message when authentication fails.
 - Show success message when authentication succeeds.
   - Show warning message when authentication is not configured.
-- **API Key Detection**: Do NOT prompt for API key if user is authenticated and has saved one.
-  - Load user settings first (includes encrypted API key from Supabase)
-  - Decrypt and cache API key in memory
-  - Check if API key exists AFTER loading settings
-  - Only show API key prompt if no key found after settings load
-  - This prevents asking for API key on every login
+- **API Key Handling**: API key never leaves the server; frontend only receives boolean state.
+  - On auth success call a `checkApiKey()` endpoint that returns existence status (`hasKey: true|false`).
+  - Endpoint validates Supabase session, decrypts key server-side, and never returns raw secret.
+  - Cache the boolean in memory; re-check whenever settings are reloaded or session changes.
+  - Prompt user only when `hasKey` is false; keep prompt hidden otherwise.
+  - This avoids leaking secrets and still prevents repetitive prompts.
 
 #### Auth state handling strategy
 
