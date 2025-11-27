@@ -7,5 +7,7 @@ export interface CommandResult {
   settingsUpdate?: Partial<Settings>;
   shouldClearMessages?: boolean;
   shouldOpenKeySelector?: boolean;
+  shouldRefreshApiKeyStatus?: boolean;
+  shouldSignOut?: boolean;
 }
 

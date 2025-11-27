@@ -33,10 +33,14 @@ const THINKING_MODEL_SHORTCUTS: Record<string, string> = {
 };
 const THINKING_SUPPORTED_MODELS_TEXT = `${THINKING_MODEL_SHORTCUTS[GEMINI_FLASH_MODEL_ID]}, ${THINKING_MODEL_SHORTCUTS[GEMINI_PRO_MODEL_ID]}, ${THINKING_MODEL_SHORTCUTS[GEMINI_3_PRO_MODEL_ID]}`;
 
+interface CommandUseCaseOptions {
+  hasRemoteApiKey?: boolean;
+}
+
 export class HandleCommandUseCase {
   constructor(
     private currentSettings: Settings,
-    private isStudioEnv: boolean
+    private options: CommandUseCaseOptions = {}
   ) {}
 
   async execute(
@@ -72,6 +76,8 @@ export class HandleCommandUseCase {
         return this.handleAudio(args);
       case CommandNames.SEARCH:
         return await this.handleSearch(args);
+      case CommandNames.SIGNOUT:
+        return this.handleSignout();
       case CommandNames.HELP:
       case '':
         return this.handleHelp();
@@ -90,11 +96,9 @@ export class HandleCommandUseCase {
   }
 
   private handleSettings(): CommandResult {
-    const keyStatus = this.isStudioEnv
-      ? 'Using Studio API Key'
-      : (this.currentSettings.apiKey
-          ? `Configured (${this.currentSettings.apiKey.substring(0, 8)}...)`
-          : 'Not configured');
+    const keyStatus = this.options.hasRemoteApiKey
+      ? 'Configured (server managed)'
+      : 'Not configured';
 
     const thinkingStatus = this.buildSettingsThinkingSummary();
 
@@ -181,35 +185,30 @@ export class HandleCommandUseCase {
   }
 
   private async handleApiKey(args: string[]): Promise<CommandResult> {
-    if (this.isStudioEnv) {
-      await ApiKeyService.openKeySelector();
-      const message = MessageService.createSystemMessage(
-        'SYSTEM: Opening API key selector...'
-      );
-      return {
-        success: true,
-        message,
-        shouldOpenKeySelector: true,
-      };
-    }
-
     const newKey = args.join(' ').trim();
     if (!newKey) {
       const message = MessageService.createErrorMessage(
-        'SYSTEM ERROR: No API key provided.\nUsage: /apikey <your_api_key>\n\nYou can get a key from Google AI Studio.'
+        'SYSTEM ERROR: No API key provided.\nUsage: /apikey <your_api_key>\n\nKeys are stored securely on the server.'
       );
       return { success: false, message };
     }
 
-    const message = MessageService.createSystemMessage(
-      'SYSTEM: API key has been updated successfully.\n\nTry sending a message to verify it works.'
-    );
-
-    return {
-      success: true,
-      message,
-      settingsUpdate: { apiKey: newKey },
-    };
+    try {
+      await ApiKeyService.saveApiKey(newKey);
+      const message = MessageService.createSystemMessage(
+        'SYSTEM: API key stored securely.\n\nLarger model calls will now route through the protected backend.'
+      );
+      return {
+        success: true,
+        message,
+        shouldRefreshApiKeyStatus: true,
+      };
+    } catch (error) {
+      const message = MessageService.createErrorMessage(
+        `SYSTEM ERROR: Unable to store API key.\n\nDetails: ${error instanceof Error ? error.message : String(error)}`
+      );
+      return { success: false, message };
+    }
   }
 
   private async handleReset(): Promise<CommandResult> {
@@ -224,11 +223,21 @@ export class HandleCommandUseCase {
       settingsUpdate: {
         fontSize: Settings.DEFAULT_FONT_SIZE,
         themeName: Theme.DEFAULT_THEME_NAME,
-        apiKey: this.isStudioEnv ? this.currentSettings.apiKey : '',
         modelName: defaultModelName,
         thinkingSettings: Settings.createDefaultThinkingSettings(),
         audioEnabled: true,
       },
+    };
+  }
+
+  private handleSignout(): CommandResult {
+    const message = MessageService.createSystemMessage(
+      'SYSTEM: Initiating secure sign-out...'
+    );
+    return {
+      success: true,
+      message,
+      shouldSignOut: true,
     };
   }
 
@@ -680,17 +689,8 @@ ${usageBlock}`;
       ModelService.resolveImageModel(imageModelId) ?? defaultImageModel;
 
     try {
-      const apiKey = await ApiKeyService.getApiKey();
-      if (!apiKey) {
-        const message = MessageService.createErrorMessage(
-          'SYSTEM ERROR: API key is missing. Please configure your API key using /apikey <your_key>.'
-        );
-        return { success: false, message };
-      }
-
       const { imageData, usageMetadata } = await generateImage(
         prompt,
-        apiKey,
         aspectRatio,
         imageModelId
       );
@@ -720,8 +720,6 @@ ${usageBlock}`;
           const aspectList = selectedImageModel.supportedAspectRatios.join(', ');
           const example = this.getImageModelExamples(selectedImageModel.id)[0] ?? '/image a cat';
           errorMessage = `SYSTEM ERROR: ${error.message}\n\n${selectedImageModel.displayName} supports: ${aspectList}\n\nExample: ${example}`;
-        } else if (errorMsg.includes('api key') || errorMsg.includes('permission') || errorMsg.includes('invalid')) {
-          errorMessage = `SYSTEM ERROR: ${error.message}\n\nTroubleshooting:\n- Verify your API key is correct\n- Ensure Imagen API is enabled in Google AI Studio\n- Check that your API key has access to image generation\n- Try updating your key: /apikey <your_key>`;
         } else if (errorMsg.includes('quota') || errorMsg.includes('rate limit')) {
           errorMessage = 'SYSTEM ERROR: API quota exceeded or rate limit reached.\n\nPlease try again later.';
         } else if (errorMsg.includes('policy') || errorMsg.includes('violation')) {
@@ -794,19 +792,7 @@ ${usageBlock}`;
     }
 
     try {
-      const apiKey = await ApiKeyService.getApiKey();
-      if (!apiKey) {
-        const message = MessageService.createErrorMessage(
-          'SYSTEM ERROR: API key is missing. Configure it with /apikey <your_key>.'
-        );
-        return { success: false, message };
-      }
-
-      const result = await SearchService.performSearch(
-        query,
-        apiKey,
-        this.currentSettings.modelName
-      );
+      const result = await SearchService.performSearch(query, this.currentSettings.modelName);
 
       let message = MessageService.createSystemMessage(result.text);
       if (result.sources.length > 0) {
@@ -889,17 +875,8 @@ ${usageBlock}`;
     }
 
     try {
-      const apiKey = await ApiKeyService.getApiKey();
-      if (!apiKey) {
-        const message = MessageService.createErrorMessage(
-          'SYSTEM ERROR: API key is missing. Configure it with /apikey <your_key>.'
-        );
-        return { success: false, message };
-      }
-
       const improved = await GrammarService.improveText(
         textToImprove,
-        apiKey,
         this.currentSettings.modelName
       );
 

@@ -14,6 +14,7 @@ export const CommandNames = {
   IMAGE: 'image',
   AUDIO: 'audio',
   HELP: 'help',
+  SIGNOUT: 'signout',
 } as const;
 
 export type CommandName = typeof CommandNames[keyof typeof CommandNames];
@@ -39,6 +40,7 @@ const COMMANDS: CommandDefinition[] = [
   { name: CommandNames.IMAGE, description: 'Generates an image from a prompt using Nano Banana (default) or Imagen 4.0 (e.g., /image a cat [--aspect 16:9] [--model nano-banana]).' },
   { name: CommandNames.AUDIO, description: 'Toggle audio effects (e.g., /audio on, /audio off).' },
   { name: CommandNames.HELP, description: 'Shows this list of commands.' },
+  { name: CommandNames.SIGNOUT, description: 'Signs out of the current session and returns to login.' },
 ];
 
 export class Command {

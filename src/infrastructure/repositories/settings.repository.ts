@@ -1,8 +1,8 @@
 import { Settings, type ThinkingModelSettings, GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID, GEMINI_3_PRO_MODEL_ID } from '../../domain/entities/settings';
 import { StorageService } from '../storage/storage.service';
-import { ThemeService } from '../services/theme.service';
-import { ApiKeyService } from '../services/api-key.service';
 import { ModelService } from '../services/model.service';
+import { ThemeService } from '../services/theme.service';
+import { UserSettingsService } from '../services/user-settings.service';
 
 const FONT_SIZE_STORAGE_KEY = 'terminal_fontSize';
 const MODEL_NAME_STORAGE_KEY = 'terminal_modelName';
@@ -11,15 +11,52 @@ const THINKING_ENABLED_STORAGE_KEY = 'terminal_thinkingEnabled';
 const THINKING_BUDGET_STORAGE_KEY = 'terminal_thinkingBudget';
 const THINKING_LEVEL_STORAGE_KEY = 'terminal_thinkingLevel';
 const AUDIO_ENABLED_STORAGE_KEY = 'terminal_audioEnabled';
+const SETTINGS_VERSION_STORAGE_KEY = 'terminal_settings_version';
 
 export class SettingsRepository {
+  private static persistLocally(settings: Settings): void {
+    const fontSizeSaved = StorageService.set(FONT_SIZE_STORAGE_KEY, settings.fontSize);
+    const themeSaved = ThemeService.saveThemeName(settings.themeName);
+    const modelNameSaved = StorageService.set(MODEL_NAME_STORAGE_KEY, settings.modelName);
+    const thinkingSettingsSaved = StorageService.set(
+      THINKING_SETTINGS_STORAGE_KEY,
+      settings.getThinkingSettingsSnapshot()
+    );
+    StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
+    StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
+    StorageService.remove(THINKING_LEVEL_STORAGE_KEY);
+    const audioEnabledSaved = StorageService.set(AUDIO_ENABLED_STORAGE_KEY, settings.audioEnabled);
+
+    if (!fontSizeSaved || !themeSaved || !modelNameSaved || !thinkingSettingsSaved || !audioEnabledSaved) {
+      console.warn('Some settings failed to save to localStorage:', {
+        fontSize: fontSizeSaved,
+        theme: themeSaved,
+        modelName: modelNameSaved,
+        thinkingSettings: thinkingSettingsSaved,
+        audioEnabled: audioEnabledSaved,
+      });
+    } else {
+      console.debug('Settings saved successfully to localStorage');
+    }
+  }
+
+  private static applyRemoteSettings(local: Settings, remote: Partial<Settings>): Settings {
+    return new Settings(
+      remote.fontSize ?? local.fontSize,
+      remote.themeName ?? local.themeName,
+      '',
+      remote.modelName ?? local.modelName,
+      remote.thinkingSettings ?? local.thinkingSettings,
+      remote.audioEnabled ?? local.audioEnabled
+    );
+  }
   static async load(): Promise<Settings> {
     const fontSize = StorageService.get<number>(
       FONT_SIZE_STORAGE_KEY,
       Settings.DEFAULT_FONT_SIZE
     );
     const themeName = ThemeService.getSavedThemeName();
-    const apiKey = await ApiKeyService.getApiKey();
+    const apiKey = '';
     const defaultModelName = ModelService.getDefaultModel().id;
     const modelName = StorageService.get<string>(
       MODEL_NAME_STORAGE_KEY,
@@ -78,7 +115,7 @@ export class SettingsRepository {
       true
     );
 
-    return new Settings(
+    const localSettings = new Settings(
       fontSize,
       themeName,
       apiKey,
@@ -86,46 +123,42 @@ export class SettingsRepository {
       thinkingSettings,
       audioEnabled
     );
+
+    try {
+      const remote = await UserSettingsService.fetch();
+      if (remote?.settings) {
+        const merged = this.applyRemoteSettings(localSettings, remote.settings);
+        this.persistLocally(merged);
+        if (remote.version) {
+          StorageService.setString(SETTINGS_VERSION_STORAGE_KEY, remote.version);
+        }
+        return merged;
+      }
+    } catch (error) {
+      console.warn('Failed to synchronize remote settings:', error);
+    }
+
+    return localSettings;
   }
 
   static async save(settings: Settings): Promise<void> {
-    const fontSizeSaved = StorageService.set(FONT_SIZE_STORAGE_KEY, settings.fontSize);
-    const themeSaved = ThemeService.saveThemeName(settings.themeName);
-    const apiKeySaved = ApiKeyService.setApiKey(settings.apiKey);
-    const modelNameSaved = StorageService.set(MODEL_NAME_STORAGE_KEY, settings.modelName);
-    const thinkingSettingsSaved = StorageService.set(
-      THINKING_SETTINGS_STORAGE_KEY,
-      settings.getThinkingSettingsSnapshot()
-    );
-    StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
-    StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
-    StorageService.remove(THINKING_LEVEL_STORAGE_KEY);
-    const audioEnabledSaved = StorageService.set(AUDIO_ENABLED_STORAGE_KEY, settings.audioEnabled);
-    
-    if (!fontSizeSaved || !themeSaved || !apiKeySaved || !modelNameSaved || !thinkingSettingsSaved || !audioEnabledSaved) {
-      console.warn('Some settings failed to save to localStorage:', {
-        fontSize: fontSizeSaved,
-        theme: themeSaved,
-        apiKey: apiKeySaved,
-        modelName: modelNameSaved,
-        thinkingSettings: thinkingSettingsSaved,
-        audioEnabled: audioEnabledSaved
-      });
-    } else {
-      console.debug('Settings saved successfully to localStorage');
+    this.persistLocally(settings);
+    const remoteVersion = await UserSettingsService.save(settings);
+    if (remoteVersion) {
+      StorageService.setString(SETTINGS_VERSION_STORAGE_KEY, remoteVersion);
     }
   }
 
   static async reset(): Promise<Settings> {
     StorageService.remove(FONT_SIZE_STORAGE_KEY);
     ThemeService.saveThemeName(ThemeService.getDefaultThemeName());
-    ApiKeyService.removeApiKey();
     StorageService.remove(MODEL_NAME_STORAGE_KEY);
     StorageService.remove(THINKING_SETTINGS_STORAGE_KEY);
     StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
     StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
     StorageService.remove(THINKING_LEVEL_STORAGE_KEY);
     StorageService.remove(AUDIO_ENABLED_STORAGE_KEY);
+    StorageService.remove(SETTINGS_VERSION_STORAGE_KEY);
     return Settings.createDefault();
   }
 }

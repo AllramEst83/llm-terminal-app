@@ -9,6 +9,9 @@ interface TerminalHeaderProps {
   thinkingEnabled: boolean;
   inputTokenCount: number;
   systemInfoVisible: boolean;
+  onLogoutClick?: () => void;
+  userEmail?: string | null;
+  apiKeyReady?: boolean | null;
 }
 
 export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
@@ -17,6 +20,9 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
   thinkingEnabled,
   inputTokenCount,
   systemInfoVisible,
+  onLogoutClick,
+  userEmail,
+  apiKeyReady,
 }) => {
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -53,22 +59,50 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
   }, [systemInfoVisible, showPopup]);
 
   return (
-    <div 
+    <div
       className="p-2 flex items-center justify-between border-b-2 header-lines relative"
       style={{ backgroundColor: theme.headerBg, color: theme.headerText, borderColor: theme.accent }}
     >
       <span className="text-lg">C:\\{'>'} GEMINI_CHAT.EXE</span>
-      {systemInfoVisible && (
-        <div className="hidden md:flex items-center space-x-3 text-sm">
-          <span style={{ color: theme.headerText, opacity: 0.8 }}>Model:</span>
-          <span style={{ color: theme.accent }}>{modelName}</span>
-          <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
-          <span style={{ color: theme.headerText, opacity: 0.8 }}>Thinking:</span>
-          <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
-          <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
-          <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
+      <div className="flex items-center space-x-3 text-sm">
+        {systemInfoVisible && (
+          <div className="hidden md:flex items-center space-x-3">
+            <span style={{ color: theme.headerText, opacity: 0.8 }}>Model:</span>
+            <span style={{ color: theme.accent }}>{modelName}</span>
+            <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
+            <span style={{ color: theme.headerText, opacity: 0.8 }}>Thinking:</span>
+            <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
+            <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
+            <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
+          </div>
+        )}
+        <div className="flex items-center space-x-2">
+          <span
+            className="hidden sm:inline text-xs uppercase tracking-wide"
+            style={{ color: theme.headerText, opacity: 0.8 }}
+          >
+            {userEmail ?? 'AUTH'}
+          </span>
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{
+              backgroundColor: apiKeyReady ? theme.accent : '#f87171',
+              boxShadow: `0 0 8px ${apiKeyReady ? theme.accent : '#f87171'}`,
+            }}
+            title={apiKeyReady ? 'API key configured' : 'API key missing'}
+          />
+          <button
+            onClick={onLogoutClick}
+            className="px-2 py-1 border text-xs uppercase tracking-widest"
+            style={{
+              borderColor: theme.accent,
+              color: theme.accent,
+            }}
+          >
+            Logout
+          </button>
         </div>
-      )}
+      </div>
       <div className="md:hidden relative">
         <button
           ref={iconRef}

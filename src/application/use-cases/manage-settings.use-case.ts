@@ -46,15 +46,10 @@ export class ManageSettingsUseCase {
     return newSettings;
   }
 
-  async resetSettings(isStudioEnv: boolean): Promise<Settings> {
+  async resetSettings(): Promise<Settings> {
     const defaultSettings = Settings.createDefault();
-    if (isStudioEnv) {
-      const currentSettings = await this.loadSettings();
-      const resetSettings = defaultSettings.withApiKey(currentSettings.apiKey);
-      await this.saveSettings(resetSettings);
-      return resetSettings;
-    }
     await SettingsRepository.reset();
+    await this.saveSettings(defaultSettings);
     return defaultSettings;
   }
 }

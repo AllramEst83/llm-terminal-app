@@ -1,57 +1,51 @@
-import { StorageService } from '../storage/storage.service';
+const EDGE_BASE = '/functions/v1';
+const API_KEY_ENDPOINT = `${EDGE_BASE}/save-api-key`;
 
-const API_KEY_STORAGE_KEY = 'terminal_apiKey';
+async function request<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const response = await fetch(input, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+    ...init,
+  });
 
-export class ApiKeyService {
-  static isStudioEnvironment(): boolean {
-    return !!(window as unknown).aistudio;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `API request failed with status ${response.status}`);
   }
 
-  static getEnvApiKey(): string {
-    const envKey = import.meta.env?.GEMINI_API_KEY || '';
-    return envKey;
+  if (response.status === 204) {
+    return {} as T;
   }
 
-  static async hasApiKey(): Promise<boolean> {
-    if (this.isStudioEnvironment()) {
-      return await (window as unknown).aistudio.hasSelectedApiKey();
-    }
-    const envKey = this.getEnvApiKey();
-    if (envKey.length > 0) {
-      return true;
-    }
-    const savedKey = StorageService.getString(API_KEY_STORAGE_KEY, '');
-    return savedKey.length > 0;
-  }
-
-  static async getApiKey(): Promise<string> {
-    if (this.isStudioEnvironment()) {
-      return process.env.API_KEY || '';
-    }
-    const envKey = this.getEnvApiKey();
-    if (envKey.length > 0) {
-      return envKey;
-    }
-    return StorageService.getString(API_KEY_STORAGE_KEY, '');
-  }
-
-  static setApiKey(apiKey: string): boolean {
-    if (!this.isStudioEnvironment()) {
-      return StorageService.setString(API_KEY_STORAGE_KEY, apiKey);
-    }
-    return true;
-  }
-
-  static removeApiKey(): void {
-    if (!this.isStudioEnvironment()) {
-      StorageService.remove(API_KEY_STORAGE_KEY);
-    }
-  }
-
-  static async openKeySelector(): Promise<void> {
-    if (this.isStudioEnvironment()) {
-      await (window as unknown).aistudio.openSelectKey();
-    }
-  }
+  return (await response.json()) as T;
 }
 
+export class ApiKeyService {
+  static async hasApiKey(): Promise<boolean> {
+    try {
+      const data = await request<{ hasKey?: boolean }>(API_KEY_ENDPOINT, {
+        method: 'GET',
+      });
+      return Boolean(data.hasKey);
+    } catch (error) {
+      console.warn('Failed to check API key status:', error);
+      return false;
+    }
+  }
+
+  static async saveApiKey(apiKey: string): Promise<void> {
+    await request(API_KEY_ENDPOINT, {
+      method: 'POST',
+      body: JSON.stringify({ apiKey }),
+    });
+  }
+
+  static async deleteApiKey(): Promise<void> {
+    await request(API_KEY_ENDPOINT, {
+      method: 'DELETE',
+    });
+  }
+}

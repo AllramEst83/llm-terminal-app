@@ -9,5 +9,6 @@ export * from './PressToBoot';
 export * from './TerminalHeader';
 export * from './TerminalInput';
 export * from './TokenCounter';
+export * from './SecureApiKeyPrompt';
 export type { AttachedImage } from './TerminalInput';
 

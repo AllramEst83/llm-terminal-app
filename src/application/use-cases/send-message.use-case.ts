@@ -31,13 +31,12 @@ export class SendMessageUseCase {
     await sendMessageToGemini(
       this.currentMessages,
       inputText,
-      this.settings.apiKey,
       this.settings.modelName,
       thinkingSettings,
       (chunkText, isFirstChunk) => {
         onStreamCallback(chunkText, isFirstChunk);
       },
-      async (sources, usageMetadata) => {
+      async (sources, usageMetadata, warningMessage) => {
         TokenCountService.updateTokenUsageFromMetadata(this.settings.modelName, usageMetadata);
 
         if (this.onTokenCountUpdate) {
@@ -45,18 +44,18 @@ export class SendMessageUseCase {
           this.onTokenCountUpdate(updatedUsage.inputTokens);
         }
 
-        let warningMessage: string | undefined;
+        let warning = warningMessage;
         const promptTokens = usageMetadata?.promptTokenCount;
-        if (TokenCountService.isApproachingModelLimit(this.settings.modelName, promptTokens)) {
+        if (!warning && TokenCountService.isApproachingModelLimit(this.settings.modelName, promptTokens)) {
           const limit = TokenCountService.getModelLimit(this.settings.modelName);
           const displayName = TokenCountService.getModelDisplayName(this.settings.modelName);
           const buffer = TokenCountService.TOKEN_WARNING_BUFFER.toLocaleString();
-          warningMessage = `SYSTEM WARNING: ${displayName} context window nearing limit.\n\nUsage: ${promptTokens?.toLocaleString() ?? '0'} / ${limit.toLocaleString()} tokens.\n\nYou're within ${buffer} tokens of the maximum context window. Use /clear to reset the conversation before reaching the limit.`;
+          warning = `SYSTEM WARNING: ${displayName} context window nearing limit.\n\nUsage: ${promptTokens?.toLocaleString() ?? '0'} / ${limit.toLocaleString()} tokens.\n\nYou're within ${buffer} tokens of the maximum context window. Use /clear to reset the conversation before reaching the limit.`;
         }
         
         onCompleteCallback({
           sources,
-          warningMessage,
+          warningMessage: warning,
         });
       },
       imageData,

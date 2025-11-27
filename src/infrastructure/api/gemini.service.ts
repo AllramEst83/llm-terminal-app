@@ -1,5 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
-import type { GenerateContentResponse } from "@google/genai";
 import type { Message, Source, MessageImage } from '../../domain/entities/message';
 import type { ThinkingModelSettings } from '../../domain/entities/settings';
 import { ModelService } from '../services/model.service';
@@ -10,228 +8,173 @@ export interface GeminiUsageMetadata {
   totalTokenCount?: number;
 }
 
-function getAiInstance(apiKey: string) {
-  if (!apiKey) {
-    throw new Error("API_KEY not provided");
-  }
-  return new GoogleGenAI({ apiKey: apiKey });
+const EDGE_BASE = '/functions/v1';
+const CHAT_ENDPOINT = `${EDGE_BASE}/gemini-chat`;
+
+interface SerializedMessage {
+  role: Message['role'];
+  text: string;
+  images?: MessageImage[];
 }
 
-function formatMessagesForGemini(messages: Message[]) {
+interface ChatStreamEvent {
+  type: 'chunk' | 'complete' | 'error';
+  text?: string;
+  isError?: boolean;
+  sources?: Source[];
+  usage?: GeminiUsageMetadata;
+  warningMessage?: string;
+}
+
+function serializeMessages(messages: Message[]): SerializedMessage[] {
   return messages
     .filter(msg => msg.role === 'user' || msg.role === 'model')
-    .map(msg => {
-      const parts: unknown[] = [];
-      
-      if (msg.images && msg.images.length > 0) {
-        for (const image of msg.images) {
-          parts.push({
-            inlineData: {
-              data: image.base64Data,
-              mimeType: image.mimeType,
-            },
-          });
-        }
-      }
-      else if (msg.imageData && msg.imageMimeType) {
-        parts.push({
-          inlineData: {
-            data: msg.imageData,
+    .map(msg => ({
+      role: msg.role,
+      text: msg.text,
+      images: msg.images ?? (msg.imageData && msg.imageMimeType
+        ? [{
+            base64Data: msg.imageData,
             mimeType: msg.imageMimeType,
-          },
-        });
-      }
-      
-      if (msg.text) {
-        parts.push({ text: msg.text });
-      }
-      
-      return {
-        role: msg.role,
-        parts: parts.length > 0 ? parts : [{ text: msg.text }],
-      };
-    });
+            fileName: 'inline-image',
+          }]
+        : undefined),
+    }));
 }
 
-function extractUsageMetadata(rawMetadata: unknown): GeminiUsageMetadata | undefined {
-  if (!rawMetadata) {
-    return undefined;
-  }
-
-  const { promptTokenCount, candidatesTokenCount, totalTokenCount } = rawMetadata as Record<string, unknown>;
-  if (
-    typeof promptTokenCount !== 'number' &&
-    typeof candidatesTokenCount !== 'number' &&
-    typeof totalTokenCount !== 'number'
-  ) {
-    return undefined;
-  }
+function buildPayload(
+  currentMessages: Message[],
+  newMessage: string,
+  modelName: string,
+  thinkingSettings: ThinkingModelSettings,
+  images?: MessageImage[],
+  imageData?: string,
+  imageMimeType?: string,
+): Record<string, unknown> {
+  const canonicalModel = ModelService.getCanonicalModelId(modelName);
+  const payloadImages =
+    images ??
+    (imageData && imageMimeType
+      ? [{ base64Data: imageData, mimeType: imageMimeType, fileName: 'inline-image' }]
+      : undefined);
 
   return {
-    promptTokenCount: promptTokenCount as number | undefined,
-    candidatesTokenCount: candidatesTokenCount as number | undefined,
-    totalTokenCount: totalTokenCount as number | undefined,
+    history: serializeMessages(currentMessages),
+    message: newMessage,
+    model: canonicalModel,
+    thinkingSettings,
+    images: payloadImages,
   };
 }
 
-const DEFAULT_THINKING_BUDGET = 8192;
-const DEFAULT_THINKING_LEVEL = 'high';
-const BUDGET_MODELS = new Set(['gemini-2.5-flash', 'gemini-2.5-pro']);
-
-function buildThinkingConfig(
-  modelName: string,
-  thinkingSettings: ThinkingModelSettings
+async function processStream(
+  response: Response,
+  onStream: (chunkText: string, isFirstChunk: boolean) => void,
+  onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata, warningMessage?: string) => void
 ) {
-  if (!thinkingSettings?.enabled) {
-    return undefined;
+  if (!response.body) {
+    throw new Error('No response body received from chat endpoint.');
   }
 
-  const canonicalModelId = ModelService.getCanonicalModelId(modelName);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let receivedFirstChunk = false;
 
-  if (canonicalModelId === 'gemini-3-pro-preview') {
-    return {
-      thinkingConfig: {
-        thinkingLevel: thinkingSettings.level ?? DEFAULT_THINKING_LEVEL,
-      },
-    };
+  const flushBuffer = () => {
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        continue;
+      }
+
+      let event: ChatStreamEvent | null = null;
+      try {
+        event = JSON.parse(trimmed) as ChatStreamEvent;
+      } catch (error) {
+        console.warn('Failed to parse chat stream event:', error, trimmed);
+      }
+
+      if (!event) {
+        continue;
+      }
+
+      if (event.type === 'chunk' && event.text) {
+        onStream(event.text, !receivedFirstChunk);
+        receivedFirstChunk = true;
+      } else if (event.type === 'error' && event.text) {
+        onStream(event.text, !receivedFirstChunk);
+        receivedFirstChunk = true;
+      } else if (event.type === 'complete') {
+        onComplete(event.sources, event.usage, event.warningMessage);
+      }
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+    buffer += decoder.decode(value, { stream: true });
+    flushBuffer();
   }
 
-  if (BUDGET_MODELS.has(canonicalModelId)) {
-    return {
-      thinkingConfig: {
-        thinkingBudget: thinkingSettings.budget ?? DEFAULT_THINKING_BUDGET,
-      },
-    };
+  if (buffer.trim().length > 0) {
+    flushBuffer();
   }
-
-  return undefined;
 }
 
 export async function sendMessageToGemini(
   currentMessages: Message[],
   newMessage: string,
-  apiKey: string,
   modelName: string,
   thinkingSettings: ThinkingModelSettings,
   onStream: (chunkText: string, isFirstChunk: boolean) => void,
-  onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata) => void,
+  onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata, warningMessage?: string) => void,
   imageData?: string,
   imageMimeType?: string,
   images?: MessageImage[]
 ): Promise<void> {
   try {
-    const ai = getAiInstance(apiKey);
-    const thinkingOverrides = buildThinkingConfig(
-      modelName,
-      thinkingSettings
-    );
-
-    const chat = ai.chats.create({
-      model: modelName,
-      history: formatMessagesForGemini(currentMessages),
-      config: {
-        systemInstruction:
-          'You are Google Gemini v1.5 (Mainframe Edition), an emulated 1980s mainframe terminal. Use confident mainframe-era phrasing, concise sentences, and avoid decorative prompts, cursors, or ASCII art. Always respond with valid Markdown (bold, italic, code blocks, lists). When incorporating Google Search results, append bracketed citations like [1] or [2] at the end of each sentence that relies on that source, matching the Sources list appended to the response. Only cite when search data is used. You have access to Google Search via the provided tool and must invoke it when the user requests /search or up-to-date information. Do not execute terminal commands; the system handles /help, /settings, /font, /sound, /clear, /search, etc. Keep answers focused, avoid speculation, and state “DATA UNAVAILABLE” if information cannot be confirmed.',
-        tools: [{ googleSearch: {} }],
-        ...(thinkingOverrides ?? {}),
+    const payload = buildPayload(currentMessages, newMessage, modelName, thinkingSettings, images, imageData, imageMimeType);
+    const response = await fetch(CHAT_ENDPOINT, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify(payload),
     });
 
-    const messageParts: unknown[] = [];
-    
-    if (images && images.length > 0) {
-      for (const image of images) {
-        messageParts.push({
-          inlineData: {
-            data: image.base64Data,
-            mimeType: image.mimeType,
-          },
-        });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Chat endpoint returned ${response.status}`);
+    }
+
+    if (response.headers.get('content-type')?.includes('application/json')) {
+      const result = (await response.json()) as ChatStreamEvent;
+      if (result.type === 'error' || !result.type) {
+        throw new Error(result.text ?? 'Chat request failed.');
       }
-    }
-    else if (imageData && imageMimeType) {
-      messageParts.push({
-        inlineData: {
-          data: imageData,
-          mimeType: imageMimeType,
-        },
-      });
-    }
-    
-    if (newMessage) {
-      messageParts.push({ text: newMessage });
-    }
-    
-    const stream = await chat.sendMessageStream({ 
-      message: messageParts.length > 0 ? messageParts : newMessage 
-    });
-
-    let isFirst = true;
-    const sources: Source[] = [];
-    let latestUsageMetadata: GeminiUsageMetadata | undefined;
-
-    let lastChunk: GenerateContentResponse | undefined;
-
-    for await (const chunk of stream) {
-      lastChunk = chunk;
-      const chunkText = chunk.text;
-      if (chunkText) {
-        onStream(chunkText, isFirst);
-        if (isFirst) isFirst = false;
+      if (result.text) {
+        onStream(result.text, true);
       }
-
-      const groundingMetadata = chunk.candidates?.[0]?.groundingMetadata;
-      if (groundingMetadata?.groundingChunks) {
-        for (const groundingChunk of groundingMetadata.groundingChunks) {
-          if (groundingChunk.web && !sources.some(s => s.uri === groundingChunk.web.uri)) {
-            sources.push({
-              title: groundingChunk.web.title || groundingChunk.web.uri,
-              uri: groundingChunk.web.uri,
-            });
-          }
-        }
-      }
-
-      const chunkUsage = extractUsageMetadata(chunk.usageMetadata);
-      if (chunkUsage) {
-        latestUsageMetadata = chunkUsage;
-      }
+      onComplete(result.sources, result.usage, result.warningMessage);
+      return;
     }
 
-    if (!latestUsageMetadata && lastChunk) {
-      latestUsageMetadata = extractUsageMetadata(lastChunk.usageMetadata);
-    }
-
-    onComplete(sources.length > 0 ? sources : undefined, latestUsageMetadata);
+    await processStream(response, onStream, onComplete);
   } catch (error) {
-    console.error("Error sending message to Gemini:", error);
-    let errorMessage: string;
-
-    if (error instanceof Error) {
-      const errorMsg = error.message.toLowerCase();
-      const errorStr = String(error);
-
-      if (
-        errorMsg.includes('api key') ||
-        errorMsg.includes('permission_denied') ||
-        errorMsg.includes('invalid api key') ||
-        errorStr.includes('401')
-      ) {
-        errorMessage =
-          "SYSTEM ERROR: Invalid API key or permission denied.\n\nPlease check:\n- Your API key is correct\n- The API key has the necessary permissions\n- You can update it using: /apikey <your_key>";
-      } else if (errorMsg.includes('quota') || errorMsg.includes('rate limit') || errorStr.includes('429')) {
-        errorMessage = "SYSTEM ERROR: API quota exceeded or rate limit reached.\n\nPlease try again later or check your API quota.";
-      } else if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('connection')) {
-        errorMessage = "SYSTEM ERROR: Network connection failed.\n\nPlease check your internet connection and try again.";
-      } else {
-        errorMessage = `SYSTEM ERROR: ${error.message || 'Failed to get response from API.'}\n\nCheck the browser console for more details.`;
-      }
-    } else {
-      errorMessage = `SYSTEM ERROR: Unexpected error occurred.\n\nError: ${String(error)}\n\nCheck the browser console for more details.`;
-    }
-
+    console.error('Error sending message:', error);
+    const errorMessage =
+      error instanceof Error
+        ? `SYSTEM ERROR: ${error.message}`
+        : 'SYSTEM ERROR: Failed to communicate with chat endpoint.';
     onStream(errorMessage, true);
     onComplete();
   }
 }
-
