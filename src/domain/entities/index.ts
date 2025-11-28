@@ -6,4 +6,5 @@ export * from './command-result';
 export * from './boot-sequence';
 export * from './browser-info';
 export * from './send-message-result';
+export * from './queue-item';
 

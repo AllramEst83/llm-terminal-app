@@ -6,6 +6,7 @@ export * from './ImageDisplay';
 export * from './MessageContent';
 export * from './MessageList';
 export * from './PressToBoot';
+export * from './QueueDisplay';
 export * from './TerminalHeader';
 export * from './TerminalInput';
 export * from './TokenCounter';
