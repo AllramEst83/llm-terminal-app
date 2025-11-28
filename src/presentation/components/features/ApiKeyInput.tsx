@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { ThemeColors } from '../../../domain/entities/theme';
-
-interface ApiKeyInputProps {
-  theme: ThemeColors;
-  onApiKeySubmit: (key: string) => void;
-}
+import type { ApiKeyInputProps } from '../../../types/ui/components';
 
 export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ theme, onApiKeySubmit }) => {
   const [localApiKey, setLocalApiKey] = useState<string>('');

@@ -1,12 +1,5 @@
 import React from 'react';
-import type { ThemeColors } from '../../../domain/entities/theme';
-
-interface ImageDisplayProps {
-  base64Image: string;
-  prompt: string;
-  theme?: ThemeColors;
-  onImageLoad?: () => void;
-}
+import type { ImageDisplayProps } from '../../../types/ui/components';
 
 export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt, theme, onImageLoad }) => {
   const imageUrl = `data:image/png;base64,${base64Image}`;

@@ -1,13 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import type { CommandDefinition } from '../../../domain/entities/command';
-import type { ThemeColors } from '../../../domain/entities/theme';
-
-interface CommandSuggestionsProps {
-  suggestions: CommandDefinition[];
-  activeIndex: number;
-  onSelect: (command: string) => void;
-  theme: ThemeColors;
-}
+import type { CommandSuggestionsProps } from '../../../types/ui/components';
 
 export const CommandSuggestions: React.FC<CommandSuggestionsProps> = ({ 
   suggestions, 

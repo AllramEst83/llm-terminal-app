@@ -1,11 +1,5 @@
 import React from 'react';
-import type { ThemeColors } from '../../../domain/entities/theme';
-
-interface TokenCounterProps {
-  inputTokens: number;
-  maxTokens: number;
-  theme: ThemeColors;
-}
+import type { TokenCounterProps } from '../../../types/ui/components';
 
 export const TokenCounter: React.FC<TokenCounterProps> = ({ inputTokens, maxTokens, theme }) => {
   const percentage = Math.min((inputTokens / maxTokens) * 100, 100);

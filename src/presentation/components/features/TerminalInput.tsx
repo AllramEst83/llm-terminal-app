@@ -1,38 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import type { CommandDefinition } from '../../../domain/entities/command';
-import type { ThemeColors } from '../../../domain/entities/theme';
 import { CommandSuggestions } from './CommandSuggestions';
+import type { TerminalInputProps, AttachedImage } from '../../../types/ui/components';
 
 // Using ASCII-safe icon to avoid parser issues with emoji in WebContainer
 const ATTACH_ICON = '[+]';
-
-export interface AttachedImage {
-  base64Data: string;
-  mimeType: string;
-  fileName: string;
-  dataUrl: string;
-}
-
-interface TerminalInputProps {
-  input: string;
-  onChange: (value: string) => void;
-  onSend: () => void;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  suggestions: CommandDefinition[];
-  showSuggestions: boolean;
-  activeSuggestionIndex: number;
-  onSuggestionSelect: (command: string) => void;
-  onSuggestionIndexChange: (index: number) => void;
-  onSuggestionsClose: () => void;
-  theme: ThemeColors;
-  disabled?: boolean;
-  autoFocus?: boolean;
-  attachedImages?: AttachedImage[];
-  onImageAttach?: (image: AttachedImage) => void;
-  onImageRemove?: (index: number) => void;
-  maxImages?: number;
-  onError?: (message: string) => void;
-}
 
 export const TerminalInput: React.FC<TerminalInputProps> = ({
   input,

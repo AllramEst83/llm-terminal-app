@@ -25,9 +25,9 @@ import {
   PressToBoot,
   ApiKeySelection,
   ApiKeyInput,
-  QueueDisplay,
-  type AttachedImage
+  QueueDisplay
 } from './presentation/components/features';
+import type { AttachedImage } from './types/ui/components';
 
 // Tell TypeScript that hljs is available globally.
 declare const hljs: any;

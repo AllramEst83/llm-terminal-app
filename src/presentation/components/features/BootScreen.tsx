@@ -1,10 +1,5 @@
 import React from 'react';
-import type { ThemeColors } from '../../../domain/entities/theme';
-
-interface BootScreenProps {
-  sequence: string[];
-  theme: ThemeColors;
-}
+import type { BootScreenProps } from '../../../types/ui/components';
 
 export const BootScreen: React.FC<BootScreenProps> = ({ sequence, theme }) => (
   <div className="p-4 whitespace-pre-wrap" style={{ color: theme.system }}>

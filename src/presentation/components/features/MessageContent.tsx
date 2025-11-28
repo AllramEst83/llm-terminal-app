@@ -1,22 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { ThemeColors } from '../../../domain/entities/theme';
-
-interface MessageContentProps {
-  text: string;
-  theme?: ThemeColors;
-}
+import type { MessageContentProps, CodeBlockProps } from '../../../types/ui/components';
 
 declare const hljs: unknown;
-
-interface CodeBlockProps {
-  code: string;
-  language: string;
-  accentColor: string;
-  backgroundColor: string;
-  textColor: string;
-}
 
 const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, backgroundColor, textColor }) => {
   const [copied, setCopied] = useState(false);

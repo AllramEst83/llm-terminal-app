@@ -1,13 +1,5 @@
 import React from 'react';
-import type { QueueItem } from '../../../domain/entities/queue-item';
-import type { ThemeColors } from '../../../domain/entities/theme';
-
-interface QueueDisplayProps {
-  queue: QueueItem[];
-  onRemove: (itemId: string) => void;
-  onClear: () => void;
-  theme: ThemeColors;
-}
+import type { QueueDisplayProps } from '../../../types/ui/components';
 
 export const QueueDisplay: React.FC<QueueDisplayProps> = ({
   queue,

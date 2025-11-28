@@ -10,5 +10,5 @@ export * from './QueueDisplay';
 export * from './TerminalHeader';
 export * from './TerminalInput';
 export * from './TokenCounter';
-export type { AttachedImage } from './TerminalInput';
+export type { AttachedImage } from '../../../types/ui/components';
 

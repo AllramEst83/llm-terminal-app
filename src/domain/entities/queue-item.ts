@@ -1,6 +1,6 @@
 import { generateId } from '../../infrastructure/utils/id.utils';
 import { getCurrentTimestamp } from '../../infrastructure/utils/date.utils';
-import type { AttachedImage } from '../../presentation/components/features/TerminalInput';
+import type { AttachedImage } from '../../types/ui/components';
 
 export type QueueItemType = 'command' | 'message';
 export type QueueItemStatus = 'pending' | 'processing' | 'completed' | 'cancelled';

@@ -1,10 +1,5 @@
 import React from 'react';
-import type { ThemeColors } from '../../../domain/entities/theme';
-
-interface ApiKeySelectionProps {
-  theme: ThemeColors;
-  onSelectKey: () => void;
-}
+import type { ApiKeySelectionProps } from '../../../types/ui/components';
 
 export const ApiKeySelection: React.FC<ApiKeySelectionProps> = ({ theme, onSelectKey }) => (
   <div className="p-4">

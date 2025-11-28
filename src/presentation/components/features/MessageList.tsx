@@ -1,18 +1,8 @@
 import React from 'react';
-import type { Message } from '../../../domain/entities/message';
 import { MessageContent } from './MessageContent';
 import { ImageDisplay } from './ImageDisplay';
-import type { ThemeColors } from '../../../domain/entities/theme';
 import { ModelService } from '../../../infrastructure/services/model.service';
-
-interface MessageListProps {
-  messages: Message[];
-  isStreaming: boolean;
-  theme: ThemeColors;
-  endOfMessagesRef?: React.RefObject<HTMLDivElement>;
-  fontSize: number;
-  onImageLoad?: () => void;
-}
+import type { MessageListProps } from '../../../types/ui/components';
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize, onImageLoad }) => {
   const headerFontSizeMultiplier = 0.9;

@@ -1,9 +1,5 @@
 import React from 'react';
-import type { ThemeColors } from '../../../domain/entities/theme';
-
-interface PressToBootProps {
-  theme: ThemeColors;
-}
+import type { PressToBootProps } from '../../../types/ui/components';
 
 export const PressToBoot: React.FC<PressToBootProps> = ({ theme }) => (
   <div className="p-4 whitespace-pre-wrap flex flex-col items-center justify-center h-full">

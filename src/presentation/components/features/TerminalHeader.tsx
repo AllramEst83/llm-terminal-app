@@ -1,15 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { ThemeColors } from '../../../domain/entities/theme';
 import { TokenCounter } from './TokenCounter';
 import { ModelService } from '../../../infrastructure/services/model.service';
-
-interface TerminalHeaderProps {
-  theme: ThemeColors;
-  modelName: string;
-  thinkingEnabled: boolean;
-  inputTokenCount: number;
-  systemInfoVisible: boolean;
-}
+import type { TerminalHeaderProps } from '../../../types/ui/components';
 
 export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
   theme,
