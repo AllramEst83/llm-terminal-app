@@ -1,3 +1,5 @@
+import { generateId } from '../../infrastructure/utils/id.utils';
+
 export interface Source {
   title: string;
   uri: string;
@@ -8,9 +10,6 @@ export interface MessageImage {
   mimeType: string;
   fileName?: string;
 }
-
-// Counter to ensure unique message IDs even when created in the same millisecond
-let messageIdCounter = 0;
 
 export class Message {
   constructor(
@@ -39,8 +38,7 @@ export class Message {
     command?: string,
     commandInput?: string
   ): Message {
-    // Use timestamp + counter + random to ensure uniqueness
-    const uniqueId = `${Date.now()}-${++messageIdCounter}-${Math.random().toString(36).substring(2, 9)}`;
+    const uniqueId = generateId();
     return new Message(
       uniqueId,
       role,

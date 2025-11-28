@@ -513,7 +513,6 @@ export const App: React.FC = () => {
           if (isFirstChunk) {
             setIsLoading(false);
             setIsStreaming(true);
-            const messageId = (Date.now() + 1).toString();
             const newMessage = Message.create(
               messageRole,
               chunkText,
