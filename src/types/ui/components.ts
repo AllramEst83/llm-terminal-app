@@ -154,3 +154,13 @@ export interface ApiKeySelectionProps {
   onSelectKey: () => void;
 }
 
+/**
+ * Props for Lightbox component
+ */
+export interface LightboxProps {
+  imageUrl: string;
+  alt: string;
+  onClose: () => void;
+  theme?: ThemeColors;
+}
+

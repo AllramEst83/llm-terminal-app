@@ -3,6 +3,7 @@ export * from './ApiKeySelection';
 export * from './BootScreen';
 export * from './CommandSuggestions';
 export * from './ImageDisplay';
+export * from './Lightbox';
 export * from './MessageContent';
 export * from './MessageList';
 export * from './PressToBoot';

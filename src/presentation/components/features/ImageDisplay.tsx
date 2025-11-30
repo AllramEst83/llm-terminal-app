@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Lightbox } from './Lightbox';
 import type { ImageDisplayProps } from '../../../types/ui/components';
 
 export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt, theme, onImageLoad }) => {
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const imageUrl = `data:image/png;base64,${base64Image}`;
   const textColor = theme?.text || '#00FF41';
   const accentColor = theme?.accent || '#00A800';
@@ -14,7 +16,8 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt,
 
   const actualPrompt = extractPrompt(prompt);
 
-  const handleDownload = (): void => {
+  const handleDownload = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    e.stopPropagation();
     const link = document.createElement('a');
     link.href = imageUrl;
     const safePrompt = actualPrompt.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -24,45 +27,60 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt,
     document.body.removeChild(link);
   };
 
+  const handleImageClick = (): void => {
+    setIsLightboxOpen(true);
+  };
+
   return (
-    <div 
-      className="mt-2 p-2 border rounded max-w-sm"
-      style={{
-        borderColor: accentColor,
-        backgroundColor: `${accentColor}20`,
-      }}
-    >
-      <p 
-        className="mb-2"
-        style={{ color: textColor }}
-      >
-        Generated image for: "{actualPrompt}"
-      </p>
-      <img 
-        src={imageUrl} 
-        alt={actualPrompt} 
-        className="w-full h-auto rounded object-cover" 
+    <>
+      <div 
+        className="mt-2 p-2 border rounded max-w-sm"
         style={{
-          border: `1px solid ${accentColor}40`
-        }}
-        onLoad={() => {
-          requestAnimationFrame(() => {
-            onImageLoad?.();
-          });
-        }}
-      />
-      <button
-        onClick={handleDownload}
-        className="mt-2 w-full font-bold py-1 px-2 rounded transition-colors duration-200 hover:opacity-80"
-        style={{
-          backgroundColor: accentColor,
-          color: backgroundColor,
-          border: `1px solid ${accentColor}60`
+          borderColor: accentColor,
+          backgroundColor: `${accentColor}20`,
         }}
       >
-        Download Image
-      </button>
-    </div>
+        <p 
+          className="mb-2"
+          style={{ color: textColor }}
+        >
+          Generated image for: "{actualPrompt}"
+        </p>
+        <img 
+          src={imageUrl} 
+          alt={actualPrompt} 
+          className="w-full h-auto rounded object-cover cursor-pointer transition-opacity hover:opacity-90" 
+          style={{
+            border: `1px solid ${accentColor}40`
+          }}
+          onClick={handleImageClick}
+          onLoad={() => {
+            requestAnimationFrame(() => {
+              onImageLoad?.();
+            });
+          }}
+        />
+        <button
+          onClick={handleDownload}
+          className="mt-2 w-full font-bold py-1 px-2 rounded transition-colors duration-200 hover:opacity-80"
+          style={{
+            backgroundColor: accentColor,
+            color: backgroundColor,
+            border: `1px solid ${accentColor}60`
+          }}
+        >
+          Download Image
+        </button>
+      </div>
+      {isLightboxOpen && (
+        <Lightbox
+          imageUrl={imageUrl}
+          alt={actualPrompt}
+          onClose={() => setIsLightboxOpen(false)}
+          theme={theme}
+        />
+      )}
+    </>
   );
 };
 
