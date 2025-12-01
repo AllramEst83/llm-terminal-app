@@ -13,11 +13,15 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
   const commandInputFontSize = fontSize * commandInputFontSizeMultiplier;
   const commandLabelFontSize = fontSize * commandLabelFontSizeMultiplier;
 
-  // Collect all generated images from non-user messages (model/system messages with imageData)
+  // Collect all generated images from /image command responses only
   const generatedImages = React.useMemo(() => {
     return messages
       .map((msg, msgIndex) => ({ msg, msgIndex }))
-      .filter(({ msg }) => msg.role !== 'user' && msg.imageData)
+      .filter(({ msg }) => 
+        msg.imageData && 
+        msg.text && 
+        msg.text.startsWith('Generated image for:')
+      )
       .map(({ msg, msgIndex }) => {
         const extractPrompt = (text: string): string => {
           const match = text.match(/Generated image for: "(.+)"/);
