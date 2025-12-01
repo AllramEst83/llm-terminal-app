@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lightbox } from './Lightbox';
+import { ImageLightbox } from './Lightbox';
 import type { ImageDisplayProps } from '../../../types/ui/components';
 
 export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt, theme, onImageLoad }) => {
@@ -73,7 +73,7 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt,
         </button>
       </div>
       {isLightboxOpen && (
-        <Lightbox
+        <ImageLightbox
           imageUrl={imageUrl}
           alt={actualPrompt}
           onClose={() => setIsLightboxOpen(false)}
