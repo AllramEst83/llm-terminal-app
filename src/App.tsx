@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { CommandNames, Message, Settings, QueueItem } from './domain';
+import { CommandNames, Message, MessageType, Settings, QueueItem } from './domain';
 import {
   ApiKeyService,
   ThemeService,
@@ -720,12 +720,14 @@ export const App: React.FC = () => {
 
             const isError = chunkText.startsWith('SYSTEM ERROR');
             const messageRole = isError ? 'system' : 'model';
+            const messageType = messageRole === 'model' ? MessageType.AI : MessageType.USER;
 
             if (isFirstChunk) {
               setIsLoading(false);
               setIsStreaming(true);
               const newMessage = Message.create(
                 messageRole,
+                messageType,
                 chunkText,
                 getCurrentTimestamp(),
                 undefined,

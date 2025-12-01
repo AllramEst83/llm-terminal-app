@@ -8,6 +8,7 @@ import {
 import { Theme, type ThemeName } from '../../domain/entities/theme';
 import type { CommandResult } from '../../domain/entities/command-result';
 import type { Message } from '../../domain/entities/message';
+import { MessageType } from '../../domain/entities/message';
 import { CommandNames } from '../../domain/entities/command';
 import { CommandService } from '../../infrastructure/services/command.service';
 import { ThemeService } from '../../infrastructure/services/theme.service';
@@ -699,7 +700,7 @@ ${usageBlock}`;
       const modelInfo = imageModelId !== defaultImageModel.id ? ` [${imageModelId}]` : '';
       const message = MessageService.createSystemMessage(
         `Generated image for: "${prompt}"${aspectInfo}${modelInfo}`
-      ).withImageData(imageData);
+      ).withImageData(imageData).withType(MessageType.IMAGE);
 
       TokenCountService.updateImageModelUsageFromMetadata(imageModelId, usageMetadata);
 

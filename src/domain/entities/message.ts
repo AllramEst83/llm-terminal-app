@@ -1,4 +1,5 @@
 import { generateId } from '../../infrastructure/utils/id.utils';
+import { CommandNames } from './command';
 
 export interface Source {
   title: string;
@@ -11,10 +12,31 @@ export interface MessageImage {
   fileName?: string;
 }
 
+export enum MessageType {
+  USER = 'user',
+  AI = 'ai',
+  CLEAR = CommandNames.CLEAR,
+  SEARCH = CommandNames.SEARCH,
+  SETTINGS = CommandNames.SETTINGS,
+  TOKENS = CommandNames.TOKENS,
+  FONT = CommandNames.FONT,
+  THEME = CommandNames.THEME,
+  API_KEY = CommandNames.API_KEY,
+  RESET = CommandNames.RESET,
+  INFO = CommandNames.INFO,
+  MODEL = CommandNames.MODEL,
+  THINK = CommandNames.THINK,
+  GRAMMAR = CommandNames.GRAMMAR,
+  IMAGE = CommandNames.IMAGE,
+  AUDIO = CommandNames.AUDIO,
+  HELP = CommandNames.HELP,
+}
+
 export class Message {
   constructor(
     public readonly id: string,
     public readonly role: 'user' | 'model' | 'system',
+    public readonly type: MessageType,
     public readonly text: string,
     public readonly timestamp?: string,
     public readonly sources?: Source[],
@@ -28,6 +50,7 @@ export class Message {
 
   static create(
     role: 'user' | 'model' | 'system',
+    type: MessageType,
     text: string,
     timestamp?: string,
     sources?: Source[],
@@ -42,6 +65,7 @@ export class Message {
     return new Message(
       uniqueId,
       role,
+      type,
       text,
       timestamp,
       sources,
@@ -55,7 +79,7 @@ export class Message {
   }
 
   static createUser(text: string, timestamp?: string): Message {
-    return Message.create('user', text, timestamp);
+    return Message.create('user', MessageType.USER, text, timestamp);
   }
 
   static createModel(
@@ -64,21 +88,61 @@ export class Message {
     sources?: Source[],
     modelName?: string
   ): Message {
-    return Message.create('model', text, timestamp, sources, undefined, modelName);
+    return Message.create('model', MessageType.AI, text, timestamp, sources, undefined, modelName);
   }
 
   static createSystem(text: string, timestamp?: string): Message {
-    return Message.create('system', text, timestamp);
+    return Message.create('system', MessageType.USER, text, timestamp);
   }
 
   static createCommand(command: string, commandInput: string, timestamp?: string): Message {
-    return Message.create('system', '', timestamp, undefined, undefined, undefined, undefined, undefined, command, commandInput);
+    const commandType = this.getCommandType(command);
+    return Message.create('system', commandType, '', timestamp, undefined, undefined, undefined, undefined, undefined, command, commandInput);
+  }
+
+  private static getCommandType(command: string): MessageType {
+    const normalizedCommand = command.toLowerCase().replace(/^\/+/, '');
+    switch (normalizedCommand) {
+      case CommandNames.CLEAR:
+        return MessageType.CLEAR;
+      case CommandNames.SEARCH:
+        return MessageType.SEARCH;
+      case CommandNames.SETTINGS:
+        return MessageType.SETTINGS;
+      case CommandNames.TOKENS:
+        return MessageType.TOKENS;
+      case CommandNames.FONT:
+        return MessageType.FONT;
+      case CommandNames.THEME:
+        return MessageType.THEME;
+      case CommandNames.API_KEY:
+        return MessageType.API_KEY;
+      case CommandNames.RESET:
+        return MessageType.RESET;
+      case CommandNames.INFO:
+        return MessageType.INFO;
+      case CommandNames.MODEL:
+        return MessageType.MODEL;
+      case CommandNames.THINK:
+        return MessageType.THINK;
+      case CommandNames.GRAMMAR:
+        return MessageType.GRAMMAR;
+      case CommandNames.IMAGE:
+        return MessageType.IMAGE;
+      case CommandNames.AUDIO:
+        return MessageType.AUDIO;
+      case CommandNames.HELP:
+        return MessageType.HELP;
+      default:
+        return MessageType.USER; // Fallback
+    }
   }
 
   withUpdatedText(newText: string): Message {
     return new Message(
       this.id,
       this.role,
+      this.type,
       newText,
       this.timestamp,
       this.sources,
@@ -95,6 +159,7 @@ export class Message {
     return new Message(
       this.id,
       this.role,
+      this.type,
       this.text,
       this.timestamp,
       sources,
@@ -111,6 +176,7 @@ export class Message {
     return new Message(
       this.id,
       this.role,
+      this.type,
       this.text,
       this.timestamp,
       this.sources,
@@ -127,6 +193,7 @@ export class Message {
     return new Message(
       this.id,
       this.role,
+      this.type,
       this.text,
       this.timestamp,
       this.sources,
@@ -143,6 +210,7 @@ export class Message {
     return new Message(
       this.id,
       this.role,
+      this.type,
       this.text,
       this.timestamp,
       this.sources,
@@ -150,6 +218,23 @@ export class Message {
       this.modelName,
       this.imageMimeType,
       images,
+      this.command,
+      this.commandInput
+    );
+  }
+
+  withType(type: MessageType): Message {
+    return new Message(
+      this.id,
+      this.role,
+      type,
+      this.text,
+      this.timestamp,
+      this.sources,
+      this.imageData,
+      this.modelName,
+      this.imageMimeType,
+      this.images,
       this.command,
       this.commandInput
     );

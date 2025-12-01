@@ -2,6 +2,7 @@ import React from 'react';
 import { MessageContent } from './MessageContent';
 import { ImageDisplay } from './ImageDisplay';
 import { ModelService } from '../../../infrastructure/services/model.service';
+import { MessageType } from '../../../domain/entities/message';
 import type { MessageListProps } from '../../../types/ui/components';
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize, onImageLoad }) => {
@@ -18,9 +19,8 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
     return messages
       .map((msg, msgIndex) => ({ msg, msgIndex }))
       .filter(({ msg }) => 
-        msg.imageData && 
-        msg.text && 
-        msg.text.startsWith('Generated image for:')
+        msg.type === MessageType.IMAGE && 
+        msg.imageData
       )
       .map(({ msg, msgIndex }) => {
         const extractPrompt = (text: string): string => {
@@ -252,7 +252,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
             }
 
             {
-              msg.imageData && !isUser && (() => {
+              msg.type === MessageType.IMAGE && msg.imageData && (() => {
                 // Find the index of this image in the generated images list
                 const imageIndex = generatedImages.findIndex(img => 
                   img.messageIndex === index
