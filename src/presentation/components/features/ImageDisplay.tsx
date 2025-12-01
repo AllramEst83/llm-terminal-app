@@ -2,7 +2,14 @@ import React, { useState } from 'react';
 import { ImageLightbox } from './Lightbox';
 import type { ImageDisplayProps } from '../../../types/ui/components';
 
-export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt, theme, onImageLoad }) => {
+export const ImageDisplay: React.FC<ImageDisplayProps> = ({ 
+  base64Image, 
+  prompt, 
+  theme, 
+  onImageLoad,
+  allImages,
+  currentImageIndex = 0
+}) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const imageUrl = `data:image/png;base64,${base64Image}`;
   const textColor = theme?.text || '#00FF41';
@@ -15,6 +22,15 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt,
   };
 
   const actualPrompt = extractPrompt(prompt);
+
+  // Use provided allImages or fallback to single image
+  const slides = allImages && allImages.length > 0 
+    ? allImages 
+    : [{ src: imageUrl, alt: actualPrompt }];
+  
+  const initialIndex = allImages && allImages.length > 0 
+    ? (currentImageIndex >= 0 && currentImageIndex < allImages.length ? currentImageIndex : 0)
+    : 0;
 
   const handleDownload = (e: React.MouseEvent<HTMLButtonElement>): void => {
     e.stopPropagation();
@@ -74,8 +90,8 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({ base64Image, prompt,
       </div>
       {isLightboxOpen && (
         <ImageLightbox
-          imageUrl={imageUrl}
-          alt={actualPrompt}
+          slides={slides}
+          initialIndex={initialIndex}
           onClose={() => setIsLightboxOpen(false)}
           theme={theme}
         />

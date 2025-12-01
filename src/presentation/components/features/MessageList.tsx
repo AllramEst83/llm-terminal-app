@@ -13,6 +13,24 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
   const commandInputFontSize = fontSize * commandInputFontSizeMultiplier;
   const commandLabelFontSize = fontSize * commandLabelFontSizeMultiplier;
 
+  // Collect all generated images from non-user messages (model/system messages with imageData)
+  const generatedImages = React.useMemo(() => {
+    return messages
+      .map((msg, msgIndex) => ({ msg, msgIndex }))
+      .filter(({ msg }) => msg.role !== 'user' && msg.imageData)
+      .map(({ msg, msgIndex }) => {
+        const extractPrompt = (text: string): string => {
+          const match = text.match(/Generated image for: "(.+)"/);
+          return match ? match[1] : text || 'Generated image';
+        };
+        return {
+          src: `data:image/png;base64,${msg.imageData}`,
+          alt: extractPrompt(msg.text),
+          messageIndex: msgIndex,
+        };
+      });
+  }, [messages]);
+
   return (
     <>
       {messages.map((msg, index) => {
@@ -230,11 +248,24 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
             }
 
             {
-              msg.imageData && !isUser && (
-                <div className="mt-2">
-                  <ImageDisplay base64Image={msg.imageData} prompt={msg.text} theme={theme} onImageLoad={onImageLoad} />
-                </div>
-              )
+              msg.imageData && !isUser && (() => {
+                // Find the index of this image in the generated images list
+                const imageIndex = generatedImages.findIndex(img => 
+                  img.messageIndex === index
+                );
+                return (
+                  <div className="mt-2">
+                    <ImageDisplay 
+                      base64Image={msg.imageData} 
+                      prompt={msg.text} 
+                      theme={theme} 
+                      onImageLoad={onImageLoad}
+                      allImages={generatedImages.map(img => ({ src: img.src, alt: img.alt }))}
+                      currentImageIndex={imageIndex >= 0 ? imageIndex : 0}
+                    />
+                  </div>
+                );
+              })()
             }
 
             {
