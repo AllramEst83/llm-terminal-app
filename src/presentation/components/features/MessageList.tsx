@@ -2,6 +2,7 @@ import React from 'react';
 import { MessageContent } from './MessageContent';
 import { ImageDisplay } from './ImageDisplay';
 import { ModelService } from '../../../infrastructure/services/model.service';
+import { MessageType } from '../../../domain/entities/message';
 import type { MessageListProps } from '../../../types/ui/components';
 
 export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize, onImageLoad }) => {
@@ -12,6 +13,27 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
   const headerFontSize = fontSize * headerFontSizeMultiplier;
   const commandInputFontSize = fontSize * commandInputFontSizeMultiplier;
   const commandLabelFontSize = fontSize * commandLabelFontSizeMultiplier;
+
+  // Collect all generated images from /image command responses only
+  const generatedImages = React.useMemo(() => {
+    return messages
+      .map((msg, msgIndex) => ({ msg, msgIndex }))
+      .filter(({ msg }) => 
+        msg.type === MessageType.IMAGE && 
+        msg.imageData
+      )
+      .map(({ msg, msgIndex }) => {
+        const extractPrompt = (text: string): string => {
+          const match = text.match(/Generated image for: "(.+)"/);
+          return match ? match[1] : text || 'Generated image';
+        };
+        return {
+          src: `data:image/png;base64,${msg.imageData}`,
+          alt: extractPrompt(msg.text),
+          messageIndex: msgIndex,
+        };
+      });
+  }, [messages]);
 
   return (
     <>
@@ -230,11 +252,24 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
             }
 
             {
-              msg.imageData && !isUser && (
-                <div className="mt-2">
-                  <ImageDisplay base64Image={msg.imageData} prompt={msg.text} theme={theme} onImageLoad={onImageLoad} />
-                </div>
-              )
+              msg.type === MessageType.IMAGE && msg.imageData && (() => {
+                // Find the index of this image in the generated images list
+                const imageIndex = generatedImages.findIndex(img => 
+                  img.messageIndex === index
+                );
+                return (
+                  <div className="mt-2">
+                    <ImageDisplay 
+                      base64Image={msg.imageData} 
+                      prompt={msg.text} 
+                      theme={theme} 
+                      onImageLoad={onImageLoad}
+                      allImages={generatedImages.map(img => ({ src: img.src, alt: img.alt }))}
+                      currentImageIndex={imageIndex >= 0 ? imageIndex : 0}
+                    />
+                  </div>
+                );
+              })()
             }
 
             {

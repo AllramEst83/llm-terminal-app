@@ -1,4 +1,4 @@
-import { Message, type MessageImage } from '../../domain/entities/message';
+import { Message, MessageType, type MessageImage } from '../../domain/entities/message';
 import { getCurrentTimestamp } from '../utils/date.utils';
 import { createInitialMessages } from '../utils/message.utils';
 
@@ -9,10 +9,10 @@ export class MessageService {
 
   static createUserMessage(text: string, imageData?: string, imageMimeType?: string, images?: MessageImage[]): Message {
     if (images && images.length > 0) {
-      return Message.create('user', text, getCurrentTimestamp(), undefined, undefined, undefined, undefined, images);
+      return Message.create('user', MessageType.USER, text, getCurrentTimestamp(), undefined, undefined, undefined, undefined, images);
     }
     if (imageData && imageMimeType) {
-      return Message.create('user', text, getCurrentTimestamp(), undefined, imageData, undefined, imageMimeType);
+      return Message.create('user', MessageType.USER, text, getCurrentTimestamp(), undefined, imageData, undefined, imageMimeType);
     }
     return Message.createUser(text, getCurrentTimestamp());
   }

@@ -1,4 +1,4 @@
-import { Message } from '../../domain/entities/message';
+import { Message, MessageType } from '../../domain/entities/message';
 import { getCurrentTimestamp } from './date.utils';
 
 export function createInitialMessage(): Message {
@@ -18,6 +18,7 @@ export function createMessageWithTimestamp(
   role: 'user' | 'model' | 'system',
   text: string
 ): Message {
-  return Message.create(role, text, getCurrentTimestamp());
+  const type = role === 'user' ? MessageType.USER : role === 'model' ? MessageType.AI : MessageType.USER;
+  return Message.create(role, type, text, getCurrentTimestamp());
 }
 

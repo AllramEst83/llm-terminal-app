@@ -102,6 +102,8 @@ export interface ImageDisplayProps {
   prompt: string;
   theme?: ThemeColors;
   onImageLoad?: () => void;
+  allImages?: Array<{ src: string; alt: string }>;
+  currentImageIndex?: number;
 }
 
 /**
@@ -152,5 +154,15 @@ export interface ApiKeyInputProps {
 export interface ApiKeySelectionProps {
   theme: ThemeColors;
   onSelectKey: () => void;
+}
+
+/**
+ * Props for Lightbox component
+ */
+export interface LightboxProps {
+  slides: Array<{ src: string; alt: string }>;
+  initialIndex?: number;
+  onClose: () => void;
+  theme?: ThemeColors;
 }
 
