@@ -46,21 +46,13 @@ export interface ImageModelDefinition {
 }
 
 const CHAT_MODELS: Record<string, ModelDefinition> = {
-  'gemini-2.5-flash': {
-    id: 'gemini-2.5-flash',
-    displayName: 'Gemini 2.5 Flash',
+  'gemini-3-flash-preview': {
+    id: 'gemini-3-flash-preview',
+    displayName: 'Gemini 3 Flash Preview',
     shortLabel: 'Flash',
     description: 'Fast multimodal model with 1M token context window.',
-    aliases: ['flash'],
+    aliases: ['flash', '3-flash'],
     contextLimit: 1_000_000,
-  },
-  'gemini-2.5-pro': {
-    id: 'gemini-2.5-pro',
-    displayName: 'Gemini 2.5 Pro',
-    shortLabel: '2.5-pro',
-    description: 'Higher quality multimodal model with 2M token context window.',
-    aliases: ['2.5-pro'],
-    contextLimit: 2_000_000,
   },
   'gemini-3-pro-preview': {
     id: 'gemini-3-pro-preview',
@@ -73,13 +65,13 @@ const CHAT_MODELS: Record<string, ModelDefinition> = {
 };
 
 const IMAGE_MODELS: Record<string, ImageModelDefinition> = {
-  'nano-banana': {
-    id: 'nano-banana',
-    displayName: 'Gemini 2.5 Flash Image (Nano Banana)',
-    shortLabel: 'Nano',
-    description: 'Fast multimodal image model best for quick concept art.',
-    aliases: ['nano', 'banana', 'gemini-2.5-flash-image'],
-    apiModelId: 'gemini-2.5-flash-image',
+  'gemini-3-pro-image-preview': {
+    id: 'gemini-3-pro-image-preview',
+    displayName: 'Gemini 3 Pro Image Preview',
+    shortLabel: '3-pro-image',
+    description: 'High quality multimodal image model.',
+    aliases: ['3-pro-image', 'gemini-3-pro-image'],
+    apiModelId: 'gemini-3-pro-image-preview',
     generationMethod: 'generateContent',
     supportedAspectRatios: [
       '1:1',
@@ -95,21 +87,8 @@ const IMAGE_MODELS: Record<string, ImageModelDefinition> = {
     ],
     defaultAspectRatio: '1:1',
     inputTokenLimit: 32_768,
-    tokenCountModelId: 'gemini-2.5-flash-image',
+    tokenCountModelId: 'gemini-3-pro-image-preview',
     outputMimeType: 'image/png',
-  },
-  'imagen-4.0': {
-    id: 'imagen-4.0',
-    displayName: 'Imagen 4.0',
-    shortLabel: 'Imagen',
-    description: 'High fidelity still-image model with 480-token prompt limit.',
-    aliases: ['imagen', 'imagen4', 'imagen-4'],
-    apiModelId: 'imagen-4.0-generate-001',
-    generationMethod: 'generateImages',
-    supportedAspectRatios: ['1:1', '3:4', '4:3', '16:9', '9:16'],
-    defaultAspectRatio: '1:1',
-    inputTokenLimit: 480,
-    outputMimeType: 'image/jpeg',
   },
 };
 
@@ -141,7 +120,7 @@ function normalizeInput(value?: string): string | undefined {
 
 export class ModelService {
   static getDefaultModel(): ModelDefinition {
-    return CHAT_MODELS['gemini-2.5-flash'];
+    return CHAT_MODELS['gemini-3-flash-preview'];
   }
 
   static listModels(): ModelDefinition[] {
@@ -181,7 +160,7 @@ export class ModelService {
   }
 
   static getDefaultImageModel(): ImageModelDefinition {
-    return IMAGE_MODELS['nano-banana'];
+    return IMAGE_MODELS['gemini-3-pro-image-preview'];
   }
 
   static resolveImageModel(input?: string): ImageModelDefinition | undefined {

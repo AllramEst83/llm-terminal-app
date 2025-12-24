@@ -38,7 +38,6 @@ function createInitialSessionUsage(): SessionTokenUsage {
 
 export class TokenCountService {
   static readonly TOKEN_WARNING_BUFFER = 50_000;
-  static readonly NANO_BANANA_INPUT_LIMIT = 32_768;
 
   static initializeSessionStorage(): void {
     const initialUsage = createInitialSessionUsage();
@@ -258,7 +257,7 @@ export class TokenCountService {
       const data = await response.json();
       return data.totalTokens || 0;
     } catch (error) {
-      console.error('Error counting Nano Banana tokens:', error);
+      console.error('Error counting tokens:', error);
       throw error;
     }
   }

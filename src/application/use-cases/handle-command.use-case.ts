@@ -2,7 +2,6 @@ import {
   Settings,
   GEMINI_FLASH_MODEL_ID,
   GEMINI_PRO_MODEL_ID,
-  GEMINI_3_PRO_MODEL_ID,
   type ThinkingModelSettings,
 } from '../../domain/entities/settings';
 import { Theme, type ThemeName } from '../../domain/entities/theme';
@@ -21,18 +20,16 @@ import { ModelService, type ImageModelDefinition } from '../../infrastructure/se
 import { GrammarService } from '../../infrastructure/services/grammar.service';
 import { SearchService } from '../../infrastructure/services/search.service';
 
-const THINKING_BUDGET_MODEL_IDS = new Set([GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID]);
+const THINKING_BUDGET_MODEL_IDS = new Set([GEMINI_FLASH_MODEL_ID]);
 const THINKING_MODEL_LABELS: Record<string, string> = {
-  [GEMINI_FLASH_MODEL_ID]: 'Gemini 2.5 Flash',
-  [GEMINI_PRO_MODEL_ID]: 'Gemini 2.5 Pro',
-  [GEMINI_3_PRO_MODEL_ID]: 'Gemini 3 Pro Preview',
+  [GEMINI_FLASH_MODEL_ID]: 'Gemini 3 Flash Preview',
+  [GEMINI_PRO_MODEL_ID]: 'Gemini 3 Pro Preview',
 };
 const THINKING_MODEL_SHORTCUTS: Record<string, string> = {
   [GEMINI_FLASH_MODEL_ID]: 'flash',
-  [GEMINI_PRO_MODEL_ID]: '2.5-pro',
-  [GEMINI_3_PRO_MODEL_ID]: '3-pro',
+  [GEMINI_PRO_MODEL_ID]: '3-pro',
 };
-const THINKING_SUPPORTED_MODELS_TEXT = `${THINKING_MODEL_SHORTCUTS[GEMINI_FLASH_MODEL_ID]}, ${THINKING_MODEL_SHORTCUTS[GEMINI_PRO_MODEL_ID]}, ${THINKING_MODEL_SHORTCUTS[GEMINI_3_PRO_MODEL_ID]}`;
+const THINKING_SUPPORTED_MODELS_TEXT = `${THINKING_MODEL_SHORTCUTS[GEMINI_FLASH_MODEL_ID]}, ${THINKING_MODEL_SHORTCUTS[GEMINI_PRO_MODEL_ID]}`;
 
 export class HandleCommandUseCase {
   constructor(
@@ -282,7 +279,7 @@ export class HandleCommandUseCase {
         .map(model => `- ${model.shortLabel.toLowerCase()} → ${model.id}`)
         .join('\n');
       const message = MessageService.createSystemMessage(
-        `Available models:\n\n${modelList}\n\nUsage:\n- /model <model_name>\n\nShortcuts:\n\n${shortcuts}\n\nYou can also provide any Gemini model ID (e.g., gemini-2.0-flash).`
+        `Available models:\n\n${modelList}\n\nUsage:\n- /model <model_name>\n\nShortcuts:\n\n${shortcuts}\n\nYou can also provide any Gemini model ID (e.g., gemini-3-flash-preview).`
       );
       return { success: true, message };
     }
@@ -356,16 +353,13 @@ export class HandleCommandUseCase {
 
   private buildThinkingStatusMessage(): string {
     const flashSection = this.buildBudgetModelStatus(GEMINI_FLASH_MODEL_ID);
-    const proSection = this.buildBudgetModelStatus(GEMINI_PRO_MODEL_ID);
-    const threeSection = this.buildLevelModelStatus(GEMINI_3_PRO_MODEL_ID);
+    const proSection = this.buildLevelModelStatus(GEMINI_PRO_MODEL_ID);
 
     return `## CURRENT THINKING SETTINGS
 
 ${flashSection}
 
 ${proSection}
-
-${threeSection}
 
 - **Notes**
   - Each model stores its own thinking budget or level.
@@ -383,7 +377,7 @@ ${threeSection}
     const candidate =
       resolved?.id ?? (normalized.startsWith('gemini-') ? normalized : undefined);
 
-    if (candidate && (THINKING_BUDGET_MODEL_IDS.has(candidate) || candidate === GEMINI_3_PRO_MODEL_ID)) {
+    if (candidate && (THINKING_BUDGET_MODEL_IDS.has(candidate) || candidate === GEMINI_PRO_MODEL_ID)) {
       return candidate;
     }
 
@@ -496,9 +490,8 @@ ${usageBlock}`;
 
   private buildSettingsThinkingSummary(): string {
     const flash = this.describeBudgetSummary(GEMINI_FLASH_MODEL_ID);
-    const pro = this.describeBudgetSummary(GEMINI_PRO_MODEL_ID);
-    const threePro = this.describeLevelSummary(GEMINI_3_PRO_MODEL_ID);
-    return `Flash ${flash} | 2.5-Pro ${pro} | 3-Pro ${threePro}`;
+    const pro = this.describeLevelSummary(GEMINI_PRO_MODEL_ID);
+    return `Flash ${flash} | 3-Pro ${pro}`;
   }
 
   private describeBudgetSummary(modelId: string): string {
@@ -853,16 +846,11 @@ ${usageBlock}`;
 
   private getImageModelExamples(modelId: string): string[] {
     switch (modelId) {
-      case 'nano-banana':
+      case 'gemini-3-pro-image-preview':
         return [
           '/image a cat',
           '/image a cat --aspect 16:9',
-          '/image a cat --model nano-banana',
-        ];
-      case 'imagen-4.0':
-        return [
-          '/image a cat --model imagen-4.0',
-          '/image a cat --aspect 9:16 --model imagen-4.0',
+          '/image a cat --model gemini-3-pro-image-preview',
         ];
       default:
         return ['/image a cat', `/image a cat --model ${modelId}`];
