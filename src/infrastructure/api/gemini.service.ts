@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import type { GenerateContentResponse } from "@google/genai";
 import type { Message, Source, MessageImage } from '../../domain/entities/message';
 import type { ThinkingModelSettings } from '../../domain/entities/settings';
+import { GEMINI_PRO_MODEL_ID } from '../../domain/entities/settings';
 import { ModelService } from '../services/model.service';
 
 export interface GeminiUsageMetadata {
@@ -88,7 +89,7 @@ function buildThinkingConfig(
 
   const canonicalModelId = ModelService.getCanonicalModelId(modelName);
 
-  if (canonicalModelId === 'gemini-3-pro-preview') {
+  if (canonicalModelId === GEMINI_PRO_MODEL_ID) {
     return {
       thinkingConfig: {
         thinkingLevel: thinkingSettings.level ?? DEFAULT_THINKING_LEVEL,
