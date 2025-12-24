@@ -36,7 +36,7 @@ const COMMANDS: CommandDefinition[] = [
   { name: CommandNames.MODEL, description: 'Switch between models (e.g., /model pro or /model flash).' },
   { name: CommandNames.THINK, description: 'Configure thinking per model (e.g., /think flash 5000, /think 3-pro high).' },
   { name: CommandNames.GRAMMAR, description: 'Fix grammar and slightly improve provided text.' },
-  { name: CommandNames.IMAGE, description: 'Generates an image from a prompt using Nano Banana (default) or Imagen 4.0 (e.g., /image a cat [--aspect 16:9] [--model nano-banana]).' },
+  { name: CommandNames.IMAGE, description: 'Generates an image from a prompt using Gemini 3 Pro Image Preview (e.g., /image a cat [--aspect 16:9] [--model gemini-3-pro-image-preview]).' },
   { name: CommandNames.AUDIO, description: 'Toggle audio effects (e.g., /audio on, /audio off).' },
   { name: CommandNames.HELP, description: 'Shows this list of commands.' },
 ];

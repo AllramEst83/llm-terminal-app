@@ -1,4 +1,4 @@
-import { Settings, type ThinkingModelSettings, GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID, GEMINI_3_PRO_MODEL_ID } from '../../domain/entities/settings';
+import { Settings, type ThinkingModelSettings, GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID } from '../../domain/entities/settings';
 import { StorageService } from '../storage/storage.service';
 import { ThemeService } from '../services/theme.service';
 import { ApiKeyService } from '../services/api-key.service';
@@ -61,8 +61,8 @@ export class SettingsRepository {
       }
 
       if (legacyThinkingLevel) {
-        thinkingSettings[GEMINI_3_PRO_MODEL_ID] = {
-          ...thinkingSettings[GEMINI_3_PRO_MODEL_ID],
+        thinkingSettings[GEMINI_PRO_MODEL_ID] = {
+          ...thinkingSettings[GEMINI_PRO_MODEL_ID],
           level: legacyThinkingLevel,
         };
       }
@@ -70,7 +70,6 @@ export class SettingsRepository {
       if (legacyThinkingEnabled) {
         thinkingSettings[GEMINI_FLASH_MODEL_ID].enabled = true;
         thinkingSettings[GEMINI_PRO_MODEL_ID].enabled = true;
-        thinkingSettings[GEMINI_3_PRO_MODEL_ID].enabled = true;
       }
     }
     const audioEnabled = StorageService.get<boolean>(

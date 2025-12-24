@@ -76,7 +76,7 @@ function extractUsageMetadata(rawMetadata: unknown): GeminiUsageMetadata | undef
 
 const DEFAULT_THINKING_BUDGET = 8192;
 const DEFAULT_THINKING_LEVEL = 'high';
-const BUDGET_MODELS = new Set(['gemini-2.5-flash', 'gemini-2.5-pro']);
+const BUDGET_MODELS = new Set(['gemini-3-flash-preview']);
 
 function buildThinkingConfig(
   modelName: string,
