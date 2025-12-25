@@ -276,15 +276,14 @@ export const App: React.FC = () => {
           bodyElement.style.top = `-${savedScrollPosition}px`;
           bodyElement.style.left = '0';
           bodyElement.style.right = '0';
+          bodyElement.style.width = '100%';
           bodyElement.style.overflow = 'hidden';
           bodyElement.style.touchAction = 'none';
           
           rootElement.style.overflow = 'hidden';
           rootElement.style.touchAction = 'none';
           
-          // Prevent touch scrolling on body/html, but allow scrolling within scroll containers
-          // The position: fixed on body should prevent most scrolling, but we add a safeguard
-          // to prevent any remaining scroll attempts while allowing the message container to scroll
+          // Prevent all scrolling on body/html/window, but allow scrolling within scroll containers
           const preventBodyScroll = (e: TouchEvent) => {
             // Check if the touch is within a scrollable container
             const target = e.target as HTMLElement;
@@ -304,13 +303,50 @@ export const App: React.FC = () => {
             e.preventDefault();
           };
           
-          // Add touch event listener to prevent body scrolling
-          // Don't use capture phase to allow scroll container to handle its own events first
+          // Prevent scroll events on window/document that would cause page scrolling
+          const scrollHandler = () => {
+            // Force scroll position to stay at saved position when keyboard is open
+            const currentScroll = window.scrollY || window.pageYOffset || 0;
+            if (Math.abs(currentScroll - savedScrollPosition) > 1) {
+              window.scrollTo(0, savedScrollPosition);
+            }
+            if (document.documentElement.scrollTop !== savedScrollPosition) {
+              document.documentElement.scrollTop = savedScrollPosition;
+            }
+            if (document.body.scrollTop !== savedScrollPosition) {
+              document.body.scrollTop = savedScrollPosition;
+            }
+          };
+          
+          // Prevent wheel events (for trackpad/mouse scrolling) on body/window
+          const preventWheel = (e: WheelEvent) => {
+            const target = e.target as HTMLElement;
+            const scrollContainer = scrollRef.current;
+            
+            // Allow wheel events within the scroll container
+            if (scrollContainer && (scrollContainer === target || scrollContainer.contains(target))) {
+              return;
+            }
+            
+            // Prevent wheel events outside scroll container
+            e.preventDefault();
+            e.stopPropagation();
+          };
+          
+          // Add event listeners to prevent body/window scrolling
           document.addEventListener('touchmove', preventBodyScroll, { passive: false });
+          window.addEventListener('scroll', scrollHandler, { passive: false, capture: true });
+          document.addEventListener('scroll', scrollHandler, { passive: false, capture: true });
+          window.addEventListener('wheel', preventWheel, { passive: false, capture: true });
+          document.addEventListener('wheel', preventWheel, { passive: false, capture: true });
           
           // Store cleanup function
           (bodyElement as any).__keyboardScrollLockCleanup = () => {
             document.removeEventListener('touchmove', preventBodyScroll);
+            window.removeEventListener('scroll', scrollHandler, { capture: true });
+            document.removeEventListener('scroll', scrollHandler, { capture: true });
+            window.removeEventListener('wheel', preventWheel, { capture: true });
+            document.removeEventListener('wheel', preventWheel, { capture: true });
           };
         } else if (!isKeyboardOpen && wasKeyboardOpen) {
           // Unlock scrolling when keyboard closes
@@ -325,6 +361,7 @@ export const App: React.FC = () => {
           bodyElement.style.top = '';
           bodyElement.style.left = '';
           bodyElement.style.right = '';
+          bodyElement.style.width = '';
           bodyElement.style.overflow = '';
           bodyElement.style.touchAction = '';
           
@@ -1100,6 +1137,14 @@ export const App: React.FC = () => {
             overflowY: 'auto',
             touchAction: 'pan-y', // Explicitly allow vertical scrolling on mobile
             WebkitOverflowScrolling: 'touch' // Smooth scrolling on iOS
+          }}
+          onScroll={(e) => {
+            // Prevent scroll events from bubbling to window/document
+            e.stopPropagation();
+          }}
+          onTouchMove={(e) => {
+            // Allow touch events within scroll container, but stop propagation
+            e.stopPropagation();
           }}
         >
           {renderContent()}
