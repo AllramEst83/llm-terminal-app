@@ -234,7 +234,7 @@ export const App: React.FC = () => {
     scrollToBottom();
   }, [messages, isStreaming, bootSequence, isLoading, scrollToBottom]);
 
-  // Handle mobile keyboard - adjust terminal height when keyboard opens
+  // Handle mobile keyboard - adjust terminal height when keyboard opens and lock scrolling
   useEffect(() => {
     // Only run viewport height adjustment on mobile devices
     if (!isMobileDevice()) {
@@ -242,18 +242,97 @@ export const App: React.FC = () => {
     }
 
     const rootElement = document.documentElement;
+    const bodyElement = document.body;
+    let isKeyboardOpen = false;
+    let savedScrollPosition = 0;
+
     const updateViewportHeight = () => {
       // Use Visual Viewport API if available (modern browsers)
       if (window.visualViewport) {
         const vh = window.visualViewport.height;
+        const windowHeight = window.innerHeight;
+        const keyboardThreshold = windowHeight * 0.75; // Keyboard is likely open if viewport < 75% of window height
+        
+        const wasKeyboardOpen = isKeyboardOpen;
+        isKeyboardOpen = vh < keyboardThreshold;
+
         setViewportHeight(vh);
         // Set CSS custom property and root height
         rootElement.style.setProperty('--viewport-height', `${vh}px`);
         rootElement.style.height = `${vh}px`;
-        document.body.style.height = `${vh}px`;
+        bodyElement.style.height = `${vh}px`;
         const rootDiv = document.getElementById('root');
         if (rootDiv) {
           rootDiv.style.height = `${vh}px`;
+        }
+
+        // Lock scrolling when keyboard opens
+        if (isKeyboardOpen && !wasKeyboardOpen) {
+          // Save current scroll position
+          savedScrollPosition = window.scrollY || window.pageYOffset || 0;
+          
+          // Lock body and html from scrolling
+          bodyElement.style.position = 'fixed';
+          bodyElement.style.top = `-${savedScrollPosition}px`;
+          bodyElement.style.left = '0';
+          bodyElement.style.right = '0';
+          bodyElement.style.overflow = 'hidden';
+          bodyElement.style.touchAction = 'none';
+          
+          rootElement.style.overflow = 'hidden';
+          rootElement.style.touchAction = 'none';
+          
+          // Prevent touch scrolling on body/html, but allow scrolling within scroll containers
+          // The position: fixed on body should prevent most scrolling, but we add a safeguard
+          // to prevent any remaining scroll attempts while allowing the message container to scroll
+          const preventBodyScroll = (e: TouchEvent) => {
+            // Check if the touch is within a scrollable container
+            const target = e.target as HTMLElement;
+            const scrollContainer = scrollRef.current;
+            
+            // Allow scrolling within the message container - check if target or any parent is the scroll container
+            let element: HTMLElement | null = target;
+            while (element && element !== document.body) {
+              if (scrollContainer && (scrollContainer === element || scrollContainer.contains(element))) {
+                // This touch is within the scroll container, allow it
+                return;
+              }
+              element = element.parentElement;
+            }
+            
+            // Touch is outside scroll container, prevent scrolling
+            e.preventDefault();
+          };
+          
+          // Add touch event listener to prevent body scrolling
+          // Don't use capture phase to allow scroll container to handle its own events first
+          document.addEventListener('touchmove', preventBodyScroll, { passive: false });
+          
+          // Store cleanup function
+          (bodyElement as any).__keyboardScrollLockCleanup = () => {
+            document.removeEventListener('touchmove', preventBodyScroll);
+          };
+        } else if (!isKeyboardOpen && wasKeyboardOpen) {
+          // Unlock scrolling when keyboard closes
+          const cleanup = (bodyElement as any).__keyboardScrollLockCleanup;
+          if (cleanup) {
+            cleanup();
+            delete (bodyElement as any).__keyboardScrollLockCleanup;
+          }
+          
+          // Restore body styles
+          bodyElement.style.position = '';
+          bodyElement.style.top = '';
+          bodyElement.style.left = '';
+          bodyElement.style.right = '';
+          bodyElement.style.overflow = '';
+          bodyElement.style.touchAction = '';
+          
+          rootElement.style.overflow = '';
+          rootElement.style.touchAction = '';
+          
+          // Restore scroll position
+          window.scrollTo(0, savedScrollPosition);
         }
       } else {
         // Fallback to window.innerHeight
@@ -261,7 +340,7 @@ export const App: React.FC = () => {
         setViewportHeight(height);
         rootElement.style.setProperty('--viewport-height', `${height}px`);
         rootElement.style.height = `${height}px`;
-        document.body.style.height = `${height}px`;
+        bodyElement.style.height = `${height}px`;
         const rootDiv = document.getElementById('root');
         if (rootDiv) {
           rootDiv.style.height = `${height}px`;
@@ -296,6 +375,23 @@ export const App: React.FC = () => {
         window.removeEventListener('resize', updateViewportHeight);
       }
       window.removeEventListener('orientationchange', handleOrientationChange);
+      
+      // Cleanup scroll lock if still active
+      const cleanup = (bodyElement as any).__keyboardScrollLockCleanup;
+      if (cleanup) {
+        cleanup();
+        delete (bodyElement as any).__keyboardScrollLockCleanup;
+      }
+      
+      // Restore body styles
+      bodyElement.style.position = '';
+      bodyElement.style.top = '';
+      bodyElement.style.left = '';
+      bodyElement.style.right = '';
+      bodyElement.style.overflow = '';
+      bodyElement.style.touchAction = '';
+      rootElement.style.overflow = '';
+      rootElement.style.touchAction = '';
     };
   }, []);
 
@@ -1000,7 +1096,11 @@ export const App: React.FC = () => {
         <div
           ref={scrollRef}
           className="flex-1 p-4 overflow-y-auto relative scan-lines min-h-0"
-          style={{ overflowY: 'auto' }}
+          style={{ 
+            overflowY: 'auto',
+            touchAction: 'pan-y', // Explicitly allow vertical scrolling on mobile
+            WebkitOverflowScrolling: 'touch' // Smooth scrolling on iOS
+          }}
         >
           {renderContent()}
         </div>
