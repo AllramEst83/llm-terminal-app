@@ -60,7 +60,9 @@ export const App: React.FC = () => {
   const [suggestions, setSuggestions] = useState<typeof CommandService.getAllCommands extends () => infer R ? R : never>([]);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number>(0);
-  const commandShortcuts = useMemo(() => CommandService.getAllCommands(), []);
+  const commandShortcuts = useMemo(() => {
+    return CommandService.getAllCommands().sort((a, b) => a.name.localeCompare(b.name));
+  }, []);
 
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
