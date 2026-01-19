@@ -58,6 +58,8 @@ export class HandleCommandUseCase {
         return await this.handleReset();
       case CommandNames.INFO:
         return await this.handleInfo();
+      case CommandNames.ABOUT:
+        return this.handleAbout();
       case CommandNames.MODEL:
         return this.handleModel(args);
       case CommandNames.THINK:
@@ -243,6 +245,26 @@ export class HandleCommandUseCase {
         message,
       };
     }
+  }
+
+  private handleAbout(): CommandResult {
+    const message = MessageService.createSystemMessage(
+      `## ABOUT
+- **Created by:** Coded By Kay
+- **Project GitHub:** https://github.com/AllramEst83/llm-terminal-app
+
+### WHY THIS APP EXISTS
+This app was created for the love and nostalgia of retro tech from the 80s. I feel there are too few modern UIs that mix old attention to detail. Everything is either glassmorphism, minimalist, or something in between. This is my wrapper app for a Gemini chat interface. Hope you like it.
+
+### USER ATTENTION
+- This app does not store your information in a database. User settings are saved in local storage and chat history is session-based only.
+- Because the app has no user accounts and stores your Gemini API key in local storage, I strongly advise you to rotate your Gemini key or purge website data at intervals.`
+    );
+
+    return {
+      success: true,
+      message,
+    };
   }
 
   private handleHelp(): CommandResult {
