@@ -32,6 +32,8 @@ export interface TerminalInputProps {
   onSuggestionSelect: (command: string) => void;
   onSuggestionIndexChange: (index: number) => void;
   onSuggestionsClose: () => void;
+  commandShortcuts?: CommandDefinition[];
+  showCommandToolbar?: boolean;
   theme: ThemeColors;
   disabled?: boolean;
   autoFocus?: boolean;

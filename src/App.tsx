@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { CommandNames, Message, MessageType, Settings, QueueItem } from './domain';
 import {
   ApiKeyService,
@@ -60,6 +60,9 @@ export const App: React.FC = () => {
   const [suggestions, setSuggestions] = useState<typeof CommandService.getAllCommands extends () => infer R ? R : never>([]);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number>(0);
+  const commandShortcuts = useMemo(() => {
+    return CommandService.getAllCommands().sort((a, b) => a.name.localeCompare(b.name));
+  }, []);
 
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
@@ -77,9 +80,11 @@ export const App: React.FC = () => {
   const clearCounterRef = useRef<number>(0);
   const messagesRef = useRef<Message[]>([]);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
   const currentProcessingItemIdRef = useRef<string | null>(null);
   const queueProcessingAbortRef = useRef<boolean | null>(null);
   const queueRef = useRef<QueueItem[]>([]);
+  const keyboardBaselineHeightRef = useRef<number | null>(null);
 
   // Initialize app
   useEffect(() => {
@@ -232,35 +237,37 @@ export const App: React.FC = () => {
   useEffect(() => {
     // Only run viewport height adjustment on mobile devices
     if (!isMobileDevice()) {
+      setIsKeyboardVisible(false);
+      keyboardBaselineHeightRef.current = null;
       return;
     }
 
     const rootElement = document.documentElement;
     const updateViewportHeight = () => {
-      // Use Visual Viewport API if available (modern browsers)
-      if (window.visualViewport) {
-        const vh = window.visualViewport.height;
-        setViewportHeight(vh);
-        // Set CSS custom property and root height
-        rootElement.style.setProperty('--viewport-height', `${vh}px`);
-        rootElement.style.height = `${vh}px`;
-        document.body.style.height = `${vh}px`;
-        const rootDiv = document.getElementById('root');
-        if (rootDiv) {
-          rootDiv.style.height = `${vh}px`;
-        }
-      } else {
-        // Fallback to window.innerHeight
-        const height = window.innerHeight;
-        setViewportHeight(height);
-        rootElement.style.setProperty('--viewport-height', `${height}px`);
-        rootElement.style.height = `${height}px`;
-        document.body.style.height = `${height}px`;
-        const rootDiv = document.getElementById('root');
-        if (rootDiv) {
-          rootDiv.style.height = `${height}px`;
-        }
+      const visualHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const layoutHeight = window.innerHeight;
+      const baselineCandidate = Math.max(visualHeight, layoutHeight);
+
+      setViewportHeight(visualHeight);
+      // Set CSS custom property and root height
+      rootElement.style.setProperty('--viewport-height', `${visualHeight}px`);
+      rootElement.style.height = `${visualHeight}px`;
+      document.body.style.height = `${visualHeight}px`;
+      const rootDiv = document.getElementById('root');
+      if (rootDiv) {
+        rootDiv.style.height = `${visualHeight}px`;
       }
+
+      if (
+        keyboardBaselineHeightRef.current === null ||
+        baselineCandidate > keyboardBaselineHeightRef.current
+      ) {
+        keyboardBaselineHeightRef.current = baselineCandidate;
+      }
+
+      const baselineHeight = keyboardBaselineHeightRef.current;
+      const isKeyboardOpen = baselineHeight ? visualHeight < baselineHeight * 0.75 : false;
+      setIsKeyboardVisible(isKeyboardOpen);
     };
 
     // Initial height
@@ -278,6 +285,7 @@ export const App: React.FC = () => {
     // Also listen to orientation changes
     const handleOrientationChange = () => {
       // Delay to allow orientation change to complete
+      keyboardBaselineHeightRef.current = null;
       setTimeout(updateViewportHeight, 100);
     };
     window.addEventListener('orientationchange', handleOrientationChange);
@@ -988,25 +996,27 @@ export const App: React.FC = () => {
               theme={theme}
             />
             <TerminalInput
-            input={input}
-            onChange={handleInputChange}
-            onSend={handleSendMessage}
-            onKeyDown={handleKeyDown}
-            suggestions={suggestions}
-            showSuggestions={showSuggestions}
-            activeSuggestionIndex={activeSuggestionIndex}
-            onSuggestionSelect={handleSuggestionClick}
-            onSuggestionIndexChange={setActiveSuggestionIndex}
-            onSuggestionsClose={() => setShowSuggestions(false)}
-            theme={theme}
-            disabled={false}
-            autoFocus={true}
-            attachedImages={attachedImages}
-            onImageAttach={handleImageAttach}
-            onImageRemove={handleImageRemove}
-            maxImages={10}
-            onError={handleImageError}
-          />
+              input={input}
+              onChange={handleInputChange}
+              onSend={handleSendMessage}
+              onKeyDown={handleKeyDown}
+              suggestions={suggestions}
+              showSuggestions={showSuggestions}
+              activeSuggestionIndex={activeSuggestionIndex}
+              onSuggestionSelect={handleSuggestionClick}
+              onSuggestionIndexChange={setActiveSuggestionIndex}
+              onSuggestionsClose={() => setShowSuggestions(false)}
+              commandShortcuts={commandShortcuts}
+              showCommandToolbar={isKeyboardVisible}
+              theme={theme}
+              disabled={false}
+              autoFocus={true}
+              attachedImages={attachedImages}
+              onImageAttach={handleImageAttach}
+              onImageRemove={handleImageRemove}
+              maxImages={10}
+              onError={handleImageError}
+            />
           </>
         )}
       </div>

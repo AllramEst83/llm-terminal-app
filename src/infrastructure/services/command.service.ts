@@ -10,7 +10,7 @@ export class CommandService {
   }
 
   static findMatchingCommands(prefix: string): CommandDefinition[] {
-    return Command.findMatchingCommands(prefix);
+    return Command.findMatchingCommands(prefix).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   static isCommand(input: string): boolean {
