@@ -16,6 +16,8 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   onSuggestionSelect,
   onSuggestionIndexChange,
   onSuggestionsClose,
+  commandShortcuts = [],
+  showCommandToolbar = false,
   theme,
   disabled = false,
   autoFocus = true,
@@ -32,6 +34,7 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   
   const hasImages = attachedImages.length > 0;
   const isMaxImages = attachedImages.length >= maxImages;
+  const hasCommandToolbar = showCommandToolbar && commandShortcuts.length > 0;
 
   // Helper function to validate image format
   const isValidImageFormat = (mimeType: string): boolean => {
@@ -382,6 +385,40 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
           }
         />
       </div>
+      {hasCommandToolbar && (
+        <div
+          className="sticky bottom-0 z-20 border-t"
+          style={{
+            backgroundColor: theme.background,
+            borderColor: `${theme.accent}40`,
+            paddingBottom: 'env(safe-area-inset-bottom)'
+          }}
+        >
+          <div
+            className="flex items-center gap-2 overflow-x-auto px-2 py-2"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {commandShortcuts.map((command) => (
+              <button
+                key={command.name}
+                type="button"
+                className="px-2 py-1 rounded-full border text-xs font-semibold whitespace-nowrap transition-opacity hover:opacity-90 active:opacity-80"
+                style={{
+                  borderColor: theme.accent,
+                  color: theme.accent,
+                  backgroundColor: `${theme.accent}15`
+                }}
+                title={`/${command.name} - ${command.description}`}
+                aria-label={`Insert command /${command.name}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleSuggestionSelect(command.name)}
+              >
+                /{command.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
