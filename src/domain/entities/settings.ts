@@ -20,8 +20,7 @@ export class Settings {
     public readonly themeName: ThemeName,
     public readonly apiKey: string,
     public readonly modelName: string,
-    public readonly thinkingSettings: Record<string, ThinkingModelSettings>,
-    public readonly audioEnabled: boolean = true
+    public readonly thinkingSettings: Record<string, ThinkingModelSettings>
   ) {
     this.thinkingSettings = Settings.normalizeThinkingSettings(thinkingSettings);
   }
@@ -39,8 +38,7 @@ export class Settings {
       Theme.DEFAULT_THEME_NAME,
       '',
       this.DEFAULT_MODEL_NAME,
-      this.createDefaultThinkingSettings(),
-      true
+      this.createDefaultThinkingSettings()
     );
   }
 
@@ -57,8 +55,7 @@ export class Settings {
       this.themeName,
       this.apiKey,
       this.modelName,
-      this.thinkingSettings,
-      this.audioEnabled
+      this.thinkingSettings
     );
   }
 
@@ -71,8 +68,7 @@ export class Settings {
       themeName,
       this.apiKey,
       this.modelName,
-      this.thinkingSettings,
-      this.audioEnabled
+      this.thinkingSettings
     );
   }
 
@@ -82,8 +78,7 @@ export class Settings {
       this.themeName,
       apiKey,
       this.modelName,
-      this.thinkingSettings,
-      this.audioEnabled
+      this.thinkingSettings
     );
   }
 
@@ -93,19 +88,7 @@ export class Settings {
       this.themeName,
       this.apiKey,
       modelName,
-      this.thinkingSettings,
-      this.audioEnabled
-    );
-  }
-
-  withAudioEnabled(audioEnabled: boolean): Settings {
-    return new Settings(
-      this.fontSize,
-      this.themeName,
-      this.apiKey,
-      this.modelName,
-      this.thinkingSettings,
-      audioEnabled
+      this.thinkingSettings
     );
   }
 
@@ -134,8 +117,7 @@ export class Settings {
       this.themeName,
       this.apiKey,
       this.modelName,
-      thinkingSettings,
-      this.audioEnabled
+      thinkingSettings
     );
   }
 

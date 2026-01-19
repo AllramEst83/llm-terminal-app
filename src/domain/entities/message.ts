@@ -28,7 +28,6 @@ export enum MessageType {
   THINK = CommandNames.THINK,
   GRAMMAR = CommandNames.GRAMMAR,
   IMAGE = CommandNames.IMAGE,
-  AUDIO = CommandNames.AUDIO,
   HELP = CommandNames.HELP,
 }
 
@@ -129,8 +128,6 @@ export class Message {
         return MessageType.GRAMMAR;
       case CommandNames.IMAGE:
         return MessageType.IMAGE;
-      case CommandNames.AUDIO:
-        return MessageType.AUDIO;
       case CommandNames.HELP:
         return MessageType.HELP;
       default:
