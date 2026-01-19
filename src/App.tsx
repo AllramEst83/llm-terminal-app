@@ -16,7 +16,6 @@ import {
   ManageSettingsUseCase
 } from './application';
 import { getCurrentTimestamp } from './infrastructure/utils/date.utils';
-import { playKeystrokeSound, playErrorBeep, playBootSound, unlockAudio } from './infrastructure/services/audio.service';
 import {
   TerminalHeader,
   MessageList,
@@ -139,8 +138,6 @@ export const App: React.FC = () => {
     if (!isKeyReady || booting || booted) return;
 
     const startBootProcess = () => {
-      // Unlock audio on user interaction
-      unlockAudio();
       setBooting(true);
       window.removeEventListener('keydown', startBootProcess);
       window.removeEventListener('click', startBootProcess);
@@ -158,9 +155,6 @@ export const App: React.FC = () => {
   // Boot sequence animation
   useEffect(() => {
     if (!booting) return;
-
-    // Play boot sound when boot sequence starts
-    playBootSound(settings.audioEnabled);
 
     const bootMessages = BootSequenceService.getBootMessages();
     let currentTimeout: number;
@@ -184,7 +178,7 @@ export const App: React.FC = () => {
 
     runBootSequence();
     return () => clearTimeout(currentTimeout);
-  }, [booting, settings.audioEnabled]);
+  }, [booting]);
 
 
   // Sync messages ref with state
@@ -381,8 +375,7 @@ export const App: React.FC = () => {
   const handleImageError = useCallback((errorMessage: string) => {
     const errorMsg = MessageService.createErrorMessage(`SYSTEM ERROR: ${errorMessage}`);
     setMessages(prev => [...prev, errorMsg]);
-    playErrorBeep(settings.audioEnabled);
-  }, [settings.audioEnabled]);
+  }, []);
 
   const removeFromQueue = useCallback((itemId: string) => {
     setQueue(prev => {
@@ -520,7 +513,6 @@ export const App: React.FC = () => {
           "SYSTEM ERROR: API Key is missing. Please reset the app."
         );
         setMessages(prev => [...prev, errorMsg]);
-        playErrorBeep(settings.audioEnabled);
         setQueue(prev => {
           const updated = QueueService.updateItemStatus(prev, nextItem.id, 'completed');
           return QueueService.removeCompletedItems(updated);
@@ -605,10 +597,6 @@ export const App: React.FC = () => {
           }
 
           // Handle command result
-          if (!result.success) {
-            playErrorBeep(settings.audioEnabled);
-          }
-
           // Handle clear command
           if (result.shouldClearMessages) {
             clearCounterRef.current += 1;
@@ -655,7 +643,6 @@ export const App: React.FC = () => {
             `SYSTEM ERROR: Command execution failed. ${error instanceof Error ? error.message : 'Unknown error'}`
           );
           setMessages(prev => [...prev, errorMessage]);
-          playErrorBeep(settings.audioEnabled);
         }
 
         // Mark as completed and remove
@@ -686,9 +673,6 @@ export const App: React.FC = () => {
 
       setMessages(prev => [...prev, userMessage]);
       setIsLoading(true);
-
-      // Play keystroke sound
-      playKeystrokeSound(settings.audioEnabled);
 
       // Check if cancelled before sending
       if (queueProcessingAbortRef.current || currentProcessingItemIdRef.current !== nextItem.id) {
@@ -736,9 +720,6 @@ export const App: React.FC = () => {
               );
               setMessages(prev => [...prev, newMessage]);
 
-              if (isError) {
-                playErrorBeep(settings.audioEnabled);
-              }
             } else {
               setMessages(prev => {
                 return MessageService.updateLastMessage(prev, (msg) => {
@@ -894,9 +875,6 @@ export const App: React.FC = () => {
   }, []);
 
   const handleInputChange = useCallback((value: string) => {
-    // Unlock audio on user interaction
-    unlockAudio();
-
     setInput(value);
     setHistoryIndex(-1);
 
@@ -912,9 +890,6 @@ export const App: React.FC = () => {
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Unlock audio on user interaction
-    unlockAudio();
-
     // Command History Navigation (only when suggestions are not shown)
     if (!showSuggestions && commandHistory.length > 0) {
       if (e.key === 'ArrowUp') {

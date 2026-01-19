@@ -1,5 +1,4 @@
 export * from './api-key.service';
-export * from './audio.service';
 export * from './boot-sequence.service';
 export * from './browser-info.service';
 export * from './command.service';
