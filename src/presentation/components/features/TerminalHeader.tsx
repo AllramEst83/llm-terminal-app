@@ -15,6 +15,25 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
   const iconRef = useRef<HTMLButtonElement>(null);
 
   const maxTokens = ModelService.getContextLimit(modelName) ?? ModelService.getDefaultModel().contextLimit;
+  const modelDisplayName = ModelService.getDisplayName(modelName) ?? (modelName?.trim() ? modelName : 'Unknown Model');
+  const compactModelLabel = (() => {
+    const candidates = [
+      ModelService.getDisplayName(modelName),
+      modelName,
+      ModelService.getShortLabel(modelName),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    if (candidates.includes('flash')) {
+      return 'Flash';
+    }
+    if (candidates.includes('pro')) {
+      return 'Pro';
+    }
+    return ModelService.getShortLabel(modelName);
+  })();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -49,12 +68,22 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
       className="p-2 flex items-center justify-between border-b-2 header-lines relative"
       style={{ backgroundColor: theme.headerBg, color: theme.headerText, borderColor: theme.accent }}
     >
-      <span className="text-lg">C:\\{'>'} GEMINI_CHAT.EXE</span>
+      <div className="flex items-center min-w-0 text-lg font-mono">
+        <span
+          className="hidden sm:inline truncate"
+          style={{ color: theme.accent }}
+        >
+          {modelDisplayName}
+        </span>
+        <span
+          className="sm:hidden"
+          style={{ color: theme.accent }}
+        >
+          {compactModelLabel}
+        </span>
+      </div>
       {systemInfoVisible && (
         <div className="hidden md:flex items-center space-x-3 text-sm">
-          <span style={{ color: theme.headerText, opacity: 0.8 }}>Model:</span>
-          <span style={{ color: theme.accent }}>{modelName}</span>
-          <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
           <span style={{ color: theme.headerText, opacity: 0.8 }}>Thinking:</span>
           <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
           <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
@@ -122,7 +151,7 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
                   className="text-sm font-mono truncate"
                   style={{ color: theme.accent }}
                 >
-                  {modelName}
+                  {modelDisplayName}
                 </div>
               </div>
 
