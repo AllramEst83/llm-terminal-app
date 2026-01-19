@@ -10,7 +10,6 @@ const THINKING_SETTINGS_STORAGE_KEY = 'terminal_thinkingSettings';
 const THINKING_ENABLED_STORAGE_KEY = 'terminal_thinkingEnabled';
 const THINKING_BUDGET_STORAGE_KEY = 'terminal_thinkingBudget';
 const THINKING_LEVEL_STORAGE_KEY = 'terminal_thinkingLevel';
-const AUDIO_ENABLED_STORAGE_KEY = 'terminal_audioEnabled';
 
 export class SettingsRepository {
   static async load(): Promise<Settings> {
@@ -72,18 +71,12 @@ export class SettingsRepository {
         thinkingSettings[GEMINI_PRO_MODEL_ID].enabled = true;
       }
     }
-    const audioEnabled = StorageService.get<boolean>(
-      AUDIO_ENABLED_STORAGE_KEY,
-      true
-    );
-
     return new Settings(
       fontSize,
       themeName,
       apiKey,
       modelName,
-      thinkingSettings,
-      audioEnabled
+      thinkingSettings
     );
   }
 
@@ -99,16 +92,14 @@ export class SettingsRepository {
     StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
     StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
     StorageService.remove(THINKING_LEVEL_STORAGE_KEY);
-    const audioEnabledSaved = StorageService.set(AUDIO_ENABLED_STORAGE_KEY, settings.audioEnabled);
     
-    if (!fontSizeSaved || !themeSaved || !apiKeySaved || !modelNameSaved || !thinkingSettingsSaved || !audioEnabledSaved) {
+    if (!fontSizeSaved || !themeSaved || !apiKeySaved || !modelNameSaved || !thinkingSettingsSaved) {
       console.warn('Some settings failed to save to localStorage:', {
         fontSize: fontSizeSaved,
         theme: themeSaved,
         apiKey: apiKeySaved,
         modelName: modelNameSaved,
-        thinkingSettings: thinkingSettingsSaved,
-        audioEnabled: audioEnabledSaved
+        thinkingSettings: thinkingSettingsSaved
       });
     } else {
       console.debug('Settings saved successfully to localStorage');
@@ -124,7 +115,6 @@ export class SettingsRepository {
     StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
     StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
     StorageService.remove(THINKING_LEVEL_STORAGE_KEY);
-    StorageService.remove(AUDIO_ENABLED_STORAGE_KEY);
     return Settings.createDefault();
   }
 }

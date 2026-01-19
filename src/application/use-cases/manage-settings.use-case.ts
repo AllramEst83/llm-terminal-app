@@ -38,10 +38,6 @@ export class ManageSettingsUseCase {
       newSettings = newSettings.withThinkingSettingsMap(updates.thinkingSettings);
     }
 
-    if (updates.audioEnabled !== undefined) {
-      newSettings = newSettings.withAudioEnabled(updates.audioEnabled);
-    }
-
     await this.saveSettings(newSettings);
     return newSettings;
   }
