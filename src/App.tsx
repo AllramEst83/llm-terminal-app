@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { CommandNames, Message, MessageType, Settings, QueueItem } from './domain';
+import {
+  CommandNames,
+  Message,
+  MessageType,
+  Settings,
+  QueueItem,
+  SYSTEM_PROMPTS,
+  type SystemPromptId,
+} from './domain';
 import {
   ApiKeyService,
   ThemeService,
@@ -383,6 +391,14 @@ export const App: React.FC = () => {
   const handleImageError = useCallback((errorMessage: string) => {
     const errorMsg = MessageService.createErrorMessage(`SYSTEM ERROR: ${errorMessage}`);
     setMessages(prev => [...prev, errorMsg]);
+  }, []);
+
+  const handleSystemPromptChange = useCallback((promptId: SystemPromptId) => {
+    setSettings(prev => prev.withSystemPromptId(promptId));
+  }, []);
+
+  const handleCustomSystemPromptSave = useCallback((prompt: string) => {
+    setSettings(prev => prev.withCustomSystemPrompt(prompt));
   }, []);
 
   const removeFromQueue = useCallback((itemId: string) => {
@@ -979,6 +995,11 @@ export const App: React.FC = () => {
           thinkingEnabled={settings.getThinkingSettingsForModel(settings.modelName).enabled}
           inputTokenCount={inputTokenCount}
           systemInfoVisible={systemInfoVisible}
+          systemPromptId={settings.systemPromptId}
+          systemPromptOptions={SYSTEM_PROMPTS}
+          customSystemPrompt={settings.customSystemPrompt}
+          onSystemPromptChange={handleSystemPromptChange}
+          onCustomSystemPromptSave={handleCustomSystemPromptSave}
         />
         <div
           ref={scrollRef}

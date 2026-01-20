@@ -19,6 +19,13 @@ import { TokenCountService } from '../../infrastructure/services/token-count.ser
 import { ModelService, type ImageModelDefinition } from '../../infrastructure/services/model.service';
 import { GrammarService } from '../../infrastructure/services/grammar.service';
 import { SearchService } from '../../infrastructure/services/search.service';
+import {
+  DEFAULT_CUSTOM_SYSTEM_PROMPT,
+  DEFAULT_SYSTEM_PROMPT_ID,
+  SYSTEM_PROMPTS,
+  getSystemPromptDefinition,
+  resolveSystemPromptId,
+} from '../../domain/system.prompts';
 
 const THINKING_BUDGET_MODEL_IDS = new Set([GEMINI_FLASH_MODEL_ID]);
 const THINKING_MODEL_LABELS: Record<string, string> = {
@@ -64,6 +71,8 @@ export class HandleCommandUseCase {
         return this.handleModel(args);
       case CommandNames.THINK:
         return this.handleThink(args);
+      case CommandNames.PROMPT:
+        return this.handlePrompt(args);
       case CommandNames.GRAMMAR:
         return await this.handleGrammar(args);
       case CommandNames.IMAGE:
@@ -95,6 +104,14 @@ export class HandleCommandUseCase {
           : 'Not configured');
 
     const thinkingStatus = this.buildSettingsThinkingSummary();
+    const promptDefinition = getSystemPromptDefinition(this.currentSettings.systemPromptId);
+    const customPromptStatus = this.currentSettings.customSystemPrompt.trim()
+      ? 'saved'
+      : 'empty';
+    const promptStatus =
+      promptDefinition.id === 'custom'
+        ? `${promptDefinition.label} (${customPromptStatus})`
+        : promptDefinition.label;
 
     const message = MessageService.createSystemMessage(
       `## CURRENT SETTINGS
@@ -102,6 +119,7 @@ export class HandleCommandUseCase {
 - **FONT SIZE:** ${this.currentSettings.fontSize}px
 - **THEME:** ${this.currentSettings.themeName.toUpperCase()}
 - **MODEL:** ${this.currentSettings.modelName}
+- **PROMPT:** ${promptStatus}
 - **THINKING:** ${thinkingStatus}
 - **API KEY:** ${keyStatus}`
     );
@@ -222,6 +240,8 @@ export class HandleCommandUseCase {
         apiKey: this.isStudioEnv ? this.currentSettings.apiKey : '',
         modelName: defaultModelName,
         thinkingSettings: Settings.createDefaultThinkingSettings(),
+        systemPromptId: DEFAULT_SYSTEM_PROMPT_ID,
+        customSystemPrompt: DEFAULT_CUSTOM_SYSTEM_PROMPT,
       },
     };
   }
@@ -280,6 +300,74 @@ This app was created for the love and nostalgia of retro tech from the 80s. I fe
     return {
       success: true,
       message,
+    };
+  }
+
+  private handlePrompt(args: string[]): CommandResult {
+    if (args.length === 0) {
+      const promptList = SYSTEM_PROMPTS
+        .map(prompt => `- **${prompt.label}** (${prompt.id}) - ${prompt.description}`)
+        .join('\n');
+      const message = MessageService.createSystemMessage(
+        `Available system prompts:\n\n${promptList}\n\nUsage:\n- /prompt <option>\n- /prompt custom <your prompt>`
+      );
+      return { success: true, message };
+    }
+
+    const [firstArg, ...restArgs] = args;
+    const primaryId = resolveSystemPromptId(firstArg);
+
+    if (primaryId === 'custom') {
+      const customPrompt = restArgs.join(' ').trim();
+      if (!customPrompt) {
+        if (this.currentSettings.customSystemPrompt.trim()) {
+          const message = MessageService.createSystemMessage(
+            'SYSTEM: Custom system prompt activated.'
+          );
+          return {
+            success: true,
+            message,
+            settingsUpdate: { systemPromptId: 'custom' },
+          };
+        }
+        const message = MessageService.createErrorMessage(
+          'SYSTEM ERROR: No custom prompt provided.\n\nUsage: /prompt custom <your prompt>'
+        );
+        return { success: false, message };
+      }
+
+      const message = MessageService.createSystemMessage(
+        'SYSTEM: Custom system prompt saved and activated.'
+      );
+      return {
+        success: true,
+        message,
+        settingsUpdate: {
+          systemPromptId: 'custom',
+          customSystemPrompt: customPrompt,
+        },
+      };
+    }
+
+    const combinedInput = args.join(' ');
+    const resolvedId = primaryId ?? resolveSystemPromptId(combinedInput);
+    if (!resolvedId) {
+      const validOptions = SYSTEM_PROMPTS.map(prompt => prompt.label).join(', ');
+      const message = MessageService.createErrorMessage(
+        `SYSTEM ERROR: Unknown prompt option "${combinedInput}".\n\nAvailable options: ${validOptions}.`
+      );
+      return { success: false, message };
+    }
+
+    const promptDefinition = getSystemPromptDefinition(resolvedId);
+    const message = MessageService.createSystemMessage(
+      `SYSTEM: System prompt set to ${promptDefinition.label}.`
+    );
+
+    return {
+      success: true,
+      message,
+      settingsUpdate: { systemPromptId: resolvedId },
     };
   }
 

@@ -34,6 +34,14 @@ export class ManageSettingsUseCase {
       newSettings = newSettings.withModelName(updates.modelName);
     }
 
+    if (updates.systemPromptId !== undefined) {
+      newSettings = newSettings.withSystemPromptId(updates.systemPromptId);
+    }
+
+    if (updates.customSystemPrompt !== undefined) {
+      newSettings = newSettings.withCustomSystemPrompt(updates.customSystemPrompt);
+    }
+
     if (updates.thinkingSettings !== undefined) {
       newSettings = newSettings.withThinkingSettingsMap(updates.thinkingSettings);
     }

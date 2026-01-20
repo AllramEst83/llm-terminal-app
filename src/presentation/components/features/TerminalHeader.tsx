@@ -9,13 +9,26 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
   thinkingEnabled,
   inputTokenCount,
   systemInfoVisible,
+  systemPromptId,
+  systemPromptOptions,
+  customSystemPrompt,
+  onSystemPromptChange,
+  onCustomSystemPromptSave,
 }) => {
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const iconRef = useRef<HTMLButtonElement>(null);
+  const [customPromptDraft, setCustomPromptDraft] = useState(customSystemPrompt);
 
   const maxTokens = ModelService.getContextLimit(modelName) ?? ModelService.getDefaultModel().contextLimit;
   const modelDisplayName = ModelService.getDisplayName(modelName) ?? (modelName?.trim() ? modelName : 'Unknown Model');
+  const activePromptDefinition =
+    systemPromptOptions.find(option => option.id === systemPromptId) ?? systemPromptOptions[0];
+  const customPromptDefinition = systemPromptOptions.find(option => option.id === 'custom');
+  const customPromptPlaceholder = customPromptDefinition?.placeholder ?? 'Enter a custom system prompt...';
+  const trimmedCustomPrompt = customSystemPrompt.trim();
+  const trimmedDraftPrompt = customPromptDraft.trim();
+  const isCustomPromptDirty = trimmedDraftPrompt !== trimmedCustomPrompt;
   const compactModelLabel = (() => {
     const candidates = [
       ModelService.getDisplayName(modelName),
@@ -63,6 +76,22 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
     }
   }, [systemInfoVisible, showPopup]);
 
+  useEffect(() => {
+    if (!showPopup) {
+      setCustomPromptDraft(customSystemPrompt);
+    }
+  }, [customSystemPrompt, showPopup]);
+
+  const handlePromptChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextPromptId = event.target.value as typeof systemPromptId;
+    onSystemPromptChange(nextPromptId);
+  };
+
+  const handleCustomPromptSave = () => {
+    onCustomSystemPromptSave(trimmedDraftPrompt);
+    setCustomPromptDraft(trimmedDraftPrompt);
+  };
+
   return (
     <div 
       className="p-2 flex items-center justify-between border-b-2 header-lines relative"
@@ -82,21 +111,25 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
           {compactModelLabel}
         </span>
       </div>
-      {systemInfoVisible && (
-        <div className="hidden md:flex items-center space-x-3 text-sm">
-          <span style={{ color: theme.headerText, opacity: 0.8 }}>Thinking:</span>
-          <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
-          <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
-          <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
-        </div>
-      )}
-      <div className="md:hidden relative">
+      <div className="flex items-center space-x-3">
+        {systemInfoVisible && (
+          <div className="hidden md:flex items-center space-x-3 text-sm">
+            <span style={{ color: theme.headerText, opacity: 0.8 }}>Thinking:</span>
+            <span style={{ color: theme.accent }}>{thinkingEnabled ? 'ON' : 'OFF'}</span>
+            <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
+            <span style={{ color: theme.headerText, opacity: 0.8 }}>Prompt:</span>
+            <span style={{ color: theme.accent }}>{activePromptDefinition?.label ?? 'Custom'}</span>
+            <span style={{ color: theme.headerText, opacity: 0.6 }}>|</span>
+            <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
+          </div>
+        )}
+        <div className="relative">
         <button
           ref={iconRef}
           onClick={() => systemInfoVisible && setShowPopup(!showPopup)}
           className="p-1 hover:opacity-80 transition-opacity"
-          style={{ color: theme.headerText, opacity: systemInfoVisible ? 1 : 0.4 }}
-          aria-label="Show model info"
+          style={{ color: theme.headerText, opacity: systemInfoVisible ? 1 : 0.6 }}
+          aria-label="Show system info"
           disabled={!systemInfoVisible}
         >
           <svg
@@ -117,7 +150,7 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
         {showPopup && systemInfoVisible && (
           <div
             ref={popupRef}
-            className="absolute right-0 top-full mt-2 rounded shadow-lg z-50 w-[280px]"
+            className="absolute right-0 top-full mt-2 rounded shadow-lg z-50 w-[320px]"
             style={{
               backgroundColor: theme.background,
               color: theme.text,
@@ -198,9 +231,85 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
                   <TokenCounter inputTokens={inputTokenCount} maxTokens={maxTokens} theme={theme} />
                 </div>
               </div>
+
+              {/* Divider */}
+              <div 
+                className="h-px"
+                style={{ backgroundColor: theme.accent, opacity: 0.3 }}
+              />
+
+              {/* System Prompt Section */}
+              <div className="space-y-2">
+                <div 
+                  className="text-xs uppercase tracking-wide"
+                  style={{ color: theme.text, opacity: 0.7 }}
+                >
+                  System Prompt
+                </div>
+                <select
+                  value={systemPromptId}
+                  onChange={handlePromptChange}
+                  className="w-full text-xs font-mono rounded px-2 py-1"
+                  style={{
+                    backgroundColor: theme.background,
+                    color: theme.text,
+                    border: `1px solid ${theme.accent}`,
+                  }}
+                  aria-label="Select system prompt"
+                >
+                  {systemPromptOptions.map(option => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {activePromptDefinition?.description && (
+                  <p className="text-xs" style={{ color: theme.text, opacity: 0.7 }}>
+                    {activePromptDefinition.description}
+                  </p>
+                )}
+                {systemPromptId === 'custom' && (
+                  <div className="space-y-2">
+                    <textarea
+                      value={customPromptDraft}
+                      onChange={(event) => setCustomPromptDraft(event.target.value)}
+                      rows={4}
+                      className="w-full text-xs font-mono rounded px-2 py-1 resize-none"
+                      style={{
+                        backgroundColor: theme.background,
+                        color: theme.text,
+                        border: `1px solid ${theme.accent}`,
+                      }}
+                      placeholder={customPromptPlaceholder}
+                      spellCheck={false}
+                      aria-label="Custom system prompt"
+                    />
+                    {!trimmedDraftPrompt && (
+                      <p className="text-xs" style={{ color: theme.text, opacity: 0.6 }}>
+                        Empty custom prompts fall back to Normal Baseline.
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleCustomPromptSave}
+                      disabled={!isCustomPromptDirty}
+                      className="px-3 py-1 rounded text-xs font-semibold transition-opacity"
+                      style={{
+                        backgroundColor: isCustomPromptDirty ? theme.accent : 'transparent',
+                        color: isCustomPromptDirty ? theme.background : theme.text,
+                        border: `1px solid ${theme.accent}`,
+                        opacity: isCustomPromptDirty ? 1 : 0.6,
+                      }}
+                    >
+                      Save Prompt
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

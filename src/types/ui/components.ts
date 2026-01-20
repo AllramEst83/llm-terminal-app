@@ -6,6 +6,7 @@ import type { CommandDefinition } from '../../domain/entities/command';
 import type { Message } from '../../domain/entities/message';
 import type { QueueItem } from '../../domain/entities/queue-item';
 import type { ThemeColors } from '../../domain/entities/theme';
+import type { SystemPromptDefinition, SystemPromptId } from '../../domain/system.prompts';
 
 /**
  * Represents an image attached to a message or queue item in the UI.
@@ -63,6 +64,11 @@ export interface TerminalHeaderProps {
   thinkingEnabled: boolean;
   inputTokenCount: number;
   systemInfoVisible: boolean;
+  systemPromptId: SystemPromptId;
+  systemPromptOptions: SystemPromptDefinition[];
+  customSystemPrompt: string;
+  onSystemPromptChange: (promptId: SystemPromptId) => void;
+  onCustomSystemPromptSave: (prompt: string) => void;
 }
 
 /**

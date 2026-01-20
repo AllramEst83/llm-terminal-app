@@ -114,6 +114,7 @@ export async function sendMessageToGemini(
   apiKey: string,
   modelName: string,
   thinkingSettings: ThinkingModelSettings,
+  systemPrompt: string,
   onStream: (chunkText: string, isFirstChunk: boolean) => void,
   onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata) => void,
   imageData?: string,
@@ -131,8 +132,7 @@ export async function sendMessageToGemini(
       model: modelName,
       history: formatMessagesForGemini(currentMessages),
       config: {
-        systemInstruction:
-          'You are Google Gemini v1.5 (Mainframe Edition), an emulated 1980s mainframe terminal. Use confident mainframe-era phrasing, concise sentences, and avoid decorative prompts, cursors, or ASCII art. Always respond with valid Markdown (bold, italic, code blocks, lists). When incorporating Google Search results, append bracketed citations like [1] or [2] at the end of each sentence that relies on that source, matching the Sources list appended to the response. Only cite when search data is used. You have access to Google Search via the provided tool and must invoke it when the user requests /search or up-to-date information. Do not execute terminal commands; the system handles /help, /settings, /font, /sound, /clear, /search, etc. Keep answers focused, avoid speculation, and state “DATA UNAVAILABLE” if information cannot be confirmed.',
+        systemInstruction: systemPrompt,
         tools: [{ googleSearch: {} }],
         ...(thinkingOverrides ?? {}),
       },

@@ -1,5 +1,6 @@
 import type { Message, MessageImage } from '../../domain/entities/message';
 import type { Settings } from '../../domain/entities/settings';
+import { resolveSystemPromptText } from '../../domain/system.prompts';
 import { sendMessageToGemini } from '../../infrastructure/api/gemini.service';
 import { MessageService } from '../../infrastructure/services/message.service';
 import { TokenCountService } from '../../infrastructure/services/token-count.service';
@@ -27,6 +28,10 @@ export class SendMessageUseCase {
     const userMessage = MessageService.createUserMessage(inputText, imageData, imageMimeType, images);
 
     const thinkingSettings = this.settings.getThinkingSettingsForModel(this.settings.modelName);
+    const systemPrompt = resolveSystemPromptText(
+      this.settings.systemPromptId,
+      this.settings.customSystemPrompt
+    );
 
     await sendMessageToGemini(
       this.currentMessages,
@@ -34,6 +39,7 @@ export class SendMessageUseCase {
       this.settings.apiKey,
       this.settings.modelName,
       thinkingSettings,
+      systemPrompt,
       (chunkText, isFirstChunk) => {
         onStreamCallback(chunkText, isFirstChunk);
       },
