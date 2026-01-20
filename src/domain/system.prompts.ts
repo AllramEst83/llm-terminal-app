@@ -1,4 +1,8 @@
-export type SystemPromptId = 'retro-terminal' | 'normal-baseline' | 'custom';
+export type SystemPromptId =
+  | 'retro-terminal'
+  | 'normal-baseline'
+  | 'dotnet-clean-architecture'
+  | 'custom';
 
 export interface SystemPromptDefinition {
   id: SystemPromptId;
@@ -26,6 +30,21 @@ const NORMAL_BASELINE_PROMPT =
   'Do not execute terminal commands; the system handles /help, /settings, /font, /sound, /clear, /search, etc. ' +
   'If information cannot be confirmed, say "DATA UNAVAILABLE".';
 
+const DOTNET_CLEAN_ARCHITECTURE_PROMPT =
+  'Act as a Senior .NET Architect. When I request a feature or logic, generate code following Clean Architecture principles.\n' +
+  '\n' +
+  'Project Structure: Organize output into these specific layers:\n' +
+  'Domain: Entities, Value Objects, Domain Events, and Repository Interfaces.\n' +
+  'Application: Use Cases (CQRS with MediatR), DTOs, Mappers, and Validators.\n' +
+  'Infrastructure: Data Persistence (EF Core DbContext/Repositories), Logging, and External Services.\n' +
+  'Presentation: Controllers (Web API) or Minimal APIs.\n' +
+  '2. Naming & Patterns:\n' +
+  '\n' +
+  'Use PascalCase for all files, classes, and namespaces.\n' +
+  'Use Primary Constructors (C# 12) and required members where appropriate.\n' +
+  'Group Application logic by feature folder (e.g., Application/Features/Products/Commands).\n' +
+  '3. Output Requirement: Provide the code and explicitly state which file/path each snippet belongs to.';
+
 export const DEFAULT_SYSTEM_PROMPT_ID: SystemPromptId = 'retro-terminal';
 export const DEFAULT_CUSTOM_SYSTEM_PROMPT = '';
 
@@ -43,6 +62,24 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     description: 'Standard helpful assistant tone with clear, concise answers.',
     prompt: NORMAL_BASELINE_PROMPT,
     aliases: ['normal', 'baseline', 'standard', 'default', 'normalbaseline'],
+  },
+  {
+    id: 'dotnet-clean-architecture',
+    label: 'The .NET "Clean Architecture" Specialist',
+    description:
+      'Use this for ASP.NET Core Web APIs or Microservices. It enforces the separation of Domain, Application, Infrastructure, and Presentation.',
+    prompt: DOTNET_CLEAN_ARCHITECTURE_PROMPT,
+    aliases: [
+      'dotnet',
+      '.net',
+      'clean architecture',
+      'clean-architecture',
+      'cleanarchitecture',
+      'aspnet',
+      'aspnet core',
+      'microservices',
+      'dotnet clean architecture',
+    ],
   },
   {
     id: 'custom',
