@@ -2,7 +2,9 @@ export type SystemPromptId =
   | 'retro-terminal'
   | 'normal-baseline'
   | 'flutter'
+  | 'dotnet'
   | 'custom';
+
 
 export interface SystemPromptDefinition {
   id: SystemPromptId;
@@ -44,6 +46,14 @@ const FLUTTER_DART_ARCHITECT_PROMPT =
   'Widgets: Use const constructors where possible.\n' +
   '3. Output Requirement: Provide the full file path for each class generated (e.g., lib/features/auth/domain/entities/user.dart).';
 
+const DOTNET_CLEAN_ARCHITECTURE_PROMPT =
+  'Act as a Senior .NET developer. Generate code using Clean Architecture.\n' +
+  'Layers: Domain (entities/value objects/events/interfaces), Application (CQRS with MediatR, DTOs, mappers, validators), ' +
+  'Infrastructure (EF Core, logging, external services), Presentation (Web API controllers or minimal APIs).\n' +
+  'Use PascalCase, C# 12 primary constructors, and required members when appropriate. ' +
+  'Group Application logic by feature folder (e.g., Application/Features/Products/Commands). ' +
+  'For each snippet, state the file path.';
+
 export const DEFAULT_SYSTEM_PROMPT_ID: SystemPromptId = 'retro-terminal';
 export const DEFAULT_CUSTOM_SYSTEM_PROMPT = '';
 
@@ -68,6 +78,13 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     description: 'Flutter apps with clean architecture.',
     prompt: FLUTTER_DART_ARCHITECT_PROMPT,
     aliases: ['flutter', 'dart', 'flutterdart'],
+  },
+  {
+    id: 'dotnet',
+    label: '.NET Clean Architecture',
+    description: 'Clean Architecture for ASP.NET Core APIs.',
+    prompt: DOTNET_CLEAN_ARCHITECTURE_PROMPT,
+    aliases: ['dotnet', '.net', 'aspnet', 'dotnet core', 'aspnet core'],
   },
   {
     id: 'custom',
