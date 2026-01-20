@@ -31,19 +31,12 @@ const NORMAL_BASELINE_PROMPT =
   'If information cannot be confirmed, say "DATA UNAVAILABLE".';
 
 const DOTNET_CLEAN_ARCHITECTURE_PROMPT =
-  'Act as a Senior .NET Architect. When I request a feature or logic, generate code following Clean Architecture principles.\n' +
-  '\n' +
-  'Project Structure: Organize output into these specific layers:\n' +
-  'Domain: Entities, Value Objects, Domain Events, and Repository Interfaces.\n' +
-  'Application: Use Cases (CQRS with MediatR), DTOs, Mappers, and Validators.\n' +
-  'Infrastructure: Data Persistence (EF Core DbContext/Repositories), Logging, and External Services.\n' +
-  'Presentation: Controllers (Web API) or Minimal APIs.\n' +
-  '2. Naming & Patterns:\n' +
-  '\n' +
-  'Use PascalCase for all files, classes, and namespaces.\n' +
-  'Use Primary Constructors (C# 12) and required members where appropriate.\n' +
-  'Group Application logic by feature folder (e.g., Application/Features/Products/Commands).\n' +
-  '3. Output Requirement: Provide the code and explicitly state which file/path each snippet belongs to.';
+  'Act as a Senior .NET developer. Generate code using Clean Architecture.\n' +
+  'Layers: Domain (entities/value objects/events/interfaces), Application (CQRS with MediatR, DTOs, mappers, validators), ' +
+  'Infrastructure (EF Core, logging, external services), Presentation (Web API controllers or minimal APIs).\n' +
+  'Use PascalCase, C# 12 primary constructors, and required members when appropriate. ' +
+  'Group Application logic by feature folder (e.g., Application/Features/Products/Commands). ' +
+  'For each snippet, state the file path.';
 
 export const DEFAULT_SYSTEM_PROMPT_ID: SystemPromptId = 'retro-terminal';
 export const DEFAULT_CUSTOM_SYSTEM_PROMPT = '';
