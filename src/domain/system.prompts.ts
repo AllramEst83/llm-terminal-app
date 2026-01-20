@@ -65,21 +65,10 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
   },
   {
     id: 'dotnet-clean-architecture',
-    label: 'The .NET "Clean Architecture" Specialist',
-    description:
-      'Use this for ASP.NET Core Web APIs or Microservices. It enforces the separation of Domain, Application, Infrastructure, and Presentation.',
+    label: '.NET Clean Architecture',
+    description: 'Clean Architecture for ASP.NET Core APIs.',
     prompt: DOTNET_CLEAN_ARCHITECTURE_PROMPT,
-    aliases: [
-      'dotnet',
-      '.net',
-      'clean architecture',
-      'clean-architecture',
-      'cleanarchitecture',
-      'aspnet',
-      'aspnet core',
-      'microservices',
-      'dotnet clean architecture',
-    ],
+    aliases: ['dotnet', '.net', 'aspnet', 'dotnet core', 'aspnet core'],
   },
   {
     id: 'custom',
