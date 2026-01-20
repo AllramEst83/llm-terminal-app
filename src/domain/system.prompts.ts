@@ -1,4 +1,8 @@
-export type SystemPromptId = 'retro-terminal' | 'normal-baseline' | 'custom';
+export type SystemPromptId =
+  | 'retro-terminal'
+  | 'normal-baseline'
+  | 'dotnet'
+  | 'custom';
 
 export interface SystemPromptDefinition {
   id: SystemPromptId;
@@ -26,6 +30,14 @@ const NORMAL_BASELINE_PROMPT =
   'Do not execute terminal commands; the system handles /help, /settings, /font, /sound, /clear, /search, etc. ' +
   'If information cannot be confirmed, say "DATA UNAVAILABLE".';
 
+const DOTNET_CLEAN_ARCHITECTURE_PROMPT =
+  'Act as a Senior .NET developer. Generate code using Clean Architecture.\n' +
+  'Layers: Domain (entities/value objects/events/interfaces), Application (CQRS with MediatR, DTOs, mappers, validators), ' +
+  'Infrastructure (EF Core, logging, external services), Presentation (Web API controllers or minimal APIs).\n' +
+  'Use PascalCase, C# 12 primary constructors, and required members when appropriate. ' +
+  'Group Application logic by feature folder (e.g., Application/Features/Products/Commands). ' +
+  'For each snippet, state the file path.';
+
 export const DEFAULT_SYSTEM_PROMPT_ID: SystemPromptId = 'retro-terminal';
 export const DEFAULT_CUSTOM_SYSTEM_PROMPT = '';
 
@@ -43,6 +55,13 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     description: 'Standard helpful assistant tone with clear, concise answers.',
     prompt: NORMAL_BASELINE_PROMPT,
     aliases: ['normal', 'baseline', 'standard', 'default', 'normalbaseline'],
+  },
+  {
+    id: 'dotnet',
+    label: '.NET Clean Architecture',
+    description: 'Clean Architecture for ASP.NET Core APIs.',
+    prompt: DOTNET_CLEAN_ARCHITECTURE_PROMPT,
+    aliases: ['dotnet', '.net', 'aspnet', 'dotnet core', 'aspnet core'],
   },
   {
     id: 'custom',
