@@ -1,4 +1,8 @@
-export type SystemPromptId = 'retro-terminal' | 'normal-baseline' | 'custom';
+export type SystemPromptId =
+  | 'retro-terminal'
+  | 'normal-baseline'
+  | 'flutter-dart-architect'
+  | 'custom';
 
 export interface SystemPromptDefinition {
   id: SystemPromptId;
@@ -26,6 +30,20 @@ const NORMAL_BASELINE_PROMPT =
   'Do not execute terminal commands; the system handles /help, /settings, /font, /sound, /clear, /search, etc. ' +
   'If information cannot be confirmed, say "DATA UNAVAILABLE".';
 
+const FLUTTER_DART_ARCHITECT_PROMPT =
+  'Act as a Flutter/Dart Expert. Implement all features using Clean Architecture with a focus on testability.\n\n' +
+  '1. Layered Structure: Organize the lib/ folder as follows:\n\n' +
+  'core/: Constants, themes, and shared utils.\n' +
+  'features/[feature_name]/:\n' +
+  'domain/: entities/, usecases/, repositories/ (abstract).\n' +
+  'data/: models/, data_sources/, repositories/ (implementation).\n' +
+  'presentation/: pages/, widgets/, and manager/ (BLoC or Notifiers).\n' +
+  '2. Naming Conventions:\n\n' +
+  'Files: Always use snake_case.dart (e.g., user_repository_impl.dart).\n' +
+  'Classes: Use PascalCase.\n' +
+  'Widgets: Use const constructors where possible.\n' +
+  '3. Output Requirement: Provide the full file path for each class generated (e.g., lib/features/auth/domain/entities/user.dart).';
+
 export const DEFAULT_SYSTEM_PROMPT_ID: SystemPromptId = 'retro-terminal';
 export const DEFAULT_CUSTOM_SYSTEM_PROMPT = '';
 
@@ -43,6 +61,23 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     description: 'Standard helpful assistant tone with clear, concise answers.',
     prompt: NORMAL_BASELINE_PROMPT,
     aliases: ['normal', 'baseline', 'standard', 'default', 'normalbaseline'],
+  },
+  {
+    id: 'flutter-dart-architect',
+    label: 'The Flutter & Dart Architect',
+    description:
+      'Use for Flutter apps. Separates UI from business logic and data fetching, typically with BLoC or Riverpod.',
+    prompt: FLUTTER_DART_ARCHITECT_PROMPT,
+    aliases: [
+      'flutter',
+      'dart',
+      'flutterdart',
+      'flutter-architect',
+      'flutter-dart',
+      'flutterdartarchitect',
+      'flutter-dart-architect',
+      'architect',
+    ],
   },
   {
     id: 'custom',
