@@ -23,6 +23,8 @@ export type ThemeName =
   | 'unicorn' 
   | 'dos' 
   | 'cga' 
+  | 'colorama'
+  | 'nordic-frost'
   | 'rose-pine'
   | 'harvest-70s'
   | 'neon-80s'
@@ -155,6 +157,34 @@ export class Theme {
       userCardBg: '#1E1E1E',
       aiCardBg: '#0F2F1E',
       systemCardBg: '#261427'
+    },
+    colorama: {
+      name: 'Colorama',
+      background: '#0A0A12',
+      text: '#FFF7FD',
+      accent: '#FF3FA8',
+      prompt: '#60FFDC',
+      headerBg: '#1B1330',
+      headerText: '#FFF6FF',
+      system: '#FFD45C',
+      ai: '#7C8CFF',
+      userCardBg: '#2A1033',
+      aiCardBg: '#111B3A',
+      systemCardBg: '#2A210F'
+    },
+    'nordic-frost': {
+      name: 'Nordic Frost',
+      background: '#0B1116',
+      text: '#E8F1F8',
+      accent: '#7AA7FF',
+      prompt: '#93F2D6',
+      headerBg: '#15202B',
+      headerText: '#F4FAFF',
+      system: '#A8D6FF',
+      ai: '#D4B1FF',
+      userCardBg: '#152A33',
+      aiCardBg: '#1C2336',
+      systemCardBg: '#1D2A24'
     },
     'rose-pine': { 
       name: 'Rosé Pine', 
