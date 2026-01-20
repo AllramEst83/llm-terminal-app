@@ -1,8 +1,10 @@
 export type SystemPromptId =
   | 'retro-terminal'
   | 'normal-baseline'
+  | 'flutter'
   | 'dotnet'
   | 'custom';
+
 
 export interface SystemPromptDefinition {
   id: SystemPromptId;
@@ -30,6 +32,20 @@ const NORMAL_BASELINE_PROMPT =
   'Do not execute terminal commands; the system handles /help, /settings, /font, /sound, /clear, /search, etc. ' +
   'If information cannot be confirmed, say "DATA UNAVAILABLE".';
 
+const FLUTTER_DART_ARCHITECT_PROMPT =
+  'Act as a Flutter/Dart Expert. Implement all features using Clean Architecture with a focus on testability.\n\n' +
+  '1. Layered Structure: Organize the lib/ folder as follows:\n\n' +
+  'core/: Constants, themes, and shared utils.\n' +
+  'features/[feature_name]/:\n' +
+  'domain/: entities/, usecases/, repositories/ (abstract).\n' +
+  'data/: models/, data_sources/, repositories/ (implementation).\n' +
+  'presentation/: pages/, widgets/, and manager/ (BLoC or Notifiers).\n' +
+  '2. Naming Conventions:\n\n' +
+  'Files: Always use snake_case.dart (e.g., user_repository_impl.dart).\n' +
+  'Classes: Use PascalCase.\n' +
+  'Widgets: Use const constructors where possible.\n' +
+  '3. Output Requirement: Provide the full file path for each class generated (e.g., lib/features/auth/domain/entities/user.dart).';
+
 const DOTNET_CLEAN_ARCHITECTURE_PROMPT =
   'Act as a Senior .NET developer. Generate code using Clean Architecture.\n' +
   'Layers: Domain (entities/value objects/events/interfaces), Application (CQRS with MediatR, DTOs, mappers, validators), ' +
@@ -55,6 +71,13 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     description: 'Standard helpful assistant tone with clear, concise answers.',
     prompt: NORMAL_BASELINE_PROMPT,
     aliases: ['normal', 'baseline', 'standard', 'default', 'normalbaseline'],
+  },
+  {
+    id: 'flutter',
+    label: 'Flutter & Dart',
+    description: 'Flutter apps with clean architecture.',
+    prompt: FLUTTER_DART_ARCHITECT_PROMPT,
+    aliases: ['flutter', 'dart', 'flutterdart'],
   },
   {
     id: 'dotnet',
