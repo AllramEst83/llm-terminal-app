@@ -64,20 +64,10 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
   },
   {
     id: 'flutter-dart-architect',
-    label: 'The Flutter & Dart Architect',
-    description:
-      'Use for Flutter apps. Separates UI from business logic and data fetching, typically with BLoC or Riverpod.',
+    label: 'Flutter & Dart',
+    description: 'Flutter apps with clean architecture.',
     prompt: FLUTTER_DART_ARCHITECT_PROMPT,
-    aliases: [
-      'flutter',
-      'dart',
-      'flutterdart',
-      'flutter-architect',
-      'flutter-dart',
-      'flutterdartarchitect',
-      'flutter-dart-architect',
-      'architect',
-    ],
+    aliases: ['flutter', 'dart', 'flutterdart'],
   },
   {
     id: 'custom',
