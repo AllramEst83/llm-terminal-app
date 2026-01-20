@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { CommandNames, Message, MessageType, Settings, QueueItem } from './domain';
+import {
+  CommandNames,
+  Message,
+  MessageType,
+  Settings,
+  QueueItem,
+  SYSTEM_PROMPTS,
+} from './domain';
 import {
   ApiKeyService,
   ThemeService,
@@ -979,6 +986,8 @@ export const App: React.FC = () => {
           thinkingEnabled={settings.getThinkingSettingsForModel(settings.modelName).enabled}
           inputTokenCount={inputTokenCount}
           systemInfoVisible={systemInfoVisible}
+          systemPromptId={settings.systemPromptId}
+          systemPromptOptions={SYSTEM_PROMPTS}
         />
         <div
           ref={scrollRef}

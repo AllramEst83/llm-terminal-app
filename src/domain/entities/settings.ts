@@ -1,5 +1,11 @@
 import type { ThemeName } from './theme';
 import { Theme } from './theme';
+import {
+  DEFAULT_CUSTOM_SYSTEM_PROMPT,
+  DEFAULT_SYSTEM_PROMPT_ID,
+  isValidSystemPromptId,
+  type SystemPromptId,
+} from '../system.prompts';
 
 export type ThinkingLevel = 'low' | 'high';
 
@@ -20,7 +26,9 @@ export class Settings {
     public readonly themeName: ThemeName,
     public readonly apiKey: string,
     public readonly modelName: string,
-    public readonly thinkingSettings: Record<string, ThinkingModelSettings>
+    public readonly thinkingSettings: Record<string, ThinkingModelSettings>,
+    public readonly systemPromptId: SystemPromptId,
+    public readonly customSystemPrompt: string
   ) {
     this.thinkingSettings = Settings.normalizeThinkingSettings(thinkingSettings);
   }
@@ -38,7 +46,9 @@ export class Settings {
       Theme.DEFAULT_THEME_NAME,
       '',
       this.DEFAULT_MODEL_NAME,
-      this.createDefaultThinkingSettings()
+      this.createDefaultThinkingSettings(),
+      DEFAULT_SYSTEM_PROMPT_ID,
+      DEFAULT_CUSTOM_SYSTEM_PROMPT
     );
   }
 
@@ -55,7 +65,9 @@ export class Settings {
       this.themeName,
       this.apiKey,
       this.modelName,
-      this.thinkingSettings
+      this.thinkingSettings,
+      this.systemPromptId,
+      this.customSystemPrompt
     );
   }
 
@@ -68,7 +80,9 @@ export class Settings {
       themeName,
       this.apiKey,
       this.modelName,
-      this.thinkingSettings
+      this.thinkingSettings,
+      this.systemPromptId,
+      this.customSystemPrompt
     );
   }
 
@@ -78,7 +92,9 @@ export class Settings {
       this.themeName,
       apiKey,
       this.modelName,
-      this.thinkingSettings
+      this.thinkingSettings,
+      this.systemPromptId,
+      this.customSystemPrompt
     );
   }
 
@@ -88,7 +104,9 @@ export class Settings {
       this.themeName,
       this.apiKey,
       modelName,
-      this.thinkingSettings
+      this.thinkingSettings,
+      this.systemPromptId,
+      this.customSystemPrompt
     );
   }
 
@@ -117,7 +135,36 @@ export class Settings {
       this.themeName,
       this.apiKey,
       this.modelName,
-      thinkingSettings
+      thinkingSettings,
+      this.systemPromptId,
+      this.customSystemPrompt
+    );
+  }
+
+  withSystemPromptId(systemPromptId: SystemPromptId): Settings {
+    if (!isValidSystemPromptId(systemPromptId)) {
+      return this;
+    }
+    return new Settings(
+      this.fontSize,
+      this.themeName,
+      this.apiKey,
+      this.modelName,
+      this.thinkingSettings,
+      systemPromptId,
+      this.customSystemPrompt
+    );
+  }
+
+  withCustomSystemPrompt(customSystemPrompt: string): Settings {
+    return new Settings(
+      this.fontSize,
+      this.themeName,
+      this.apiKey,
+      this.modelName,
+      this.thinkingSettings,
+      this.systemPromptId,
+      customSystemPrompt
     );
   }
 
