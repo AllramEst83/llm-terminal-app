@@ -11,24 +11,15 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
   systemInfoVisible,
   systemPromptId,
   systemPromptOptions,
-  customSystemPrompt,
-  onSystemPromptChange,
-  onCustomSystemPromptSave,
 }) => {
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const iconRef = useRef<HTMLButtonElement>(null);
-  const [customPromptDraft, setCustomPromptDraft] = useState(customSystemPrompt);
 
   const maxTokens = ModelService.getContextLimit(modelName) ?? ModelService.getDefaultModel().contextLimit;
   const modelDisplayName = ModelService.getDisplayName(modelName) ?? (modelName?.trim() ? modelName : 'Unknown Model');
   const activePromptDefinition =
     systemPromptOptions.find(option => option.id === systemPromptId) ?? systemPromptOptions[0];
-  const customPromptDefinition = systemPromptOptions.find(option => option.id === 'custom');
-  const customPromptPlaceholder = customPromptDefinition?.placeholder ?? 'Enter a custom system prompt...';
-  const trimmedCustomPrompt = customSystemPrompt.trim();
-  const trimmedDraftPrompt = customPromptDraft.trim();
-  const isCustomPromptDirty = trimmedDraftPrompt !== trimmedCustomPrompt;
   const compactModelLabel = (() => {
     const candidates = [
       ModelService.getDisplayName(modelName),
@@ -76,22 +67,6 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
     }
   }, [systemInfoVisible, showPopup]);
 
-  useEffect(() => {
-    if (!showPopup) {
-      setCustomPromptDraft(customSystemPrompt);
-    }
-  }, [customSystemPrompt, showPopup]);
-
-  const handlePromptChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextPromptId = event.target.value as typeof systemPromptId;
-    onSystemPromptChange(nextPromptId);
-  };
-
-  const handleCustomPromptSave = () => {
-    onCustomSystemPromptSave(trimmedDraftPrompt);
-    setCustomPromptDraft(trimmedDraftPrompt);
-  };
-
   return (
     <div 
       className="p-2 flex items-center justify-between border-b-2 header-lines relative"
@@ -124,69 +99,69 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
           </div>
         )}
         <div className="relative">
-        <button
-          ref={iconRef}
-          onClick={() => systemInfoVisible && setShowPopup(!showPopup)}
-          className="p-1 hover:opacity-80 transition-opacity"
-          style={{ color: theme.headerText, opacity: systemInfoVisible ? 1 : 0.6 }}
-          aria-label="Show system info"
-          disabled={!systemInfoVisible}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
+          <button
+            ref={iconRef}
+            onClick={() => systemInfoVisible && setShowPopup(!showPopup)}
+            className="p-1 hover:opacity-80 transition-opacity"
+            style={{ color: theme.headerText, opacity: systemInfoVisible ? 1 : 0.6 }}
+            aria-label="Show system info"
+            disabled={!systemInfoVisible}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </button>
-        {showPopup && systemInfoVisible && (
-          <div
-            ref={popupRef}
-            className="absolute right-0 top-full mt-2 rounded shadow-lg z-50 w-[320px]"
-            style={{
-              backgroundColor: theme.background,
-              color: theme.text,
-              border: `2px solid ${theme.accent}`,
-            }}
-          >
-            {/* Header */}
-            <div 
-              className="px-4 py-2 border-b"
-              style={{ borderColor: theme.accent, opacity: 0.3 }}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
-              <h3 
-                className="text-sm font-bold uppercase tracking-wider"
-                style={{ color: theme.accent }}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </button>
+          {showPopup && systemInfoVisible && (
+            <div
+              ref={popupRef}
+              className="absolute right-0 top-full mt-2 rounded shadow-lg z-50 w-[320px]"
+              style={{
+                backgroundColor: theme.background,
+                color: theme.text,
+                border: `2px solid ${theme.accent}`,
+              }}
+            >
+              {/* Header */}
+              <div 
+                className="px-4 py-2 border-b"
+                style={{ borderColor: theme.accent, opacity: 0.3 }}
               >
-                SYSTEM INFO
-              </h3>
-            </div>
-            
-            {/* Content */}
-            <div className="p-4 space-y-4">
-              {/* Model Section */}
-              <div className="space-y-1">
-                <div 
-                  className="text-xs uppercase tracking-wide"
-                  style={{ color: theme.text, opacity: 0.7 }}
-                >
-                  Model
-                </div>
-                <div 
-                  className="text-sm font-mono truncate"
+                <h3 
+                  className="text-sm font-bold uppercase tracking-wider"
                   style={{ color: theme.accent }}
                 >
-                  {modelDisplayName}
-                </div>
+                  SYSTEM INFO
+                </h3>
               </div>
+              
+              {/* Content */}
+              <div className="p-4 space-y-4">
+                {/* Model Section */}
+                <div className="space-y-1">
+                  <div 
+                    className="text-xs uppercase tracking-wide"
+                    style={{ color: theme.text, opacity: 0.7 }}
+                  >
+                    Model
+                  </div>
+                  <div 
+                    className="text-sm font-mono truncate"
+                    style={{ color: theme.accent }}
+                  >
+                    {modelDisplayName}
+                  </div>
+                </div>
 
               {/* Thinking Section */}
               <div className="space-y-1">
@@ -239,71 +214,23 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
               />
 
               {/* System Prompt Section */}
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <div 
                   className="text-xs uppercase tracking-wide"
                   style={{ color: theme.text, opacity: 0.7 }}
                 >
                   System Prompt
                 </div>
-                <select
-                  value={systemPromptId}
-                  onChange={handlePromptChange}
-                  className="w-full text-xs font-mono rounded px-2 py-1"
-                  style={{
-                    backgroundColor: theme.background,
-                    color: theme.text,
-                    border: `1px solid ${theme.accent}`,
-                  }}
-                  aria-label="Select system prompt"
+                <div 
+                  className="text-sm font-mono truncate"
+                  style={{ color: theme.accent }}
                 >
-                  {systemPromptOptions.map(option => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  {activePromptDefinition?.label ?? 'Unknown'}
+                </div>
                 {activePromptDefinition?.description && (
                   <p className="text-xs" style={{ color: theme.text, opacity: 0.7 }}>
                     {activePromptDefinition.description}
                   </p>
-                )}
-                {systemPromptId === 'custom' && (
-                  <div className="space-y-2">
-                    <textarea
-                      value={customPromptDraft}
-                      onChange={(event) => setCustomPromptDraft(event.target.value)}
-                      rows={4}
-                      className="w-full text-xs font-mono rounded px-2 py-1 resize-none"
-                      style={{
-                        backgroundColor: theme.background,
-                        color: theme.text,
-                        border: `1px solid ${theme.accent}`,
-                      }}
-                      placeholder={customPromptPlaceholder}
-                      spellCheck={false}
-                      aria-label="Custom system prompt"
-                    />
-                    {!trimmedDraftPrompt && (
-                      <p className="text-xs" style={{ color: theme.text, opacity: 0.6 }}>
-                        Empty custom prompts fall back to Normal Baseline.
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleCustomPromptSave}
-                      disabled={!isCustomPromptDirty}
-                      className="px-3 py-1 rounded text-xs font-semibold transition-opacity"
-                      style={{
-                        backgroundColor: isCustomPromptDirty ? theme.accent : 'transparent',
-                        color: isCustomPromptDirty ? theme.background : theme.text,
-                        border: `1px solid ${theme.accent}`,
-                        opacity: isCustomPromptDirty ? 1 : 0.6,
-                      }}
-                    >
-                      Save Prompt
-                    </button>
-                  </div>
                 )}
               </div>
             </div>

@@ -66,9 +66,6 @@ export interface TerminalHeaderProps {
   systemInfoVisible: boolean;
   systemPromptId: SystemPromptId;
   systemPromptOptions: SystemPromptDefinition[];
-  customSystemPrompt: string;
-  onSystemPromptChange: (promptId: SystemPromptId) => void;
-  onCustomSystemPromptSave: (prompt: string) => void;
 }
 
 /**
