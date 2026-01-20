@@ -1,7 +1,7 @@
 export type SystemPromptId =
   | 'retro-terminal'
   | 'normal-baseline'
-  | 'dotnet-clean-architecture'
+  | 'dotnet'
   | 'custom';
 
 export interface SystemPromptDefinition {
@@ -57,7 +57,7 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     aliases: ['normal', 'baseline', 'standard', 'default', 'normalbaseline'],
   },
   {
-    id: 'dotnet-clean-architecture',
+    id: 'dotnet',
     label: '.NET Clean Architecture',
     description: 'Clean Architecture for ASP.NET Core APIs.',
     prompt: DOTNET_CLEAN_ARCHITECTURE_PROMPT,
