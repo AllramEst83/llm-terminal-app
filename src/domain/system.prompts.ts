@@ -1,7 +1,7 @@
 export type SystemPromptId =
   | 'retro-terminal'
   | 'normal-baseline'
-  | 'flutter-dart-architect'
+  | 'flutter'
   | 'custom';
 
 export interface SystemPromptDefinition {
@@ -63,7 +63,7 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     aliases: ['normal', 'baseline', 'standard', 'default', 'normalbaseline'],
   },
   {
-    id: 'flutter-dart-architect',
+    id: 'flutter',
     label: 'Flutter & Dart',
     description: 'Flutter apps with clean architecture.',
     prompt: FLUTTER_DART_ARCHITECT_PROMPT,
