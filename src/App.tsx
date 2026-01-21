@@ -242,25 +242,60 @@ export const App: React.FC = () => {
 
   // Handle mobile keyboard - adjust terminal height when keyboard opens
   useEffect(() => {
+    const rootElement = document.documentElement;
+    const bodyElement = document.body;
+    const rootDiv = document.getElementById('root');
+
+    const unlockViewport = () => {
+      bodyElement.style.position = '';
+      bodyElement.style.top = '';
+      bodyElement.style.left = '';
+      bodyElement.style.width = '';
+      bodyElement.style.overflow = '';
+      bodyElement.style.removeProperty('overscroll-behavior');
+      rootElement.style.removeProperty('overscroll-behavior');
+
+      if (rootDiv) {
+        rootDiv.style.position = '';
+        rootDiv.style.top = '';
+        rootDiv.style.left = '';
+        rootDiv.style.right = '';
+        rootDiv.style.transform = '';
+        rootDiv.style.willChange = '';
+      }
+    };
+
     // Only run viewport height adjustment on mobile devices
     if (!isMobileDevice()) {
       setIsKeyboardVisible(false);
       keyboardBaselineHeightRef.current = null;
+      rootElement.style.removeProperty('--viewport-height');
+      rootElement.style.removeProperty('--viewport-offset-top');
+      rootElement.style.removeProperty('--viewport-offset-left');
+      rootElement.style.height = '';
+      bodyElement.style.height = '';
+      if (rootDiv) {
+        rootDiv.style.height = '';
+      }
+      unlockViewport();
       return;
     }
 
-    const rootElement = document.documentElement;
     const updateViewportHeight = () => {
-      const visualHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const viewport = window.visualViewport;
+      const visualHeight = viewport ? viewport.height : window.innerHeight;
+      const offsetTop = viewport ? viewport.offsetTop : 0;
+      const offsetLeft = viewport ? viewport.offsetLeft : 0;
       const layoutHeight = window.innerHeight;
       const baselineCandidate = Math.max(visualHeight, layoutHeight);
 
       setViewportHeight(visualHeight);
       // Set CSS custom property and root height
       rootElement.style.setProperty('--viewport-height', `${visualHeight}px`);
+      rootElement.style.setProperty('--viewport-offset-top', `${offsetTop}px`);
+      rootElement.style.setProperty('--viewport-offset-left', `${offsetLeft}px`);
       rootElement.style.height = `${visualHeight}px`;
-      document.body.style.height = `${visualHeight}px`;
-      const rootDiv = document.getElementById('root');
+      bodyElement.style.height = `${visualHeight}px`;
       if (rootDiv) {
         rootDiv.style.height = `${visualHeight}px`;
       }
@@ -275,6 +310,28 @@ export const App: React.FC = () => {
       const baselineHeight = keyboardBaselineHeightRef.current;
       const isKeyboardOpen = baselineHeight ? visualHeight < baselineHeight * 0.75 : false;
       setIsKeyboardVisible(isKeyboardOpen);
+
+      // Lock the UI to the visual viewport while the keyboard is open.
+      if (isKeyboardOpen) {
+        bodyElement.style.position = 'fixed';
+        bodyElement.style.top = '0';
+        bodyElement.style.left = '0';
+        bodyElement.style.width = '100%';
+        bodyElement.style.overflow = 'hidden';
+        bodyElement.style.setProperty('overscroll-behavior', 'none');
+        rootElement.style.setProperty('overscroll-behavior', 'none');
+
+        if (rootDiv) {
+          rootDiv.style.position = 'fixed';
+          rootDiv.style.top = '0';
+          rootDiv.style.left = '0';
+          rootDiv.style.right = '0';
+          rootDiv.style.transform = `translate(${offsetLeft}px, ${offsetTop}px)`;
+          rootDiv.style.willChange = 'transform';
+        }
+      } else {
+        unlockViewport();
+      }
     };
 
     // Initial height
@@ -305,6 +362,7 @@ export const App: React.FC = () => {
         window.removeEventListener('resize', updateViewportHeight);
       }
       window.removeEventListener('orientationchange', handleOrientationChange);
+      unlockViewport();
     };
   }, []);
 
