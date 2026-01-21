@@ -3,6 +3,7 @@ export type SystemPromptId =
   | 'normal-baseline'
   | 'flutter'
   | 'dotnet'
+  | 'javascript'
   | 'custom';
 
 
@@ -54,6 +55,17 @@ const DOTNET_CLEAN_ARCHITECTURE_PROMPT =
   'Group Application logic by feature folder (e.g., Application/Features/Products/Commands). ' +
   'For each snippet, state the file path.';
 
+const MODULAR_UTILITY_PROMPT =
+  'Act as a Lead JavaScript/TypeScript Developer. When writing logic, prioritize a Modular (ESM) Pattern.\n\n' +
+  '1. Organization:\n\n' +
+  'Group by functional module (e.g., src/utils/, src/lib/, src/services/).\n' +
+  'Use an index.ts file in each folder to manage public exports (Barrel exports).\n' +
+  '2. Standards:\n\n' +
+  'Files: Use kebab-case.ts for all filenames.\n' +
+  'Safety: Ensure strict null checks. Use JSDoc or TSDoc for every public function.\n' +
+  'Testing: Include a basic test case using Vitest or Jest for the core logic.\n' +
+  '3. Output Requirement: Show the export structure and the directory layout.';
+
 export const DEFAULT_SYSTEM_PROMPT_ID: SystemPromptId = 'retro-terminal';
 export const DEFAULT_CUSTOM_SYSTEM_PROMPT = '';
 
@@ -85,6 +97,13 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     description: 'Clean Architecture for ASP.NET Core APIs.',
     prompt: DOTNET_CLEAN_ARCHITECTURE_PROMPT,
     aliases: ['dotnet', '.net', 'aspnet', 'dotnet core', 'aspnet core'],
+  },
+  {
+    id: 'javascript',
+    label: 'JS/TS Modular',
+    description: 'Modular ESM utilities.',
+    prompt: MODULAR_UTILITY_PROMPT,
+    aliases: ['js', 'javascript', 'ts', 'typescript'],
   },
   {
     id: 'custom',
