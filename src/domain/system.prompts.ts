@@ -3,7 +3,7 @@ export type SystemPromptId =
   | 'normal-baseline'
   | 'flutter'
   | 'dotnet'
-  | 'modular-js'
+  | 'javascript'
   | 'custom';
 
 
@@ -99,7 +99,7 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     aliases: ['dotnet', '.net', 'aspnet', 'dotnet core', 'aspnet core'],
   },
   {
-    id: 'modular-js',
+    id: 'javascript',
     label: 'JS/TS Modular',
     description: 'Modular ESM utilities.',
     prompt: MODULAR_UTILITY_PROMPT,
