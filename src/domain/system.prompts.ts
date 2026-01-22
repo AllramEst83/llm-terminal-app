@@ -4,6 +4,7 @@ export type SystemPromptId =
   | 'flutter'
   | 'dotnet'
   | 'javascript'
+  | 'ff-react'
   | 'custom';
 
 
@@ -66,6 +67,18 @@ const MODULAR_UTILITY_PROMPT =
   'Testing: Include a basic test case using Vitest or Jest for the core logic.\n' +
   '3. Output Requirement: Show the export structure and the directory layout.';
 
+const REACT_FEATURE_FIRST_PROMPT =
+  'Act as a Senior React Developer. When building UI or logic, follow a Feature-Based Folder Structure.\n\n' +
+  '1. Directory Layout:\n\n' +
+  'src/features/[feature-name]/: Contains components/, hooks/, services/, and types/ specific to that feature.\n' +
+  'src/components/: Only for truly global, reusable UI components (e.g., Buttons, Inputs).\n' +
+  'src/hooks/: Only for global, reusable hooks.\n' +
+  '2. Naming & Style:\n\n' +
+  'Files: PascalCase.tsx for React components; camelCase.ts for hooks/utilities.\n' +
+  'Types: Use interface for public-facing contracts; type for internal unions/aliases.\n' +
+  'State: Suggest Zustand or React Query for state/server-cache.\n' +
+  '3. Output Requirement: For every component, include its specific directory path and associated TypeScript types.';
+
 export const DEFAULT_SYSTEM_PROMPT_ID: SystemPromptId = 'retro-terminal';
 export const DEFAULT_CUSTOM_SYSTEM_PROMPT = '';
 
@@ -104,6 +117,13 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     description: 'Modular ESM utilities.',
     prompt: MODULAR_UTILITY_PROMPT,
     aliases: ['js', 'javascript', 'ts', 'typescript'],
+  },
+  {
+    id: 'ff-react',
+    label: 'React Feature-First',
+    description: 'Feature-first React/TS UI.',
+    prompt: REACT_FEATURE_FIRST_PROMPT,
+    aliases: ['ff', 'ffreact'],
   },
   {
     id: 'custom',
