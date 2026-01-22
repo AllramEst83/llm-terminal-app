@@ -123,7 +123,7 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     label: 'React Feature-First',
     description: 'Feature-first React/TS UI.',
     prompt: REACT_FEATURE_FIRST_PROMPT,
-    aliases: ['react', 'react-dev'],
+    aliases: ['react', 'react-dev', 'reactjs', 'reactts'],
   },
   {
     id: 'custom',
