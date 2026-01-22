@@ -4,7 +4,7 @@ export type SystemPromptId =
   | 'flutter'
   | 'dotnet'
   | 'javascript'
-  | 'ff-react'
+  | 'react'
   | 'custom';
 
 
@@ -119,11 +119,11 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
     aliases: ['js', 'javascript', 'ts', 'typescript'],
   },
   {
-    id: 'ff-react',
+    id: 'react',
     label: 'React Feature-First',
     description: 'Feature-first React/TS UI.',
     prompt: REACT_FEATURE_FIRST_PROMPT,
-    aliases: ['ff', 'ffreact'],
+    aliases: ['react', 'react-dev'],
   },
   {
     id: 'custom',
