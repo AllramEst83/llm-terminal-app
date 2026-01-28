@@ -12,7 +12,7 @@ export const TerminalTabs: React.FC<TerminalTabsProps> = ({
   const canClose = tabs.length > 1;
 
   return (
-    <div className="flex items-center gap-2 mb-2 flex-wrap flex-shrink-0">
+    <div className="flex items-center gap-2 mb-2 mt-2 mx-2 flex-wrap flex-shrink-0">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId;
         return (
@@ -20,9 +20,11 @@ export const TerminalTabs: React.FC<TerminalTabsProps> = ({
             key={tab.id}
             className="flex items-center border-2 rounded px-2 py-1 text-sm font-mono"
             style={{
-              borderColor: theme.accent,
-              backgroundColor: isActive ? theme.headerBg : 'transparent',
-              color: isActive ? theme.headerText : theme.text,
+              borderColor: isActive ? theme.headerText : theme.accent,
+              backgroundColor: isActive ? theme.accent : 'transparent',
+              color: isActive ? theme.background : theme.text,
+              boxShadow: isActive ? `0 0 0 2px ${theme.accent}` : 'none',
+              fontWeight: isActive ? 700 : 400,
             }}
           >
             <button
