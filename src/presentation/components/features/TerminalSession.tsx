@@ -26,6 +26,7 @@ import {
   TerminalHeader,
   MessageList,
   TerminalInput,
+  TerminalTabs,
   BootScreen,
   PressToBoot,
   ApiKeySelection,
@@ -55,7 +56,11 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
   apiKey,
   onApiKeySubmit,
   onSelectKey,
-  onThemeChange,
+  tabs,
+  activeTabId,
+  onSelectTab,
+  onCloseTab,
+  onNewTab,
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
@@ -155,8 +160,7 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
       return;
     }
     ThemeService.applyTheme(theme);
-    onThemeChange?.(theme);
-  }, [isActive, theme, onThemeChange]);
+  }, [isActive, theme]);
 
   // Update input token count when model changes
   useEffect(() => {
@@ -1051,7 +1055,7 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
   return (
     <div
       className="flex flex-col flex-1 min-h-0"
-      style={{ display: isActive ? 'flex' : 'none' }}
+      style={{ display: isActive ? 'flex' : 'none', height: '100%' }}
       aria-hidden={!isActive}
     >
       <div
@@ -1068,6 +1072,14 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
           overflow: 'hidden'
         }}
       >
+        <TerminalTabs
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onNewTab={onNewTab}
+          theme={theme}
+        />
         <TerminalHeader
           theme={theme}
           modelName={settings.modelName}

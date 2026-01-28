@@ -202,6 +202,10 @@ export interface TerminalSessionProps {
   apiKey: string;
   onApiKeySubmit: (key: string) => void;
   onSelectKey: () => Promise<void>;
-  onThemeChange?: (theme: ThemeColors) => void;
+  tabs: TerminalTabItem[];
+  activeTabId: string;
+  onSelectTab: (tabId: string) => void;
+  onCloseTab: (tabId: string) => void;
+  onNewTab: () => void;
 }
 

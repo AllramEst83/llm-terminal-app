@@ -12,7 +12,7 @@ export const TerminalTabs: React.FC<TerminalTabsProps> = ({
   const canClose = tabs.length > 1;
 
   return (
-    <div className="flex items-center gap-2 mb-2 flex-wrap">
+    <div className="flex items-center gap-2 mb-2 flex-wrap flex-shrink-0">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId;
         return (

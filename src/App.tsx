@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_SESSION_ID } from './domain';
-import { ApiKeyService, ThemeService } from './infrastructure/services';
+import { ApiKeyService } from './infrastructure/services';
 import { generateId } from './infrastructure/utils/id.utils';
-import { TerminalSession, TerminalTabs } from './presentation/components/features';
+import { TerminalSession } from './presentation/components/features';
 import type { TerminalTabItem } from './types/ui/components';
 
 export const App: React.FC = () => {
@@ -14,7 +14,6 @@ export const App: React.FC = () => {
   ]);
   const [activeTabId, setActiveTabId] = useState(DEFAULT_SESSION_ID);
   const [tabCounter, setTabCounter] = useState(1);
-  const [activeTheme, setActiveTheme] = useState(ThemeService.getDefaultTheme());
 
   // Initialize global environment and API key state
   useEffect(() => {
@@ -71,10 +70,6 @@ export const App: React.FC = () => {
     });
   }, [activeTabId]);
 
-  const handleThemeChange = useCallback((theme) => {
-    setActiveTheme(theme);
-  }, []);
-
   return (
     <div
       className="flex flex-col p-2 sm:p-4"
@@ -87,14 +82,6 @@ export const App: React.FC = () => {
         flexDirection: 'column'
       }}
     >
-      <TerminalTabs
-        tabs={tabs}
-        activeTabId={activeTabId}
-        onSelectTab={setActiveTabId}
-        onCloseTab={handleCloseTab}
-        onNewTab={handleNewTab}
-        theme={activeTheme}
-      />
       <div className="flex-1 min-h-0">
         {tabs.map((tab) => (
           <TerminalSession
@@ -106,7 +93,11 @@ export const App: React.FC = () => {
             apiKey={apiKey}
             onApiKeySubmit={handleApiKeySubmit}
             onSelectKey={handleSelectKey}
-            onThemeChange={handleThemeChange}
+            tabs={tabs}
+            activeTabId={activeTabId}
+            onSelectTab={setActiveTabId}
+            onCloseTab={handleCloseTab}
+            onNewTab={handleNewTab}
           />
         ))}
       </div>
