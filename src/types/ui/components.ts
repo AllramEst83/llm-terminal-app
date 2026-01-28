@@ -171,3 +171,37 @@ export interface LightboxProps {
   theme?: ThemeColors;
 }
 
+/**
+ * Represents a terminal tab in the UI.
+ */
+export interface TerminalTabItem {
+  id: string;
+  label: string;
+}
+
+/**
+ * Props for TerminalTabs component
+ */
+export interface TerminalTabsProps {
+  tabs: TerminalTabItem[];
+  activeTabId: string;
+  onSelectTab: (tabId: string) => void;
+  onCloseTab: (tabId: string) => void;
+  onNewTab: () => void;
+  theme: ThemeColors;
+}
+
+/**
+ * Props for TerminalSession component
+ */
+export interface TerminalSessionProps {
+  sessionId: string;
+  isActive: boolean;
+  isStudioEnv: boolean;
+  isKeyReady: boolean;
+  apiKey: string;
+  onApiKeySubmit: (key: string) => void;
+  onSelectKey: () => Promise<void>;
+  onThemeChange?: (theme: ThemeColors) => void;
+}
+
