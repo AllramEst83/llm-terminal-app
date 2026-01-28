@@ -1080,10 +1080,6 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
           onNewTab={onNewTab}
           theme={theme}
         />
-        <div
-          className="mx-2 mb-2"
-          style={{ height: '2px', backgroundColor: theme.accent, opacity: 0.6 }}
-        />
         <TerminalHeader
           theme={theme}
           modelName={settings.modelName}

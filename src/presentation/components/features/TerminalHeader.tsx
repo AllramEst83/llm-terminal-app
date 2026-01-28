@@ -69,7 +69,7 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
 
   return (
     <div 
-      className="p-2 flex items-center justify-between border-b-2 header-lines relative"
+      className="p-2 flex items-center justify-between border-y-2 header-lines relative"
       style={{ backgroundColor: theme.headerBg, color: theme.headerText, borderColor: theme.accent }}
     >
       <div className="flex items-center min-w-0 text-lg font-mono">
