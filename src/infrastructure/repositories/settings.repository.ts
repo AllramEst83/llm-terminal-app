@@ -85,12 +85,13 @@ export class SettingsRepository {
     const themeName = ThemeService.getSavedThemeName(tabId, allowLegacyFallback);
     const apiKey = await ApiKeyService.getApiKey();
     const defaultModelName = ModelService.getDefaultModel().id;
-    const modelName = readScopedString(
+    const storedModelName = readScopedString(
       tabId,
       MODEL_NAME_STORAGE_KEY,
       defaultModelName,
       allowLegacyFallback
     );
+    const modelName = ModelService.getCanonicalModelId(storedModelName);
     const storedThinkingSettings = readScopedValue<Record<string, ThinkingModelSettings> | null>(
       tabId,
       THINKING_SETTINGS_STORAGE_KEY,

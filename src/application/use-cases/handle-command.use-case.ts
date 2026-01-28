@@ -373,7 +373,7 @@ This app was created for the love and nostalgia of retro tech from the 80s. I fe
   }
 
   private handleModel(args: string[]): CommandResult {
-    const requestedModelRaw = args[0];
+    const requestedModelRaw = ModelService.sanitizeModelInput(args[0]) ?? args[0];
     const availableModels = ModelService.listModels();
 
     if (!requestedModelRaw) {
@@ -390,7 +390,7 @@ This app was created for the love and nostalgia of retro tech from the 80s. I fe
     }
 
     const requestedModel = requestedModelRaw.toLowerCase();
-    const resolvedModel = ModelService.resolveModel(requestedModel);
+    const resolvedModel = ModelService.resolveModel(requestedModelRaw);
 
     let modelName: string;
     let modelLabel: string;

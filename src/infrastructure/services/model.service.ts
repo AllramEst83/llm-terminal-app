@@ -114,8 +114,32 @@ const IMAGE_ALIAS_LOOKUP: Record<string, string> = Object.values(IMAGE_MODELS).r
   {} as Record<string, string>
 );
 
+function stripOuterQuotes(value: string): string {
+  if (value.length < 2) {
+    return value;
+  }
+  const first = value[0];
+  const last = value[value.length - 1];
+  if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+    return value.slice(1, -1).trim();
+  }
+  return value;
+}
+
+function sanitizeInput(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return stripOuterQuotes(trimmed);
+}
+
 function normalizeInput(value?: string): string | undefined {
-  return value?.trim().toLowerCase();
+  const sanitized = sanitizeInput(value);
+  return sanitized?.toLowerCase();
 }
 
 export class ModelService {
@@ -128,7 +152,8 @@ export class ModelService {
   }
 
   static resolveModel(input?: string): ModelDefinition | undefined {
-    const normalized = normalizeInput(input);
+    const sanitized = sanitizeInput(input);
+    const normalized = normalizeInput(sanitized);
     if (!normalized) {
       return undefined;
     }
@@ -136,11 +161,12 @@ export class ModelService {
     if (canonicalId) {
       return CHAT_MODELS[canonicalId];
     }
-    return CHAT_MODELS[input ?? ''];
+    return CHAT_MODELS[sanitized ?? ''];
   }
 
   static getCanonicalModelId(input: string): string {
-    return this.resolveModel(input)?.id ?? input;
+    const sanitized = sanitizeInput(input) ?? input;
+    return this.resolveModel(sanitized)?.id ?? sanitized;
   }
 
   static getContextLimit(modelName?: string): number | undefined {
@@ -164,7 +190,8 @@ export class ModelService {
   }
 
   static resolveImageModel(input?: string): ImageModelDefinition | undefined {
-    const normalized = normalizeInput(input);
+    const sanitized = sanitizeInput(input);
+    const normalized = normalizeInput(sanitized);
     if (!normalized) {
       return undefined;
     }
@@ -172,11 +199,16 @@ export class ModelService {
     if (canonicalId) {
       return IMAGE_MODELS[canonicalId];
     }
-    return IMAGE_MODELS[input ?? ''];
+    return IMAGE_MODELS[sanitized ?? ''];
   }
 
   static getCanonicalImageModelId(input: string): string {
-    return this.resolveImageModel(input)?.id ?? input;
+    const sanitized = sanitizeInput(input) ?? input;
+    return this.resolveImageModel(sanitized)?.id ?? sanitized;
+  }
+
+  static sanitizeModelInput(input?: string): string | undefined {
+    return sanitizeInput(input);
   }
 
   static getImageModelDisplayName(modelName?: string): string | undefined {
