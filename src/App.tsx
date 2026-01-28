@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_SESSION_ID } from './domain';
-import { ApiKeyService } from './infrastructure/services';
+import { ApiKeyService, TokenCountService } from './infrastructure/services';
+import { SettingsRepository } from './infrastructure/repositories/settings.repository';
 import { generateId } from './infrastructure/utils/id.utils';
 import { TerminalSession } from './presentation/components/features';
 import type { TerminalTabItem } from './types/ui/components';
@@ -15,6 +16,8 @@ export const App: React.FC = () => {
   const [activeTabId, setActiveTabId] = useState(DEFAULT_SESSION_ID);
   const [tabCounter, setTabCounter] = useState(1);
 
+  const TAB_SESSION_STORAGE_KEY = 'terminal_open_tabs';
+
   // Initialize global environment and API key state
   useEffect(() => {
     const initApp = async () => {
@@ -28,6 +31,40 @@ export const App: React.FC = () => {
       setApiKey(storedKey);
     };
     initApp();
+  }, []);
+
+  useEffect(() => {
+    const tabIds = tabs.map(tab => tab.id);
+    sessionStorage.setItem(TAB_SESSION_STORAGE_KEY, JSON.stringify(tabIds));
+  }, [tabs]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const stored = sessionStorage.getItem(TAB_SESSION_STORAGE_KEY);
+      if (!stored) {
+        return;
+      }
+      try {
+        const tabIds = JSON.parse(stored);
+        if (Array.isArray(tabIds)) {
+          tabIds
+            .filter((tabId): tabId is string => typeof tabId === 'string')
+            .filter(tabId => tabId !== DEFAULT_SESSION_ID)
+            .forEach(tabId => {
+              SettingsRepository.clearTab(tabId);
+            });
+        }
+      } catch {
+        // Ignore parse issues on unload
+      } finally {
+        sessionStorage.removeItem(TAB_SESSION_STORAGE_KEY);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   const handleSelectKey = useCallback(async () => {
@@ -68,6 +105,8 @@ export const App: React.FC = () => {
       }
       return nextTabs;
     });
+    SettingsRepository.clearTab(tabId);
+    TokenCountService.removeSessionUsage(tabId);
   }, [activeTabId]);
 
   return (

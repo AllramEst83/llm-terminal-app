@@ -239,5 +239,14 @@ export class SettingsRepository {
 
     return Settings.createDefault();
   }
+
+  static clearTab(tabId: string): void {
+    StorageService.remove(buildScopedKey(tabId, FONT_SIZE_STORAGE_KEY));
+    ThemeService.removeSavedThemeName(tabId);
+    StorageService.remove(buildScopedKey(tabId, MODEL_NAME_STORAGE_KEY));
+    StorageService.remove(buildScopedKey(tabId, SYSTEM_PROMPT_ID_STORAGE_KEY));
+    StorageService.remove(buildScopedKey(tabId, CUSTOM_SYSTEM_PROMPT_STORAGE_KEY));
+    StorageService.remove(buildScopedKey(tabId, THINKING_SETTINGS_STORAGE_KEY));
+  }
 }
 

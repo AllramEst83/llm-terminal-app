@@ -391,5 +391,9 @@ ${imageSection}
   static clearTokenUsage(sessionId?: string): void {
     this.initializeSessionStorage(sessionId);
   }
+
+  static removeSessionUsage(sessionId?: string): void {
+    sessionStorage.removeItem(buildSessionKey(sessionId));
+  }
 }
 

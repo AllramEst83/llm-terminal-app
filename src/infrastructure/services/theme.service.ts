@@ -64,6 +64,10 @@ export class ThemeService {
     return StorageService.setString(buildThemeStorageKey(scopeId), themeName);
   }
 
+  static removeSavedThemeName(scopeId?: string): void {
+    StorageService.remove(buildThemeStorageKey(scopeId));
+  }
+
   static applyTheme(theme: ThemeColors): void {
     applyThemeToDocument(theme);
   }
