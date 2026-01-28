@@ -115,15 +115,26 @@ const IMAGE_ALIAS_LOOKUP: Record<string, string> = Object.values(IMAGE_MODELS).r
 );
 
 function stripOuterQuotes(value: string): string {
-  if (value.length < 2) {
-    return value;
+  let trimmed = value.trim();
+  let changed = true;
+
+  while (changed && trimmed.length > 1) {
+    changed = false;
+    const withoutSlashes = trimmed.replace(/^\\+/, '').replace(/\\+$/, '').trim();
+    if (withoutSlashes !== trimmed) {
+      trimmed = withoutSlashes;
+      changed = true;
+    }
+
+    const first = trimmed[0];
+    const last = trimmed[trimmed.length - 1];
+    if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+      trimmed = trimmed.slice(1, -1).trim();
+      changed = true;
+    }
   }
-  const first = value[0];
-  const last = value[value.length - 1];
-  if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
-    return value.slice(1, -1).trim();
-  }
-  return value;
+
+  return trimmed;
 }
 
 function sanitizeInput(value?: string): string | undefined {
@@ -134,7 +145,8 @@ function sanitizeInput(value?: string): string | undefined {
   if (!trimmed) {
     return undefined;
   }
-  return stripOuterQuotes(trimmed);
+  const unescaped = trimmed.replace(/\\(["'])/g, '$1');
+  return stripOuterQuotes(unescaped);
 }
 
 function normalizeInput(value?: string): string | undefined {
