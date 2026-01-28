@@ -53,6 +53,26 @@ function readScopedValue<T>(
   return defaultValue;
 }
 
+function decodeStoredString(raw: string): string {
+  let current = raw;
+  for (let i = 0; i < 3; i += 1) {
+    const trimmed = current.trim();
+    if (!trimmed.startsWith('"') || !trimmed.endsWith('"')) {
+      break;
+    }
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed !== 'string' || parsed === current) {
+        break;
+      }
+      current = parsed;
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
 function readScopedString(
   tabId: string | undefined,
   key: string,
@@ -62,12 +82,12 @@ function readScopedString(
   const scopedKey = buildScopedKey(tabId, key);
   const scopedValue = StorageService.getStringOptional(scopedKey);
   if (scopedValue !== undefined) {
-    return scopedValue;
+    return decodeStoredString(scopedValue);
   }
   if (allowLegacyFallback) {
     const legacyValue = StorageService.getStringOptional(key);
     if (legacyValue !== undefined) {
-      return legacyValue;
+      return decodeStoredString(legacyValue);
     }
   }
   return defaultValue;
@@ -171,15 +191,15 @@ export class SettingsRepository {
     );
     const themeSaved = ThemeService.saveThemeName(settings.themeName, tabId);
     const apiKeySaved = ApiKeyService.setApiKey(settings.apiKey);
-    const modelNameSaved = StorageService.set(
+    const modelNameSaved = StorageService.setString(
       buildScopedKey(tabId, MODEL_NAME_STORAGE_KEY),
       settings.modelName
     );
-    const systemPromptIdSaved = StorageService.set(
+    const systemPromptIdSaved = StorageService.setString(
       buildScopedKey(tabId, SYSTEM_PROMPT_ID_STORAGE_KEY),
       settings.systemPromptId
     );
-    const customSystemPromptSaved = StorageService.set(
+    const customSystemPromptSaved = StorageService.setString(
       buildScopedKey(tabId, CUSTOM_SYSTEM_PROMPT_STORAGE_KEY),
       settings.customSystemPrompt
     );
