@@ -10,6 +10,8 @@ export * from './PressToBoot';
 export * from './QueueDisplay';
 export * from './TerminalHeader';
 export * from './TerminalInput';
+export * from './TerminalSession';
+export * from './TerminalTabs';
 export * from './TokenCounter';
 export type { AttachedImage } from '../../../types/ui/components';
 

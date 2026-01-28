@@ -114,8 +114,44 @@ const IMAGE_ALIAS_LOOKUP: Record<string, string> = Object.values(IMAGE_MODELS).r
   {} as Record<string, string>
 );
 
+function stripOuterQuotes(value: string): string {
+  let trimmed = value.trim();
+  let changed = true;
+
+  while (changed && trimmed.length > 1) {
+    changed = false;
+    const withoutSlashes = trimmed.replace(/^\\+/, '').replace(/\\+$/, '').trim();
+    if (withoutSlashes !== trimmed) {
+      trimmed = withoutSlashes;
+      changed = true;
+    }
+
+    const first = trimmed[0];
+    const last = trimmed[trimmed.length - 1];
+    if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+      trimmed = trimmed.slice(1, -1).trim();
+      changed = true;
+    }
+  }
+
+  return trimmed;
+}
+
+function sanitizeInput(value?: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const unescaped = trimmed.replace(/\\(["'])/g, '$1');
+  return stripOuterQuotes(unescaped);
+}
+
 function normalizeInput(value?: string): string | undefined {
-  return value?.trim().toLowerCase();
+  const sanitized = sanitizeInput(value);
+  return sanitized?.toLowerCase();
 }
 
 export class ModelService {
@@ -128,7 +164,8 @@ export class ModelService {
   }
 
   static resolveModel(input?: string): ModelDefinition | undefined {
-    const normalized = normalizeInput(input);
+    const sanitized = sanitizeInput(input);
+    const normalized = normalizeInput(sanitized);
     if (!normalized) {
       return undefined;
     }
@@ -136,11 +173,12 @@ export class ModelService {
     if (canonicalId) {
       return CHAT_MODELS[canonicalId];
     }
-    return CHAT_MODELS[input ?? ''];
+    return CHAT_MODELS[sanitized ?? ''];
   }
 
   static getCanonicalModelId(input: string): string {
-    return this.resolveModel(input)?.id ?? input;
+    const sanitized = sanitizeInput(input) ?? input;
+    return this.resolveModel(sanitized)?.id ?? sanitized;
   }
 
   static getContextLimit(modelName?: string): number | undefined {
@@ -164,7 +202,8 @@ export class ModelService {
   }
 
   static resolveImageModel(input?: string): ImageModelDefinition | undefined {
-    const normalized = normalizeInput(input);
+    const sanitized = sanitizeInput(input);
+    const normalized = normalizeInput(sanitized);
     if (!normalized) {
       return undefined;
     }
@@ -172,11 +211,16 @@ export class ModelService {
     if (canonicalId) {
       return IMAGE_MODELS[canonicalId];
     }
-    return IMAGE_MODELS[input ?? ''];
+    return IMAGE_MODELS[sanitized ?? ''];
   }
 
   static getCanonicalImageModelId(input: string): string {
-    return this.resolveImageModel(input)?.id ?? input;
+    const sanitized = sanitizeInput(input) ?? input;
+    return this.resolveImageModel(sanitized)?.id ?? sanitized;
+  }
+
+  static sanitizeModelInput(input?: string): string | undefined {
+    return sanitizeInput(input);
   }
 
   static getImageModelDisplayName(modelName?: string): string | undefined {

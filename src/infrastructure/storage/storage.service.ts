@@ -28,6 +28,24 @@ export class StorageService {
     }
   }
 
+  static getOptional<T>(key: string): T | undefined {
+    if (!this.isAvailable()) {
+      console.warn('localStorage is not available. Settings will not persist.');
+      return undefined;
+    }
+
+    try {
+      const item = localStorage.getItem(key);
+      if (item === null) {
+        return undefined;
+      }
+      return JSON.parse(item) as T;
+    } catch (error) {
+      console.error(`Failed to read from localStorage: ${key}`, error);
+      return undefined;
+    }
+  }
+
   static getString(key: string, defaultValue: string): string {
     if (!this.isAvailable()) {
       console.warn('localStorage is not available. Settings will not persist.');
@@ -39,6 +57,21 @@ export class StorageService {
     } catch (error) {
       console.error(`Failed to read from localStorage: ${key}`, error);
       return defaultValue;
+    }
+  }
+
+  static getStringOptional(key: string): string | undefined {
+    if (!this.isAvailable()) {
+      console.warn('localStorage is not available. Settings will not persist.');
+      return undefined;
+    }
+
+    try {
+      const item = localStorage.getItem(key);
+      return item === null ? undefined : item;
+    } catch (error) {
+      console.error(`Failed to read from localStorage: ${key}`, error);
+      return undefined;
     }
   }
 

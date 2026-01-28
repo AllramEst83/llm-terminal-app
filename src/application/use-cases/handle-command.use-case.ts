@@ -41,7 +41,8 @@ const THINKING_SUPPORTED_MODELS_TEXT = `${THINKING_MODEL_SHORTCUTS[GEMINI_FLASH_
 export class HandleCommandUseCase {
   constructor(
     private currentSettings: Settings,
-    private isStudioEnv: boolean
+    private isStudioEnv: boolean,
+    private sessionId?: string
   ) {}
 
   async execute(
@@ -88,7 +89,7 @@ export class HandleCommandUseCase {
   }
 
   private handleClear(): CommandResult {
-    TokenCountService.clearTokenUsage();
+    TokenCountService.clearTokenUsage(this.sessionId);
     
     return {
       success: true,
@@ -131,7 +132,7 @@ export class HandleCommandUseCase {
   }
 
   private handleTokens(): CommandResult {
-    const usage = TokenCountService.getTokenUsage();
+    const usage = TokenCountService.getTokenUsage(this.sessionId);
     const formattedUsage = TokenCountService.formatTokenUsage(usage);
     const message = MessageService.createSystemMessage(formattedUsage);
 
@@ -237,7 +238,7 @@ export class HandleCommandUseCase {
       settingsUpdate: {
         fontSize: Settings.DEFAULT_FONT_SIZE,
         themeName: Theme.DEFAULT_THEME_NAME,
-        apiKey: this.isStudioEnv ? this.currentSettings.apiKey : '',
+        apiKey: this.currentSettings.apiKey,
         modelName: defaultModelName,
         thinkingSettings: Settings.createDefaultThinkingSettings(),
         systemPromptId: DEFAULT_SYSTEM_PROMPT_ID,
@@ -372,7 +373,7 @@ This app was created for the love and nostalgia of retro tech from the 80s. I fe
   }
 
   private handleModel(args: string[]): CommandResult {
-    const requestedModelRaw = args[0];
+    const requestedModelRaw = ModelService.sanitizeModelInput(args[0]) ?? args[0];
     const availableModels = ModelService.listModels();
 
     if (!requestedModelRaw) {
@@ -389,7 +390,7 @@ This app was created for the love and nostalgia of retro tech from the 80s. I fe
     }
 
     const requestedModel = requestedModelRaw.toLowerCase();
-    const resolvedModel = ModelService.resolveModel(requestedModel);
+    const resolvedModel = ModelService.resolveModel(requestedModelRaw);
 
     let modelName: string;
     let modelLabel: string;
@@ -799,7 +800,11 @@ ${usageBlock}`;
         `Generated image for: "${prompt}"${aspectInfo}${modelInfo}`
       ).withImageData(imageData).withType(MessageType.IMAGE);
 
-      TokenCountService.updateImageModelUsageFromMetadata(imageModelId, usageMetadata);
+      TokenCountService.updateImageModelUsageFromMetadata(
+        imageModelId,
+        usageMetadata,
+        this.sessionId
+      );
 
       return {
         success: true,

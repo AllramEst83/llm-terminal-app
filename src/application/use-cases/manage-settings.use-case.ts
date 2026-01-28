@@ -2,19 +2,29 @@ import { Settings } from '../../domain/entities/settings';
 import { SettingsRepository } from '../../infrastructure/repositories/settings.repository';
 import { ThemeService } from '../../infrastructure/services/theme.service';
 
+interface SaveSettingsOptions {
+  applyTheme?: boolean;
+}
+
 export class ManageSettingsUseCase {
+  constructor(private readonly sessionId?: string) {}
+
   async loadSettings(): Promise<Settings> {
-    return await SettingsRepository.load();
+    return await SettingsRepository.load(this.sessionId);
   }
 
-  async saveSettings(settings: Settings): Promise<void> {
-    await SettingsRepository.save(settings);
-    ThemeService.applyTheme(ThemeService.getTheme(settings.themeName));
+  async saveSettings(settings: Settings, options: SaveSettingsOptions = {}): Promise<void> {
+    const { applyTheme = true } = options;
+    await SettingsRepository.save(settings, this.sessionId);
+    if (applyTheme) {
+      ThemeService.applyTheme(ThemeService.getTheme(settings.themeName));
+    }
   }
 
   async updateSettings(
     currentSettings: Settings,
-    updates: Partial<Settings>
+    updates: Partial<Settings>,
+    options: SaveSettingsOptions = {}
   ): Promise<Settings> {
     let newSettings = currentSettings;
 
@@ -46,20 +56,16 @@ export class ManageSettingsUseCase {
       newSettings = newSettings.withThinkingSettingsMap(updates.thinkingSettings);
     }
 
-    await this.saveSettings(newSettings);
+    await this.saveSettings(newSettings, options);
     return newSettings;
   }
 
-  async resetSettings(isStudioEnv: boolean): Promise<Settings> {
+  async resetSettings(currentSettings: Settings): Promise<Settings> {
     const defaultSettings = Settings.createDefault();
-    if (isStudioEnv) {
-      const currentSettings = await this.loadSettings();
-      const resetSettings = defaultSettings.withApiKey(currentSettings.apiKey);
-      await this.saveSettings(resetSettings);
-      return resetSettings;
-    }
-    await SettingsRepository.reset();
-    return defaultSettings;
+    const resetSettings = defaultSettings.withApiKey(currentSettings.apiKey);
+    await SettingsRepository.reset(this.sessionId);
+    await this.saveSettings(resetSettings, { applyTheme: false });
+    return resetSettings;
   }
 }
 

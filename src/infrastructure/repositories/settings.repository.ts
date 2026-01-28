@@ -4,6 +4,7 @@ import {
   GEMINI_FLASH_MODEL_ID,
   GEMINI_PRO_MODEL_ID,
 } from '../../domain/entities/settings';
+import { DEFAULT_SESSION_ID } from '../../domain/entities/terminal-session';
 import {
   DEFAULT_CUSTOM_SYSTEM_PROMPT,
   DEFAULT_SYSTEM_PROMPT_ID,
@@ -23,52 +24,129 @@ const THINKING_BUDGET_STORAGE_KEY = 'terminal_thinkingBudget';
 const THINKING_LEVEL_STORAGE_KEY = 'terminal_thinkingLevel';
 const SYSTEM_PROMPT_ID_STORAGE_KEY = 'terminal_systemPromptId';
 const CUSTOM_SYSTEM_PROMPT_STORAGE_KEY = 'terminal_customSystemPrompt';
+const SETTINGS_STORAGE_PREFIX = 'terminal_tab';
+
+function buildScopedKey(tabId: string | undefined, key: string): string {
+  if (!tabId) {
+    return key;
+  }
+  return `${SETTINGS_STORAGE_PREFIX}:${tabId}:${key}`;
+}
+
+function readScopedValue<T>(
+  tabId: string | undefined,
+  key: string,
+  defaultValue: T,
+  allowLegacyFallback: boolean
+): T {
+  const scopedKey = buildScopedKey(tabId, key);
+  const scopedValue = StorageService.getOptional<T>(scopedKey);
+  if (scopedValue !== undefined) {
+    return scopedValue;
+  }
+  if (allowLegacyFallback) {
+    const legacyValue = StorageService.getOptional<T>(key);
+    if (legacyValue !== undefined) {
+      return legacyValue;
+    }
+  }
+  return defaultValue;
+}
+
+function decodeStoredString(raw: string): string {
+  let current = raw;
+  for (let i = 0; i < 3; i += 1) {
+    const trimmed = current.trim();
+    if (!trimmed.startsWith('"') || !trimmed.endsWith('"')) {
+      break;
+    }
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed !== 'string' || parsed === current) {
+        break;
+      }
+      current = parsed;
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
+function readScopedString(
+  tabId: string | undefined,
+  key: string,
+  defaultValue: string,
+  allowLegacyFallback: boolean
+): string {
+  const scopedKey = buildScopedKey(tabId, key);
+  const scopedValue = StorageService.getStringOptional(scopedKey);
+  if (scopedValue !== undefined) {
+    return decodeStoredString(scopedValue);
+  }
+  if (allowLegacyFallback) {
+    const legacyValue = StorageService.getStringOptional(key);
+    if (legacyValue !== undefined) {
+      return decodeStoredString(legacyValue);
+    }
+  }
+  return defaultValue;
+}
 
 export class SettingsRepository {
-  static async load(): Promise<Settings> {
-    const fontSize = StorageService.get<number>(
+  static async load(tabId?: string): Promise<Settings> {
+    const allowLegacyFallback = tabId === DEFAULT_SESSION_ID || !tabId;
+    const fontSize = readScopedValue<number>(
+      tabId,
       FONT_SIZE_STORAGE_KEY,
-      Settings.DEFAULT_FONT_SIZE
+      Settings.DEFAULT_FONT_SIZE,
+      allowLegacyFallback
     );
-    const themeName = ThemeService.getSavedThemeName();
+    const themeName = ThemeService.getSavedThemeName(tabId, allowLegacyFallback);
     const apiKey = await ApiKeyService.getApiKey();
     const defaultModelName = ModelService.getDefaultModel().id;
-    const modelName = StorageService.get<string>(
+    const storedModelName = readScopedString(
+      tabId,
       MODEL_NAME_STORAGE_KEY,
-      defaultModelName
+      defaultModelName,
+      allowLegacyFallback
     );
-    const storedThinkingSettings = StorageService.get<Record<string, ThinkingModelSettings> | null>(
+    const modelName = ModelService.getCanonicalModelId(storedModelName);
+    const storedThinkingSettings = readScopedValue<Record<string, ThinkingModelSettings> | null>(
+      tabId,
       THINKING_SETTINGS_STORAGE_KEY,
-      null
+      null,
+      allowLegacyFallback
     );
-    const storedSystemPromptId = StorageService.get<string>(
+    const storedSystemPromptId = readScopedString(
+      tabId,
       SYSTEM_PROMPT_ID_STORAGE_KEY,
-      DEFAULT_SYSTEM_PROMPT_ID
+      DEFAULT_SYSTEM_PROMPT_ID,
+      allowLegacyFallback
     );
     const systemPromptId: SystemPromptId = isValidSystemPromptId(storedSystemPromptId)
       ? storedSystemPromptId
       : DEFAULT_SYSTEM_PROMPT_ID;
-    const customSystemPrompt = StorageService.get<string>(
+    const customSystemPrompt = readScopedString(
+      tabId,
       CUSTOM_SYSTEM_PROMPT_STORAGE_KEY,
-      DEFAULT_CUSTOM_SYSTEM_PROMPT
+      DEFAULT_CUSTOM_SYSTEM_PROMPT,
+      allowLegacyFallback
     );
     let thinkingSettings: Record<string, ThinkingModelSettings>;
 
     if (storedThinkingSettings) {
       thinkingSettings = storedThinkingSettings;
     } else {
-      const legacyThinkingEnabled = StorageService.get<boolean>(
-        THINKING_ENABLED_STORAGE_KEY,
-        false
-      );
-      const legacyThinkingBudget = StorageService.get<number | undefined>(
-        THINKING_BUDGET_STORAGE_KEY,
-        undefined
-      );
-      const legacyThinkingLevel = StorageService.get(
-        THINKING_LEVEL_STORAGE_KEY,
-        Settings.DEFAULT_THINKING_LEVEL
-      );
+      const legacyThinkingEnabled = allowLegacyFallback
+        ? StorageService.get<boolean>(THINKING_ENABLED_STORAGE_KEY, false)
+        : false;
+      const legacyThinkingBudget = allowLegacyFallback
+        ? StorageService.get<number | undefined>(THINKING_BUDGET_STORAGE_KEY, undefined)
+        : undefined;
+      const legacyThinkingLevel = allowLegacyFallback
+        ? StorageService.get(THINKING_LEVEL_STORAGE_KEY, Settings.DEFAULT_THINKING_LEVEL)
+        : Settings.DEFAULT_THINKING_LEVEL;
 
       thinkingSettings = Settings.createDefaultThinkingSettings();
 
@@ -106,23 +184,35 @@ export class SettingsRepository {
     );
   }
 
-  static async save(settings: Settings): Promise<void> {
-    const fontSizeSaved = StorageService.set(FONT_SIZE_STORAGE_KEY, settings.fontSize);
-    const themeSaved = ThemeService.saveThemeName(settings.themeName);
+  static async save(settings: Settings, tabId?: string): Promise<void> {
+    const fontSizeSaved = StorageService.set(
+      buildScopedKey(tabId, FONT_SIZE_STORAGE_KEY),
+      settings.fontSize
+    );
+    const themeSaved = ThemeService.saveThemeName(settings.themeName, tabId);
     const apiKeySaved = ApiKeyService.setApiKey(settings.apiKey);
-    const modelNameSaved = StorageService.set(MODEL_NAME_STORAGE_KEY, settings.modelName);
-    const systemPromptIdSaved = StorageService.set(SYSTEM_PROMPT_ID_STORAGE_KEY, settings.systemPromptId);
-    const customSystemPromptSaved = StorageService.set(
-      CUSTOM_SYSTEM_PROMPT_STORAGE_KEY,
+    const modelNameSaved = StorageService.setString(
+      buildScopedKey(tabId, MODEL_NAME_STORAGE_KEY),
+      settings.modelName
+    );
+    const systemPromptIdSaved = StorageService.setString(
+      buildScopedKey(tabId, SYSTEM_PROMPT_ID_STORAGE_KEY),
+      settings.systemPromptId
+    );
+    const customSystemPromptSaved = StorageService.setString(
+      buildScopedKey(tabId, CUSTOM_SYSTEM_PROMPT_STORAGE_KEY),
       settings.customSystemPrompt
     );
     const thinkingSettingsSaved = StorageService.set(
-      THINKING_SETTINGS_STORAGE_KEY,
+      buildScopedKey(tabId, THINKING_SETTINGS_STORAGE_KEY),
       settings.getThinkingSettingsSnapshot()
     );
-    StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
-    StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
-    StorageService.remove(THINKING_LEVEL_STORAGE_KEY);
+
+    if (tabId === DEFAULT_SESSION_ID || !tabId) {
+      StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
+      StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
+      StorageService.remove(THINKING_LEVEL_STORAGE_KEY);
+    }
     
     if (
       !fontSizeSaved ||
@@ -147,18 +237,36 @@ export class SettingsRepository {
     }
   }
 
-  static async reset(): Promise<Settings> {
-    StorageService.remove(FONT_SIZE_STORAGE_KEY);
-    ThemeService.saveThemeName(ThemeService.getDefaultThemeName());
-    ApiKeyService.removeApiKey();
-    StorageService.remove(MODEL_NAME_STORAGE_KEY);
-    StorageService.remove(SYSTEM_PROMPT_ID_STORAGE_KEY);
-    StorageService.remove(CUSTOM_SYSTEM_PROMPT_STORAGE_KEY);
-    StorageService.remove(THINKING_SETTINGS_STORAGE_KEY);
-    StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
-    StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
-    StorageService.remove(THINKING_LEVEL_STORAGE_KEY);
+  static async reset(tabId?: string): Promise<Settings> {
+    const allowLegacyFallback = tabId === DEFAULT_SESSION_ID || !tabId;
+    StorageService.remove(buildScopedKey(tabId, FONT_SIZE_STORAGE_KEY));
+    ThemeService.saveThemeName(ThemeService.getDefaultThemeName(), tabId);
+    StorageService.remove(buildScopedKey(tabId, MODEL_NAME_STORAGE_KEY));
+    StorageService.remove(buildScopedKey(tabId, SYSTEM_PROMPT_ID_STORAGE_KEY));
+    StorageService.remove(buildScopedKey(tabId, CUSTOM_SYSTEM_PROMPT_STORAGE_KEY));
+    StorageService.remove(buildScopedKey(tabId, THINKING_SETTINGS_STORAGE_KEY));
+
+    if (allowLegacyFallback) {
+      StorageService.remove(FONT_SIZE_STORAGE_KEY);
+      StorageService.remove(MODEL_NAME_STORAGE_KEY);
+      StorageService.remove(SYSTEM_PROMPT_ID_STORAGE_KEY);
+      StorageService.remove(CUSTOM_SYSTEM_PROMPT_STORAGE_KEY);
+      StorageService.remove(THINKING_SETTINGS_STORAGE_KEY);
+      StorageService.remove(THINKING_ENABLED_STORAGE_KEY);
+      StorageService.remove(THINKING_BUDGET_STORAGE_KEY);
+      StorageService.remove(THINKING_LEVEL_STORAGE_KEY);
+    }
+
     return Settings.createDefault();
+  }
+
+  static clearTab(tabId: string): void {
+    StorageService.remove(buildScopedKey(tabId, FONT_SIZE_STORAGE_KEY));
+    ThemeService.removeSavedThemeName(tabId);
+    StorageService.remove(buildScopedKey(tabId, MODEL_NAME_STORAGE_KEY));
+    StorageService.remove(buildScopedKey(tabId, SYSTEM_PROMPT_ID_STORAGE_KEY));
+    StorageService.remove(buildScopedKey(tabId, CUSTOM_SYSTEM_PROMPT_STORAGE_KEY));
+    StorageService.remove(buildScopedKey(tabId, THINKING_SETTINGS_STORAGE_KEY));
   }
 }
 
