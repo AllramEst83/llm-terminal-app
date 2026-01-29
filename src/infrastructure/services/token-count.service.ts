@@ -16,7 +16,14 @@ export interface SessionTokenUsage {
 
 type UsageCategory = keyof SessionTokenUsage;
 
-const SESSION_STORAGE_KEY = 'token_usage';
+const SESSION_STORAGE_KEY_PREFIX = 'token_usage';
+
+function buildSessionKey(sessionId?: string): string {
+  if (!sessionId) {
+    return SESSION_STORAGE_KEY_PREFIX;
+  }
+  return `${SESSION_STORAGE_KEY_PREFIX}:${sessionId}`;
+}
 
 function createEmptyUsage(): TokenUsage {
   return { inputTokens: 0, outputTokens: 0, imageTokens: 0 };
@@ -39,26 +46,26 @@ function createInitialSessionUsage(): SessionTokenUsage {
 export class TokenCountService {
   static readonly TOKEN_WARNING_BUFFER = 50_000;
 
-  static initializeSessionStorage(): void {
+  static initializeSessionStorage(sessionId?: string): void {
     const initialUsage = createInitialSessionUsage();
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(initialUsage));
+    sessionStorage.setItem(buildSessionKey(sessionId), JSON.stringify(initialUsage));
   }
 
-  static getTokenUsage(): SessionTokenUsage {
+  static getTokenUsage(sessionId?: string): SessionTokenUsage {
     try {
-      const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      const stored = sessionStorage.getItem(buildSessionKey(sessionId));
       if (!stored) {
-        this.initializeSessionStorage();
-        return this.getTokenUsage();
+        this.initializeSessionStorage(sessionId);
+        return this.getTokenUsage(sessionId);
       }
       const parsed = JSON.parse(stored);
       const sessionUsage = this.normalizeSessionUsage(parsed);
-      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUsage));
+      sessionStorage.setItem(buildSessionKey(sessionId), JSON.stringify(sessionUsage));
       return sessionUsage;
     } catch (error) {
       console.error('Error reading token usage from session storage:', error);
-      this.initializeSessionStorage();
-      return this.getTokenUsage();
+      this.initializeSessionStorage(sessionId);
+      return this.getTokenUsage(sessionId);
     }
   }
 
@@ -112,14 +119,16 @@ export class TokenCountService {
     modelName: string,
     inputTokens?: number,
     outputTokens?: number,
-    imageTokensDelta?: number
+    imageTokensDelta?: number,
+    sessionId?: string
   ): void {
-    this.updateModelUsage('chat', modelName, inputTokens, outputTokens, imageTokensDelta);
+    this.updateModelUsage('chat', modelName, inputTokens, outputTokens, imageTokensDelta, sessionId);
   }
 
   static updateTokenUsageFromMetadata(
     modelName: string,
-    usageMetadata?: GeminiUsageMetadata
+    usageMetadata?: GeminiUsageMetadata,
+    sessionId?: string
   ): void {
     if (!usageMetadata) {
       return;
@@ -134,12 +143,13 @@ export class TokenCountService {
         ? usageMetadata.candidatesTokenCount
         : undefined;
 
-    this.updateModelUsage('chat', modelName, inputTokens, outputTokens);
+    this.updateModelUsage('chat', modelName, inputTokens, outputTokens, undefined, sessionId);
   }
 
   static updateImageModelUsageFromMetadata(
     modelName: string,
-    usageMetadata?: GeminiUsageMetadata
+    usageMetadata?: GeminiUsageMetadata,
+    sessionId?: string
   ): void {
     if (!usageMetadata) {
       return;
@@ -158,25 +168,25 @@ export class TokenCountService {
         ? usageMetadata.totalTokenCount
         : undefined;
 
-    this.updateModelUsage('image', modelName, inputTokens, outputTokens, totalTokens);
+    this.updateModelUsage('image', modelName, inputTokens, outputTokens, totalTokens, sessionId);
   }
 
-  static addImageTokens(modelName: string, tokenCount?: number): void {
+  static addImageTokens(modelName: string, tokenCount?: number, sessionId?: string): void {
     if (typeof tokenCount !== 'number' || tokenCount <= 0) {
       return;
     }
 
-    this.updateModelUsage('image', modelName, undefined, undefined, tokenCount);
+    this.updateModelUsage('image', modelName, undefined, undefined, tokenCount, sessionId);
   }
 
-  static getModelTokenUsage(modelName: string): TokenUsage {
-    const usage = this.getTokenUsage();
+  static getModelTokenUsage(modelName: string, sessionId?: string): TokenUsage {
+    const usage = this.getTokenUsage(sessionId);
     const canonicalModel = ModelService.getCanonicalModelId(modelName);
     return usage.chat[canonicalModel] || createEmptyUsage();
   }
 
-  static getImageModelTokenUsage(modelName: string): TokenUsage {
-    const usage = this.getTokenUsage();
+  static getImageModelTokenUsage(modelName: string, sessionId?: string): TokenUsage {
+    const usage = this.getTokenUsage(sessionId);
     const canonicalModel = ModelService.getCanonicalImageModelId(modelName);
     return usage.image[canonicalModel] || createEmptyUsage();
   }
@@ -186,9 +196,10 @@ export class TokenCountService {
     modelName: string,
     inputTokens?: number,
     outputTokens?: number,
-    imageTokensDelta?: number
+    imageTokensDelta?: number,
+    sessionId?: string
   ): void {
-    const usage = this.getTokenUsage();
+    const usage = this.getTokenUsage(sessionId);
     const canonicalModel =
       category === 'chat'
         ? ModelService.getCanonicalModelId(modelName)
@@ -215,7 +226,7 @@ export class TokenCountService {
       modelUsage.imageTokens += imageTokensDelta;
     }
 
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(usage));
+    sessionStorage.setItem(buildSessionKey(sessionId), JSON.stringify(usage));
   }
 
   static async countTokensViaEndpoint(
@@ -377,8 +388,12 @@ ${imageSection}
     return promptTokens >= Math.max(limit - buffer, 0);
   }
 
-  static clearTokenUsage(): void {
-    this.initializeSessionStorage();
+  static clearTokenUsage(sessionId?: string): void {
+    this.initializeSessionStorage(sessionId);
+  }
+
+  static removeSessionUsage(sessionId?: string): void {
+    sessionStorage.removeItem(buildSessionKey(sessionId));
   }
 }
 

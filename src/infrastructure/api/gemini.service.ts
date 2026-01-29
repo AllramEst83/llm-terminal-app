@@ -123,13 +123,14 @@ export async function sendMessageToGemini(
 ): Promise<void> {
   try {
     const ai = getAiInstance(apiKey);
+    const canonicalModelId = ModelService.getCanonicalModelId(modelName);
     const thinkingOverrides = buildThinkingConfig(
-      modelName,
+      canonicalModelId,
       thinkingSettings
     );
 
     const chat = ai.chats.create({
-      model: modelName,
+      model: canonicalModelId,
       history: formatMessagesForGemini(currentMessages),
       config: {
         systemInstruction: systemPrompt,

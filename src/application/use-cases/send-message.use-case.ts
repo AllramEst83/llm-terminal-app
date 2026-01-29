@@ -14,7 +14,8 @@ export class SendMessageUseCase {
   constructor(
     private currentMessages: Message[],
     private settings: Settings,
-    private onTokenCountUpdate?: (inputTokens: number) => void
+    private onTokenCountUpdate?: (inputTokens: number) => void,
+    private sessionId?: string
   ) {}
 
   async execute(
@@ -44,10 +45,17 @@ export class SendMessageUseCase {
         onStreamCallback(chunkText, isFirstChunk);
       },
       async (sources, usageMetadata) => {
-        TokenCountService.updateTokenUsageFromMetadata(this.settings.modelName, usageMetadata);
+        TokenCountService.updateTokenUsageFromMetadata(
+          this.settings.modelName,
+          usageMetadata,
+          this.sessionId
+        );
 
         if (this.onTokenCountUpdate) {
-          const updatedUsage = TokenCountService.getModelTokenUsage(this.settings.modelName);
+          const updatedUsage = TokenCountService.getModelTokenUsage(
+            this.settings.modelName,
+            this.sessionId
+          );
           this.onTokenCountUpdate(updatedUsage.inputTokens);
         }
 
