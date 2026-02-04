@@ -216,7 +216,7 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text,
             </ul>
           ),
           ol: ({ children }) => (
-            <ol className="list-decimal list-outside mb-2 ml-6 space-y-1" style={{ color: textColor }}>
+            <ol className="list-decimal list-inside mb-2 space-y-1" style={{ color: textColor }}>
               {children}
             </ol>
           ),
