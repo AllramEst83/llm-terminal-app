@@ -2,13 +2,14 @@ import { GoogleGenAI } from '@google/genai';
 import { ModelService } from './model.service';
 
 const GRAMMAR_SYSTEM_PROMPT =
-  'You are a precise copy editor. Improve grammar, clarity, and flow while preserving the original meaning and tone. Return only the improved text without commentary or Markdown fences.';
+  'You are a precise copy editor. Improve grammar, clarity, and flow while preserving the original meaning and tone unless optional notes request otherwise. If notes are provided, follow them as additional instructions. Return only the improved text without commentary or Markdown fences.';
 
 export class GrammarService {
   static async improveText(
     text: string,
     apiKey: string,
-    modelName?: string
+    modelName?: string,
+    notes?: string
   ): Promise<string> {
     if (!text.trim()) {
       throw new Error('No text provided for grammar improvement.');
@@ -30,8 +31,13 @@ export class GrammarService {
       },
     });
 
+    const messageParts = [`Text:\n${text.trim()}`];
+    if (notes?.trim()) {
+      messageParts.push(`Notes:\n${notes.trim()}`);
+    }
+
     const stream = await chat.sendMessageStream({
-      message: `Text:\n${text.trim()}`,
+      message: messageParts.join('\n\n'),
     });
 
     let output = '';
