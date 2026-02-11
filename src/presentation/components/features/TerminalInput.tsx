@@ -42,11 +42,42 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
     return validTypes.includes(mimeType.toLowerCase());
   };
 
-  useEffect(() => {
-    if (autoFocus && !disabled) {
-      inputRef.current?.focus();
+  const focusInput = useCallback(() => {
+    if (!autoFocus || disabled || document.visibilityState !== 'visible') {
+      return;
     }
+
+    const inputElement = inputRef.current;
+    if (!inputElement || document.activeElement === inputElement) {
+      return;
+    }
+
+    inputElement.focus({ preventScroll: true });
   }, [autoFocus, disabled]);
+
+  useEffect(() => {
+    focusInput();
+  }, [focusInput]);
+
+  useEffect(() => {
+    // Re-focus when users return from another app or tab.
+    const handleWindowFocus = () => {
+      focusInput();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        focusInput();
+      }
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [focusInput]);
 
   const processImageFiles = useCallback(
     (files: File[]) => {
