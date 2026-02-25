@@ -935,12 +935,52 @@ ${usageBlock}`;
       message,
     };
   }
-  private async handleGrammar(args: string[]): Promise<CommandResult> {
-    const textToImprove = args.join(' ').trim();
 
-    if (!textToImprove) {
+  private parseGrammarArgs(args: string[]): {
+    text: string;
+    notes: string;
+    hasNotesFlag: boolean;
+  } {
+    let notesIndex = -1;
+    let notesTokenLength = 1;
+
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--notes') {
+        notesIndex = i;
+        break;
+      }
+      if (args[i] === '--' && i + 1 < args.length && args[i + 1] === 'notes') {
+        notesIndex = i;
+        notesTokenLength = 2;
+        break;
+      }
+    }
+
+    if (notesIndex === -1) {
+      return { text: args.join(' ').trim(), notes: '', hasNotesFlag: false };
+    }
+
+    return {
+      text: args.slice(0, notesIndex).join(' ').trim(),
+      notes: args.slice(notesIndex + notesTokenLength).join(' ').trim(),
+      hasNotesFlag: true,
+    };
+  }
+
+  private async handleGrammar(args: string[]): Promise<CommandResult> {
+    const usage = 'Usage: /grammar <text to improve> [--notes <guidance>]';
+    const { text, notes, hasNotesFlag } = this.parseGrammarArgs(args);
+
+    if (!text) {
       const message = MessageService.createErrorMessage(
-        'SYSTEM ERROR: Provide the text to improve.\nUsage: /grammar <text to improve>'
+        `SYSTEM ERROR: Provide the text to improve.\n${usage}`
+      );
+      return { success: false, message };
+    }
+
+    if (hasNotesFlag && !notes) {
+      const message = MessageService.createErrorMessage(
+        `SYSTEM ERROR: Provide notes after --notes.\n${usage}`
       );
       return { success: false, message };
     }
@@ -955,9 +995,10 @@ ${usageBlock}`;
       }
 
       const improved = await GrammarService.improveText(
-        textToImprove,
+        text,
         apiKey,
-        this.currentSettings.modelName
+        this.currentSettings.modelName,
+        notes || undefined
       );
 
       const codeBlock = `\`\`\`\n${improved}\n\`\`\``;
