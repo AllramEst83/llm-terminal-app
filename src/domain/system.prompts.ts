@@ -92,7 +92,7 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
   },
   {
     id: 'normal-baseline',
-    label: 'Normal Baseline',
+    label: 'Default',
     description: 'Standard helpful assistant tone with clear, concise answers.',
     prompt: NORMAL_BASELINE_PROMPT,
     aliases: ['normal', 'baseline', 'standard', 'default', 'normalbaseline'],
@@ -106,24 +106,24 @@ export const SYSTEM_PROMPTS: SystemPromptDefinition[] = [
   },
   {
     id: 'dotnet',
-    label: '.NET Clean Architecture',
+    label: '.NET',
     description: 'Clean Architecture for ASP.NET Core APIs.',
     prompt: DOTNET_CLEAN_ARCHITECTURE_PROMPT,
     aliases: ['dotnet', '.net', 'aspnet', 'dotnet core', 'aspnet core'],
   },
   {
     id: 'javascript',
-    label: 'JS/TS Modular',
-    description: 'Modular ESM utilities.',
+    label: 'JavaScript/TypeScript',
+    description: 'Modular ESM utilities with strict null checks and testing.',
     prompt: MODULAR_UTILITY_PROMPT,
     aliases: ['js', 'javascript', 'ts', 'typescript'],
   },
   {
     id: 'react',
-    label: 'React Feature-First',
+    label: 'React/TS',
     description: 'Feature-first React/TS UI.',
     prompt: REACT_FEATURE_FIRST_PROMPT,
-    aliases: ['react', 'react-dev', 'reactjs', 'reactts'],
+    aliases: ['react', 'react', 'reactjs', 'reactts'],
   },
   {
     id: 'custom',
