@@ -59,7 +59,7 @@ const CHAT_MODELS: Record<string, ModelDefinition> = {
     displayName: 'Gemini 3.1 Pro Preview',
     shortLabel: '3-pro',
     description: 'Higher quality multimodal model with 1.048.576 token context window.',
-    aliases: ['3-pro', 'gemini-3-pro-preview'],
+    aliases: ['3-pro'],
     contextLimit: 1_048_576,
   },
 };
