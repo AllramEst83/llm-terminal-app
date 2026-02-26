@@ -16,7 +16,7 @@ export interface ThinkingModelSettings {
 }
 
 export const GEMINI_FLASH_MODEL_ID = 'gemini-3-flash-preview';
-export const GEMINI_PRO_MODEL_ID = 'gemini-3-pro-preview';
+export const GEMINI_PRO_MODEL_ID = 'gemini-3.1-pro-preview';
 
 const BUDGET_MODEL_IDS = new Set<string>([GEMINI_FLASH_MODEL_ID]);
 

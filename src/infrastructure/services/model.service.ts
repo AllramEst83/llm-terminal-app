@@ -54,9 +54,9 @@ const CHAT_MODELS: Record<string, ModelDefinition> = {
     aliases: ['flash', '3-flash'],
     contextLimit: 1_000_000,
   },
-  'gemini-3-pro-preview': {
-    id: 'gemini-3-pro-preview',
-    displayName: 'Gemini 3 Pro Preview',
+  'gemini-3.1-pro-preview': {
+    id: 'gemini-3.1-pro-preview',
+    displayName: 'Gemini 3.1 Pro Preview',
     shortLabel: '3-pro',
     description: 'Higher quality multimodal model with 1.048.576 token context window.',
     aliases: ['3-pro'],
