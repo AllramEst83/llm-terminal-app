@@ -16,7 +16,8 @@ export interface ThinkingModelSettings {
 }
 
 export const GEMINI_FLASH_MODEL_ID = 'gemini-3-flash-preview';
-export const GEMINI_PRO_MODEL_ID = 'gemini-3-pro-preview';
+export const GEMINI_PRO_MODEL_ID = 'gemini-3.1-pro-preview';
+const LEGACY_GEMINI_PRO_MODEL_ID = 'gemini-3-pro-preview';
 
 const BUDGET_MODEL_IDS = new Set<string>([GEMINI_FLASH_MODEL_ID]);
 
@@ -182,9 +183,14 @@ export class Settings {
   ): Record<string, ThinkingModelSettings> {
     const normalized: Record<string, ThinkingModelSettings> = {};
     const source = settings ?? {};
+    const legacyProSettings = source[LEGACY_GEMINI_PRO_MODEL_ID];
 
     [GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID].forEach(id => {
-      normalized[id] = Settings.createNormalizedModelSettings(id, source[id]);
+      const existingSettings =
+        id === GEMINI_PRO_MODEL_ID
+          ? source[id] ?? legacyProSettings
+          : source[id];
+      normalized[id] = Settings.createNormalizedModelSettings(id, existingSettings);
     });
 
     return normalized;
