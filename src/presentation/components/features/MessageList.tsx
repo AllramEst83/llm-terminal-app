@@ -1,11 +1,12 @@
 import React from 'react';
 import { MessageContent } from './MessageContent';
 import { ImageDisplay } from './ImageDisplay';
+import { SpeakButton } from './SpeakButton';
 import { ModelService } from '../../../infrastructure/services/model.service';
 import { MessageType } from '../../../domain/entities/message';
 import type { MessageListProps } from '../../../types/ui/components';
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize, onImageLoad }) => {
+export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming, theme, endOfMessagesRef, fontSize, onImageLoad, apiKey }) => {
   const headerFontSizeMultiplier = 0.9;
   const commandLabelFontSizeMultiplier = 0.6;
   const commandInputFontSizeMultiplier = 0.8;
@@ -310,6 +311,17 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isStreaming,
                 </div>
               )
             }
+
+            {!isUser && msg.text && !(isStreaming && isLastMessage) && apiKey && (
+              <div className="flex justify-end mt-1">
+                <SpeakButton
+                  text={msg.text}
+                  apiKey={apiKey}
+                  theme={theme}
+                  accentColor={isModel ? theme.ai : theme.system}
+                />
+              </div>
+            )}
           </div >
         );
       })}

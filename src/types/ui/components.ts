@@ -78,6 +78,7 @@ export interface MessageListProps {
   endOfMessagesRef?: React.RefObject<HTMLDivElement>;
   fontSize: number;
   onImageLoad?: () => void;
+  apiKey?: string;
 }
 
 /**
