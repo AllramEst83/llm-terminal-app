@@ -19,13 +19,13 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, back
       textArea.style.left = '-999999px';
       textArea.style.top = '-999999px';
       textArea.style.opacity = '0';
+      textArea.style.fontSize = '16px';
       textArea.setAttribute('readonly', '');
       textArea.setAttribute('aria-hidden', 'true');
+      textArea.setAttribute('inputmode', 'none');
       
       document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
+
       // For iOS Safari
       const range = document.createRange();
       range.selectNodeContents(textArea);
@@ -38,6 +38,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, back
       
       const successful = document.execCommand('copy');
       document.body.removeChild(textArea);
+
+      // Restore focus away from any text input to prevent keyboard popup
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       
       return successful;
     } catch (err) {
@@ -63,8 +68,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, back
     return copyWithExecCommand(text);
   };
 
-  // Handle copy button click/touch
-  const handleCopy = async (e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
+  // Handle copy button click
+  const handleCopy = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -82,11 +87,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, back
       timeoutRef.current = setTimeout(() => {
         setCopied(false);
       }, 2000);
+
+      // Blur the button to prevent keyboard from appearing on mobile
+      (e.target as HTMLElement).blur();
     } else {
-      // Last resort: show code in alert for user to manually copy
       console.error('All copy methods failed');
-      // Note: Alert is commented out as it's intrusive, but can be enabled if needed
-      // alert('Copy failed. Please select and copy manually:\n\n' + code);
     }
   };
 
@@ -131,7 +136,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, back
       <div className="flex justify-end mt-1">
         <button
           onClick={handleCopy}
-          onTouchEnd={handleCopy}
           type="button"
           aria-label={copied ? 'Code copied to clipboard' : 'Copy code to clipboard'}
           className="px-2 py-1 text-xs uppercase focus:outline-none transition-opacity hover:opacity-80 active:opacity-70"
