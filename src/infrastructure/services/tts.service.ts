@@ -67,9 +67,10 @@ export class TtsService {
 
     try {
       const ai = new GoogleGenAI({ apiKey });
+      const prompt = `Read the following at a normal, natural speaking pace. Do not speak slowly:\n\n${text}`;
       const response = await ai.models.generateContent({
         model: TTS_MODEL,
-        contents: [{ parts: [{ text }] }],
+        contents: [{ parts: [{ text: prompt }] }],
         config: {
           responseModalities: ["AUDIO"],
           speechConfig: {
