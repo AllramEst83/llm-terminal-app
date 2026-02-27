@@ -59,8 +59,8 @@ export const SpeakButton: React.FC<SpeakButtonProps> = ({ text, apiKey, theme, a
     if (!text?.trim() || !apiKey) return;
 
     const cleanText = text
-      .replace(/```[\s\S]*?```/g, ' code block ')
-      .replace(/`[^`]+`/g, (match) => match.slice(1, -1))
+      .replace(/```(?:\w*)\n?([\s\S]*?)```/g, (_match, content) => content.trim())
+      .replace(/`([^`]+)`/g, (_match, content) => content)
       .replace(/#{1,6}\s/g, '')
       .replace(/[*_~]{1,3}/g, '')
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
@@ -93,7 +93,7 @@ export const SpeakButton: React.FC<SpeakButtonProps> = ({ text, apiKey, theme, a
       className="flex items-center justify-center rounded transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
       style={{
         color: accentColor,
-        padding: '4px',
+        padding: '5px',
         opacity: state === 'idle' ? 0.5 : 1,
         background: 'transparent',
         border: 'none',
@@ -112,11 +112,11 @@ export const SpeakButton: React.FC<SpeakButtonProps> = ({ text, apiKey, theme, a
       }}
     >
       {state === 'loading' ? (
-        <LoadingSpinner size={14} color={accentColor} />
+        <LoadingSpinner size={18} color={accentColor} />
       ) : state === 'playing' ? (
-        <StopIcon size={14} />
+        <StopIcon size={18} />
       ) : (
-        <SpeakerIcon size={14} />
+        <SpeakerIcon size={18} />
       )}
     </button>
   );
