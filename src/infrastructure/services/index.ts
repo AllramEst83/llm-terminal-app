@@ -8,4 +8,5 @@ export * from './model.service';
 export * from './queue.service';
 export * from './theme.service';
 export * from './token-count.service';
+export * from './tts.service';
 

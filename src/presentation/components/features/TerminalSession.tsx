@@ -1037,7 +1037,7 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
 
     return (
       <>
-        <MessageList messages={messages} isStreaming={isStreaming} theme={theme} endOfMessagesRef={endOfMessagesRef} fontSize={settings.fontSize} onImageLoad={scrollToBottom} />
+        <MessageList messages={messages} isStreaming={isStreaming} theme={theme} endOfMessagesRef={endOfMessagesRef} fontSize={settings.fontSize} onImageLoad={scrollToBottom} apiKey={apiKey} />
         {isLoading && (
           <div className="flex items-center">
             <span className="mr-2" style={{ color: theme.accent, opacity: 0.6 }}>{getCurrentTimestamp()}</span>
