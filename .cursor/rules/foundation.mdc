@@ -1,0 +1,42 @@
+---
+description: Clean code, TypeScript discipline, and testing defaults for the whole repo
+alwaysApply: true
+---
+
+# Foundation
+
+## Scope
+
+Applies to all files. Prefer small, focused changes that match existing style.
+
+## Principles
+
+- **SRP**: One clear responsibility per module/function.
+- **DRY**: Extract repeated logic; do not copy-paste workflows.
+- **Readable names**: Prefer clarity over brevity.
+- **Comments**: Explain *why* when non-obvious; avoid narrating *what* the code does.
+
+## TypeScript
+
+- Strict typing; avoid `any`. Use `unknown` and narrow with type guards when needed.
+- Prefer `interface` for object shapes; `type` for unions and mapped types.
+- Handle `null` / `undefined` explicitly (`?.`, `??`, guards).
+
+## Errors
+
+- Fail fast on invalid inputs where practical.
+- Do not swallow errors silently; surface user-facing messages appropriately in UI code.
+
+## Tests
+
+- Use **Vitest** (`npm test`). Prefer AAA-style tests and behavior-focused names.
+- Add or update tests when changing domain or infrastructure behavior.
+
+## Imports
+
+Order consistently: React → third-party → `@/` (project) → relative. Use `import type` for type-only imports.
+
+## Git hygiene
+
+- No drive-by refactors unrelated to the task.
+- No commented-out dead code in commits.

@@ -1,6 +1,11 @@
-import { generateId } from '../../infrastructure/utils/id.utils';
-import { getCurrentTimestamp } from '../../infrastructure/utils/date.utils';
-import type { AttachedImage } from '../../types/ui/components';
+import { generateId, getCurrentTimestamp } from '../utils';
+
+export interface QueueItemImage {
+  base64Data: string;
+  mimeType: string;
+  fileName: string;
+  dataUrl: string;
+}
 
 export type QueueItemType = 'command' | 'message';
 export type QueueItemStatus = 'pending' | 'processing' | 'completed' | 'cancelled';
@@ -10,7 +15,7 @@ export class QueueItem {
     public readonly id: string,
     public readonly text: string,
     public readonly type: QueueItemType,
-    public readonly attachedImages: AttachedImage[],
+    public readonly attachedImages: QueueItemImage[],
     public status: QueueItemStatus,
     public readonly timestamp: string
   ) {}
@@ -18,7 +23,7 @@ export class QueueItem {
   static create(
     text: string,
     type: QueueItemType,
-    attachedImages: AttachedImage[] = []
+    attachedImages: QueueItemImage[] = []
   ): QueueItem {
     return new QueueItem(
       generateId(),

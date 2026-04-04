@@ -156,13 +156,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language, accentColor, back
 export const MessageContent: React.FC<MessageContentProps> = React.memo(({ text, theme }) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Apply syntax highlighting after render
+  // Debounce syntax highlighting to avoid thrashing during streaming
   useEffect(() => {
-    if (typeof hljs !== 'undefined' && contentRef.current) {
-      contentRef.current.querySelectorAll('pre code:not(.hljs)').forEach((block) => {
-        hljs.highlightElement(block as HTMLElement);
+    if (typeof hljs === 'undefined' || !contentRef.current) return;
+
+    const timer = setTimeout(() => {
+      contentRef.current?.querySelectorAll('pre code:not(.hljs)').forEach((block) => {
+        (hljs as any).highlightElement(block as HTMLElement);
       });
-    }
+    }, 200);
+
+    return () => clearTimeout(timer);
   }, [text]);
 
   const textColor = theme?.text || '#00FF41';

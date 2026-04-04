@@ -1,0 +1,45 @@
+---
+description: Clean Architecture layout, React patterns, and stack specifics for src/
+globs:
+  - "src/**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# LLM Terminal App (React + TS)
+
+## Stack
+
+- React 19, TypeScript (strict), Vite 6, Tailwind 4, Vitest + Testing Library
+- AI: Google Gemini via `@google/genai`
+- Env: `GEMINI_API_KEY` (see `vite.config.ts` / `.env` loading)
+
+## Path alias
+
+- `@/` resolves to the **repository root** (not `src/`). Prefer `@/src/...` for app code.
+
+## Layer layout (`src/`)
+
+```
+src/domain/entities/     — domain models, no React or IO
+src/application/use-cases/ — orchestration; depends on domain
+src/infrastructure/      — API (Gemini), storage, services, utils, repositories
+src/presentation/        — components, hooks; UI only
+src/types/               — cross-cutting TS types (e.g. ui/)
+```
+
+**Dependency direction:** `presentation` → `application` / `infrastructure` → `domain`. Domain must not import from outer layers.
+
+## React
+
+- Functional components; explicit props types (often in `src/types/ui/`).
+- Hooks for state and side effects; `useCallback` / `useMemo` when stabilizing references matters.
+- Tailwind for layout and styling; keep terminal aesthetic consistent with existing components.
+
+## Domain
+
+- Prefer immutable updates (new instances) over mutating entities.
+- Keep framework and Gemini types out of `domain/`.
+
+## When touching behavior
+
+- Consider impact on message flow, queue, commands, and streaming UX in `TerminalSession` and related hooks (e.g. `useQueueProcessor`).

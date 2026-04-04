@@ -1,4 +1,4 @@
-import { generateId } from '../../infrastructure/utils/id.utils';
+import { generateId } from '../utils';
 import { CommandNames } from './command';
 
 export interface Source {

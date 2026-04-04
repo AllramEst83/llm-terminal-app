@@ -4,20 +4,15 @@
 
 import type { CommandDefinition } from '../../domain/entities/command';
 import type { Message } from '../../domain/entities/message';
-import type { QueueItem } from '../../domain/entities/queue-item';
+import type { QueueItem, QueueItemImage } from '../../domain/entities/queue-item';
 import type { ThemeColors } from '../../domain/entities/theme';
 import type { SystemPromptDefinition, SystemPromptId } from '../../domain/system.prompts';
 
 /**
  * Represents an image attached to a message or queue item in the UI.
- * This type includes UI-specific fields like dataUrl for thumbnail display.
+ * Extends the domain QueueItemImage which defines the core data shape.
  */
-export interface AttachedImage {
-  base64Data: string;
-  mimeType: string;
-  fileName: string;
-  dataUrl: string;
-}
+export type AttachedImage = QueueItemImage;
 
 /**
  * Props for TerminalInput component
@@ -75,7 +70,6 @@ export interface MessageListProps {
   messages: Message[];
   isStreaming: boolean;
   theme: ThemeColors;
-  endOfMessagesRef?: React.RefObject<HTMLDivElement>;
   fontSize: number;
   onImageLoad?: () => void;
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DEFAULT_SESSION_ID } from './domain';
 import { ApiKeyService, TokenCountService } from './infrastructure/services';
 import { SettingsRepository } from './infrastructure/repositories/settings.repository';
@@ -14,7 +14,7 @@ export const App: React.FC = () => {
     { id: DEFAULT_SESSION_ID, label: 'Tab 1' },
   ]);
   const [activeTabId, setActiveTabId] = useState(DEFAULT_SESSION_ID);
-  const [tabCounter, setTabCounter] = useState(1);
+  const tabCounterRef = useRef(1);
 
   const TAB_SESSION_STORAGE_KEY = 'terminal_open_tabs';
 
@@ -82,15 +82,13 @@ export const App: React.FC = () => {
 
   const handleNewTab = useCallback(() => {
     const newTabId = `tab-${generateId()}`;
-    setTabCounter(prevCount => {
-      const nextCount = prevCount + 1;
-      setTabs(prevTabs => [
-        ...prevTabs,
-        { id: newTabId, label: `Tab ${nextCount}` },
-      ]);
-      setActiveTabId(newTabId);
-      return nextCount;
-    });
+    tabCounterRef.current += 1;
+    const nextCount = tabCounterRef.current;
+    setTabs(prevTabs => [
+      ...prevTabs,
+      { id: newTabId, label: `Tab ${nextCount}` },
+    ]);
+    setActiveTabId(newTabId);
   }, []);
 
   const handleCloseTab = useCallback((tabId: string) => {
