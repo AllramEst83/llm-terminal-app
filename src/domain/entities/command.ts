@@ -14,6 +14,7 @@ export const CommandNames = {
   PROMPT: 'prompt',
   GRAMMAR: 'grammar',
   IMAGE: 'image',
+  EXPORT: 'export',
   HELP: 'help',
 } as const;
 
@@ -40,6 +41,7 @@ const COMMANDS: CommandDefinition[] = [
   { name: CommandNames.PROMPT, description: 'Switch system prompt (e.g., /prompt retro or /prompt custom <text>).' },
   { name: CommandNames.GRAMMAR, description: 'Fix grammar and slightly improve provided text (use --notes for guidance).' },
   { name: CommandNames.IMAGE, description: 'Generates an image from a prompt (e.g., /image a cat [--aspect 16:9] [--model 3.1-flash-image]).' },
+  { name: CommandNames.EXPORT, description: 'Exports terminal session history (e.g., /export md or /export json).' },
   { name: CommandNames.HELP, description: 'Shows this list of commands.' },
 ];
 

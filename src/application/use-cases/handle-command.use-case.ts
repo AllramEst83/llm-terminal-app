@@ -62,7 +62,8 @@ export class HandleCommandUseCase {
 
   async execute(
     command: string,
-    args: string[]
+    args: string[],
+    currentMessages: Message[] = []
   ): Promise<CommandResult> {
     switch (command) {
       case CommandNames.CLEAR:
@@ -95,6 +96,8 @@ export class HandleCommandUseCase {
         return await this.handleImage(args);
       case CommandNames.SEARCH:
         return await this.handleSearch(args);
+      case CommandNames.EXPORT:
+        return this.handleExport(args, currentMessages);
       case CommandNames.HELP:
       case '':
         return this.handleHelp();
@@ -1036,6 +1039,66 @@ ${usageBlock}`;
         `SYSTEM ERROR: Unable to improve grammar.\n\nDetails: ${errorMessage}`
       );
       return { success: false, message };
+    }
+  }
+
+  private handleExport(args: string[], currentMessages: Message[] = []): CommandResult {
+    const format = (args[0] || 'md').toLowerCase();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    let content = '';
+    let mimeType = 'text/markdown';
+    let extension = 'md';
+
+    if (format === 'json') {
+      mimeType = 'application/json';
+      extension = 'json';
+      content = JSON.stringify(
+        currentMessages.map(m => ({
+          role: m.role,
+          type: m.type,
+          text: m.text,
+          timestamp: m.timestamp,
+          modelName: m.modelName,
+          sources: m.sources,
+        })),
+        null,
+        2
+      );
+    } else {
+      content = `# Terminal Chat Export (${new Date().toLocaleString()})\n\n` +
+        currentMessages
+          .filter(m => m.type !== MessageType.SYSTEM)
+          .map(m => {
+            const sender = m.role === 'user' ? '**USER**' : `**MODEL (${m.modelName || 'Gemini'})**`;
+            return `${sender} - *${m.timestamp}*\n\n${m.text}\n\n---`;
+          })
+          .join('\n\n');
+    }
+
+    try {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `terminal-session-${timestamp}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      return {
+        success: true,
+        message: MessageService.createSystemMessage(
+          `Exported terminal session history to \`terminal-session-${timestamp}.${extension}\`.`
+        ),
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: MessageService.createErrorMessage(
+          `SYSTEM ERROR: Failed to export session. ${err instanceof Error ? err.message : ''}`
+        ),
+      };
     }
   }
 }

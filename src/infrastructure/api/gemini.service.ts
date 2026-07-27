@@ -126,7 +126,8 @@ export async function sendMessageToGemini(
   onComplete: (sources?: Source[], usageMetadata?: GeminiUsageMetadata) => void,
   imageData?: string,
   imageMimeType?: string,
-  images?: MessageImage[]
+  images?: MessageImage[],
+  abortSignal?: AbortSignal
 ): Promise<void> {
   try {
     const ai = getAiInstance(apiKey);
@@ -182,6 +183,10 @@ export async function sendMessageToGemini(
     let lastChunk: GenerateContentResponse | undefined;
 
     for await (const chunk of stream) {
+      if (abortSignal?.aborted) {
+        onComplete();
+        return;
+      }
       lastChunk = chunk;
       const chunkText = chunk.text;
       if (chunkText) {
@@ -213,6 +218,10 @@ export async function sendMessageToGemini(
 
     onComplete(sources.length > 0 ? sources : undefined, latestUsageMetadata);
   } catch (error) {
+    if (abortSignal?.aborted || (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted')))) {
+      onComplete();
+      return;
+    }
     console.error("Error sending message to Gemini:", error);
     let errorMessage: string;
 

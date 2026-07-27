@@ -35,6 +35,7 @@ export function useQueueProcessor(
   const [messages, setMessages] = useState<Message[]>([]);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
+  const isProcessingQueueRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [inputTokenCount, setInputTokenCount] = useState(0);
@@ -43,7 +44,8 @@ export function useQueueProcessor(
   const queueRef = useRef<QueueItem[]>([]);
   const clearCounterRef = useRef(0);
   const currentProcessingItemIdRef = useRef<string | null>(null);
-  const queueProcessingAbortRef = useRef<boolean | null>(null);
+  const activeAbortControllerRef = useRef<AbortController | null>(null);
+  const queueProcessingAbortRef = useRef(false);
 
   const callbacksRef = useRef(callbacks);
   callbacksRef.current = callbacks;
@@ -66,8 +68,15 @@ export function useQueueProcessor(
     messagesRef.current = msgs;
   }, []);
 
-  const enqueue = useCallback((item: QueueItem) => {
-    setQueue(prev => QueueService.addItem(prev, item));
+  const stopCurrentStreaming = useCallback(() => {
+    queueProcessingAbortRef.current = true;
+    currentProcessingItemIdRef.current = null;
+    if (activeAbortControllerRef.current) {
+      activeAbortControllerRef.current.abort();
+      activeAbortControllerRef.current = null;
+    }
+    setIsLoading(false);
+    setIsStreaming(false);
   }, []);
 
   const removeFromQueue = useCallback((itemId: string) => {
@@ -76,8 +85,14 @@ export function useQueueProcessor(
       if (item?.isProcessing()) {
         queueProcessingAbortRef.current = true;
         currentProcessingItemIdRef.current = null;
+        if (activeAbortControllerRef.current) {
+          activeAbortControllerRef.current.abort();
+          activeAbortControllerRef.current = null;
+        }
       }
-      return QueueService.removeItem(prev, itemId);
+      const next = QueueService.removeItem(prev, itemId);
+      queueRef.current = next;
+      return next;
     });
   }, []);
 
@@ -86,29 +101,33 @@ export function useQueueProcessor(
       if (prev.some(item => item.isProcessing())) {
         queueProcessingAbortRef.current = true;
         currentProcessingItemIdRef.current = null;
+        if (activeAbortControllerRef.current) {
+          activeAbortControllerRef.current.abort();
+          activeAbortControllerRef.current = null;
+        }
       }
-      return QueueService.clearQueue(prev);
+      const next = QueueService.clearQueue(prev);
+      queueRef.current = next;
+      return next;
     });
   }, []);
 
   const markCompleteAndRemove = useCallback((itemId: string) => {
     setQueue(prev => {
       const updated = QueueService.updateItemStatus(prev, itemId, 'completed');
-      return QueueService.removeCompletedItems(updated);
+      const next = QueueService.removeCompletedItems(updated);
+      queueRef.current = next;
+      return next;
     });
   }, []);
 
   const processQueue = useCallback(async () => {
-    if (isProcessingQueue) return;
-    if (queueProcessingAbortRef.current === null) {
-      queueProcessingAbortRef.current = false;
-    } else if (queueProcessingAbortRef.current === true) {
-      return;
-    }
+    if (isProcessingQueueRef.current) return;
 
     const currentQueue = queueRef.current;
     if (QueueService.hasProcessingItems(currentQueue)) return;
 
+    isProcessingQueueRef.current = true;
     setIsProcessingQueue(true);
     queueProcessingAbortRef.current = false;
 
@@ -189,10 +208,23 @@ export function useQueueProcessor(
       currentProcessingItemIdRef.current = null;
     }
 
+    isProcessingQueueRef.current = false;
     setIsProcessingQueue(false);
     currentProcessingItemIdRef.current = null;
     queueProcessingAbortRef.current = null;
-  }, [isProcessingQueue]);
+  }, []);
+
+  const enqueue = useCallback((item: QueueItem) => {
+    queueProcessingAbortRef.current = false;
+    setQueue(prev => {
+      const next = QueueService.addItem(prev, item);
+      queueRef.current = next;
+      return next;
+    });
+    setTimeout(() => {
+      processQueue();
+    }, 0);
+  }, [processQueue]);
 
   async function processCommand(
     nextItem: QueueItem,
@@ -222,7 +254,11 @@ export function useQueueProcessor(
       }
 
       setIsLoading(true);
-      const result = await new HandleCommandUseCase(currentSettings, isStudioEnv, sessionId).execute(parsed.command, parsed.args);
+      const result = await new HandleCommandUseCase(currentSettings, isStudioEnv, sessionId).execute(
+        parsed.command,
+        parsed.args,
+        messagesRef.current
+      );
       setIsLoading(false);
 
       if (!queueRef.current.some(i => i.id === nextItem.id)) return;
@@ -303,6 +339,9 @@ export function useQueueProcessor(
     let streamingCompleted = false;
     let streamingError = false;
 
+    const controller = new AbortController();
+    activeAbortControllerRef.current = controller;
+
     try {
       const sendUseCase = new SendMessageUseCase(
         messagesRef.current, currentSettings,
@@ -360,12 +399,15 @@ export function useQueueProcessor(
           setIsStreaming(false);
           streamingCompleted = true;
         },
-        undefined, undefined, messageImages
+        undefined, undefined, messageImages,
+        controller.signal
       );
     } catch {
       setIsLoading(false);
       setIsStreaming(false);
       streamingError = true;
+    } finally {
+      activeAbortControllerRef.current = null;
     }
 
     if (streamingError) {
@@ -399,7 +441,7 @@ export function useQueueProcessor(
 
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queue.length, isProcessingQueue, processQueue]);
+  }, [queue, isProcessingQueue, processQueue]);
 
   return {
     messages,
@@ -409,6 +451,7 @@ export function useQueueProcessor(
     enqueue,
     removeFromQueue,
     clearQueue,
+    stopCurrentStreaming,
     isProcessingQueue,
     isLoading,
     isStreaming,

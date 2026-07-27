@@ -55,6 +55,17 @@ export default defineConfig(({ mode, command }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'vendor-genai': ['@google/genai'],
+              'vendor-markdown': ['react-markdown', 'remark-gfm', 'rehype-raw'],
+              'vendor-lightbox': ['yet-another-react-lightbox'],
+            },
+          },
+        },
       }
     };
 });

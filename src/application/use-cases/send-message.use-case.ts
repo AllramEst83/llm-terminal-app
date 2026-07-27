@@ -24,7 +24,8 @@ export class SendMessageUseCase {
     onCompleteCallback: (result: CompletionResult) => void,
     imageData?: string,
     imageMimeType?: string,
-    images?: MessageImage[]
+    images?: MessageImage[],
+    abortSignal?: AbortSignal
   ): Promise<Message> {
     const userMessage = MessageService.createUserMessage(inputText, imageData, imageMimeType, images);
 
@@ -75,7 +76,8 @@ export class SendMessageUseCase {
       },
       imageData,
       imageMimeType,
-      images
+      images,
+      abortSignal
     );
 
     return userMessage;

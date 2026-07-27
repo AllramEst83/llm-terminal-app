@@ -58,7 +58,7 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
 
   const {
     messages, setMessages, initMessages, queue, enqueue,
-    removeFromQueue, clearQueue,
+    removeFromQueue, clearQueue, stopCurrentStreaming,
     isLoading, isStreaming, inputTokenCount,
   } = useQueueProcessor(sessionId, settings, setSettings, isStudioEnv, bootedRef, {
     onApiKeySubmit,
@@ -427,6 +427,8 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
               onImageRemove={handleImageRemove}
               maxImages={10}
               onError={handleImageError}
+              isStreaming={isStreaming}
+              onStopStreaming={stopCurrentStreaming}
             />
           </>
         )}

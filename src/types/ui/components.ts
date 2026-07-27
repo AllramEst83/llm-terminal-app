@@ -38,6 +38,8 @@ export interface TerminalInputProps {
   onImageRemove?: (index: number) => void;
   maxImages?: number;
   onError?: (message: string) => void;
+  isStreaming?: boolean;
+  onStopStreaming?: () => void;
 }
 
 /**

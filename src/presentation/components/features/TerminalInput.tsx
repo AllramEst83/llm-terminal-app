@@ -26,6 +26,8 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   onImageRemove,
   maxImages = 10,
   onError,
+  isStreaming = false,
+  onStopStreaming,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -234,7 +236,19 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Handle suggestions navigation when suggestions are visible
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && isStreaming && onStopStreaming) {
+      e.preventDefault();
+      onStopStreaming();
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onSuggestionsClose();
+      onSend();
+      return;
+    }
+
     if (showSuggestions && suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -244,8 +258,8 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
         e.preventDefault();
         onSuggestionIndexChange((activeSuggestionIndex - 1 + suggestions.length) % suggestions.length);
         return;
-      } else if (e.key === 'Tab' || e.key === 'Enter') {
-        if (activeSuggestionIndex >= 0) {
+      } else if (e.key === 'Tab') {
+        if (activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
           e.preventDefault();
           handleSuggestionSelect(suggestions[activeSuggestionIndex].name);
           return;
@@ -257,14 +271,6 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
       }
     }
 
-    // Handle Enter key for sending messages
-    if (e.key === 'Enter' && !showSuggestions) {
-      onSend();
-      return;
-    }
-
-    // For arrow keys when suggestions are not shown, let parent handle history navigation
-    // Call parent's onKeyDown handler for all keys (including arrow keys when suggestions are hidden)
     onKeyDown?.(e);
   };
 
@@ -408,13 +414,31 @@ export const TerminalInput: React.FC<TerminalInputProps> = ({
           readOnly={disabled}
           autoComplete="off"
           placeholder={
-            hasImages
+            isStreaming
+              ? 'Generating response... (Press Ctrl+C or STOP to interrupt)'
+              : hasImages
               ? `${attachedImages.length} image${attachedImages.length > 1 ? 's' : ''} attached...`
               : disabled
               ? ''
               : 'Type a command or drag & drop images...'
           }
         />
+        {isStreaming && onStopStreaming && (
+          <button
+            type="button"
+            onClick={onStopStreaming}
+            className="ml-2 px-2 py-0.5 text-xs font-bold uppercase transition-opacity hover:opacity-80 active:opacity-70 animate-pulse"
+            style={{
+              backgroundColor: theme.accent,
+              color: theme.background,
+              border: `1px solid ${theme.accent}`,
+              borderRadius: '2px',
+            }}
+            title="Interrupt AI output (Ctrl+C)"
+          >
+            [STOP]
+          </button>
+        )}
       </div>
       {hasCommandToolbar && (
         <div
