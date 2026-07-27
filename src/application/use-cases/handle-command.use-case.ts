@@ -1,5 +1,9 @@
 import {
   Settings,
+  GEMINI_FLASH_3_6_MODEL_ID,
+  GEMINI_FLASH_3_5_MODEL_ID,
+  GEMINI_FLASH_LITE_3_5_MODEL_ID,
+  GEMINI_PRO_3_1_MODEL_ID,
   GEMINI_FLASH_MODEL_ID,
   GEMINI_PRO_MODEL_ID,
   type ThinkingModelSettings,
@@ -27,16 +31,27 @@ import {
   resolveSystemPromptId,
 } from '../../domain/system.prompts';
 
-const THINKING_BUDGET_MODEL_IDS = new Set([GEMINI_FLASH_MODEL_ID]);
+const THINKING_BUDGET_MODEL_IDS = new Set([
+  GEMINI_FLASH_3_6_MODEL_ID,
+  GEMINI_FLASH_3_5_MODEL_ID,
+  GEMINI_FLASH_LITE_3_5_MODEL_ID,
+]);
+
 const THINKING_MODEL_LABELS: Record<string, string> = {
-  [GEMINI_FLASH_MODEL_ID]: 'Gemini 3 Flash Preview',
-  [GEMINI_PRO_MODEL_ID]: 'Gemini 3 Pro Preview',
+  [GEMINI_FLASH_3_6_MODEL_ID]: 'Gemini 3.6 Flash',
+  [GEMINI_FLASH_3_5_MODEL_ID]: 'Gemini 3.5 Flash',
+  [GEMINI_FLASH_LITE_3_5_MODEL_ID]: 'Gemini 3.5 Flash-Lite',
+  [GEMINI_PRO_3_1_MODEL_ID]: 'Gemini 3.1 Pro Preview',
 };
+
 const THINKING_MODEL_SHORTCUTS: Record<string, string> = {
-  [GEMINI_FLASH_MODEL_ID]: 'flash',
-  [GEMINI_PRO_MODEL_ID]: '3-pro',
+  [GEMINI_FLASH_3_6_MODEL_ID]: '3.6-flash',
+  [GEMINI_FLASH_3_5_MODEL_ID]: '3.5-flash',
+  [GEMINI_FLASH_LITE_3_5_MODEL_ID]: '3.5-lite',
+  [GEMINI_PRO_3_1_MODEL_ID]: '3.1-pro',
 };
-const THINKING_SUPPORTED_MODELS_TEXT = `${THINKING_MODEL_SHORTCUTS[GEMINI_FLASH_MODEL_ID]}, ${THINKING_MODEL_SHORTCUTS[GEMINI_PRO_MODEL_ID]}`;
+
+const THINKING_SUPPORTED_MODELS_TEXT = Object.values(THINKING_MODEL_SHORTCUTS).join(', ');
 
 export class HandleCommandUseCase {
   constructor(
@@ -457,14 +472,16 @@ This app was created for the love and nostalgia of retro tech from the 80s. I fe
   }
 
   private buildThinkingStatusMessage(): string {
-    const flashSection = this.buildBudgetModelStatus(GEMINI_FLASH_MODEL_ID);
-    const proSection = this.buildLevelModelStatus(GEMINI_PRO_MODEL_ID);
+    const sections = Object.keys(THINKING_MODEL_LABELS).map(modelId => {
+      if (THINKING_BUDGET_MODEL_IDS.has(modelId)) {
+        return this.buildBudgetModelStatus(modelId);
+      }
+      return this.buildLevelModelStatus(modelId);
+    }).join('\n\n');
 
     return `## CURRENT THINKING SETTINGS
 
-${flashSection}
-
-${proSection}
+${sections}
 
 - **Notes**
   - Each model stores its own thinking budget or level.
@@ -482,7 +499,7 @@ ${proSection}
     const candidate =
       resolved?.id ?? (normalized.startsWith('gemini-') ? normalized : undefined);
 
-    if (candidate && (THINKING_BUDGET_MODEL_IDS.has(candidate) || candidate === GEMINI_PRO_MODEL_ID)) {
+    if (candidate && (THINKING_BUDGET_MODEL_IDS.has(candidate) || THINKING_MODEL_LABELS[candidate] !== undefined)) {
       return candidate;
     }
 

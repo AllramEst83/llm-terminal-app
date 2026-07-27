@@ -35,11 +35,11 @@ const COMMANDS: CommandDefinition[] = [
   { name: CommandNames.RESET, description: 'Resets all settings to their default values.' },
   { name: CommandNames.INFO, description: 'Displays browser and system information.' },
   { name: CommandNames.ABOUT, description: 'Shows information about the app and creator.' },
-  { name: CommandNames.MODEL, description: 'Switch between models (e.g., /model pro or /model flash).' },
-  { name: CommandNames.THINK, description: 'Configure thinking per model (e.g., /think flash 5000, /think 3-pro high).' },
+  { name: CommandNames.MODEL, description: 'Switch between models (e.g., /model 3.6-flash, /model 3.1-pro, /model 3.5-flash).' },
+  { name: CommandNames.THINK, description: 'Configure thinking per model (e.g., /think 3.6-flash 5000, /think 3.1-pro high).' },
   { name: CommandNames.PROMPT, description: 'Switch system prompt (e.g., /prompt retro or /prompt custom <text>).' },
   { name: CommandNames.GRAMMAR, description: 'Fix grammar and slightly improve provided text (use --notes for guidance).' },
-  { name: CommandNames.IMAGE, description: 'Generates an image from a prompt using Gemini 3 Pro Image Preview (e.g., /image a cat [--aspect 16:9] [--model gemini-3-pro-image-preview]).' },
+  { name: CommandNames.IMAGE, description: 'Generates an image from a prompt (e.g., /image a cat [--aspect 16:9] [--model imagen-3]).' },
   { name: CommandNames.HELP, description: 'Shows this list of commands.' },
 ];
 

@@ -20,24 +20,7 @@ export const TerminalHeader: React.FC<TerminalHeaderProps> = ({
   const modelDisplayName = ModelService.getDisplayName(modelName) ?? (modelName?.trim() ? modelName : 'Unknown Model');
   const activePromptDefinition =
     systemPromptOptions.find(option => option.id === systemPromptId) ?? systemPromptOptions[0];
-  const compactModelLabel = (() => {
-    const candidates = [
-      ModelService.getDisplayName(modelName),
-      modelName,
-      ModelService.getShortLabel(modelName),
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-
-    if (candidates.includes('flash')) {
-      return 'Flash';
-    }
-    if (candidates.includes('pro')) {
-      return 'Pro';
-    }
-    return ModelService.getShortLabel(modelName);
-  })();
+  const compactModelLabel = ModelService.getShortLabel(modelName);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {

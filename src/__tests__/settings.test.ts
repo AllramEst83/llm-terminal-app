@@ -7,7 +7,7 @@ describe('Settings', () => {
       const settings = Settings.createDefault();
       expect(settings.fontSize).toBe(16);
       expect(settings.apiKey).toBe('');
-      expect(settings.modelName).toBe('gemini-3-flash-preview');
+      expect(settings.modelName).toBe('gemini-3.6-flash');
       expect(settings.systemPromptId).toBe('retro-terminal');
     });
   });

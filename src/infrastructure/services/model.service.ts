@@ -46,20 +46,36 @@ export interface ImageModelDefinition {
 }
 
 const CHAT_MODELS: Record<string, ModelDefinition> = {
-  'gemini-3-flash-preview': {
-    id: 'gemini-3-flash-preview',
-    displayName: 'Gemini 3 Flash Preview',
-    shortLabel: 'Flash',
-    description: 'Fast multimodal model with 1M token context window.',
-    aliases: ['flash', '3-flash'],
-    contextLimit: 1_000_000,
+  'gemini-3.6-flash': {
+    id: 'gemini-3.6-flash',
+    displayName: 'Gemini 3.6 Flash',
+    shortLabel: '3.6-flash',
+    description: 'Latest Flash model balancing speed, multimodal capabilities, and frontier performance.',
+    aliases: ['3.6-flash', 'gemini-3.6-flash', 'flash-3.6', '3.6', 'flash'],
+    contextLimit: 1_048_576,
+  },
+  'gemini-3.5-flash': {
+    id: 'gemini-3.5-flash',
+    displayName: 'Gemini 3.5 Flash',
+    shortLabel: '3.5-flash',
+    description: 'Frontier performance optimized for agentic and coding tasks.',
+    aliases: ['3.5-flash', 'gemini-3.5-flash', 'flash-3.5', '3.5'],
+    contextLimit: 1_048_576,
+  },
+  'gemini-3.5-flash-lite': {
+    id: 'gemini-3.5-flash-lite',
+    displayName: 'Gemini 3.5 Flash-Lite',
+    shortLabel: '3.5-lite',
+    description: 'Fastest, most cost-effective model for high-throughput execution.',
+    aliases: ['3.5-lite', 'gemini-3.5-flash-lite', 'flash-lite-3.5', '3.5-flash-lite'],
+    contextLimit: 1_048_576,
   },
   'gemini-3.1-pro-preview': {
     id: 'gemini-3.1-pro-preview',
     displayName: 'Gemini 3.1 Pro Preview',
-    shortLabel: '3-pro',
-    description: 'Higher quality multimodal model with 1.048.576 token context window.',
-    aliases: ['3-pro'],
+    shortLabel: '3.1-pro',
+    description: 'Advanced reasoning, complex problem solving, and coding model.',
+    aliases: ['3.1-pro', '3-pro', 'pro', 'gemini-3.1-pro-preview', 'gemini-3.1-pro'],
     contextLimit: 1_048_576,
   },
 };
@@ -89,6 +105,18 @@ const IMAGE_MODELS: Record<string, ImageModelDefinition> = {
     inputTokenLimit: 32_768,
     tokenCountModelId: 'gemini-3-pro-image-preview',
     outputMimeType: 'image/png',
+  },
+  'imagen-3.0-generate-002': {
+    id: 'imagen-3.0-generate-002',
+    displayName: 'Imagen 3',
+    shortLabel: 'imagen-3',
+    description: 'Google highest quality text-to-image model.',
+    aliases: ['imagen-3', 'imagen-3.0-generate-002'],
+    apiModelId: 'imagen-3.0-generate-002',
+    generationMethod: 'generateImages',
+    supportedAspectRatios: ['1:1', '3:4', '4:3', '16:9', '9:16'],
+    defaultAspectRatio: '1:1',
+    outputMimeType: 'image/jpeg',
   },
 };
 
@@ -156,7 +184,7 @@ function normalizeInput(value?: string): string | undefined {
 
 export class ModelService {
   static getDefaultModel(): ModelDefinition {
-    return CHAT_MODELS['gemini-3-flash-preview'];
+    return CHAT_MODELS['gemini-3.6-flash'] ?? CHAT_MODELS['gemini-3-flash-preview'];
   }
 
   static listModels(): ModelDefinition[] {

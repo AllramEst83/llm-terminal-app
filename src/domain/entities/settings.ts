@@ -15,10 +15,25 @@ export interface ThinkingModelSettings {
   level?: ThinkingLevel;
 }
 
-export const GEMINI_FLASH_MODEL_ID = 'gemini-3-flash-preview';
-export const GEMINI_PRO_MODEL_ID = 'gemini-3.1-pro-preview';
+export const GEMINI_FLASH_3_6_MODEL_ID = 'gemini-3.6-flash';
+export const GEMINI_FLASH_3_5_MODEL_ID = 'gemini-3.5-flash';
+export const GEMINI_FLASH_LITE_3_5_MODEL_ID = 'gemini-3.5-flash-lite';
+export const GEMINI_PRO_3_1_MODEL_ID = 'gemini-3.1-pro-preview';
+export const GEMINI_FLASH_MODEL_ID = GEMINI_FLASH_3_6_MODEL_ID;
+export const GEMINI_PRO_MODEL_ID = GEMINI_PRO_3_1_MODEL_ID;
 
-const BUDGET_MODEL_IDS = new Set<string>([GEMINI_FLASH_MODEL_ID]);
+const BUDGET_MODEL_IDS = new Set<string>([
+  GEMINI_FLASH_3_6_MODEL_ID,
+  GEMINI_FLASH_3_5_MODEL_ID,
+  GEMINI_FLASH_LITE_3_5_MODEL_ID,
+]);
+
+export const ALL_MODEL_IDS = [
+  GEMINI_FLASH_3_6_MODEL_ID,
+  GEMINI_FLASH_3_5_MODEL_ID,
+  GEMINI_FLASH_LITE_3_5_MODEL_ID,
+  GEMINI_PRO_3_1_MODEL_ID,
+];
 
 export class Settings {
   constructor(
@@ -36,7 +51,7 @@ export class Settings {
   static readonly DEFAULT_FONT_SIZE = 16;
   static readonly MIN_FONT_SIZE = 8;
   static readonly MAX_FONT_SIZE = 48;
-  static readonly DEFAULT_MODEL_NAME = 'gemini-3-flash-preview';
+  static readonly DEFAULT_MODEL_NAME = 'gemini-3.6-flash';
   static readonly DEFAULT_THINKING_BUDGET = 8192;
   static readonly DEFAULT_THINKING_LEVEL: ThinkingLevel = 'high';
 
@@ -115,10 +130,11 @@ export class Settings {
   }
 
   static createDefaultThinkingSettings(): Record<string, ThinkingModelSettings> {
-    return {
-      [GEMINI_FLASH_MODEL_ID]: { enabled: false, budget: this.DEFAULT_THINKING_BUDGET },
-      [GEMINI_PRO_MODEL_ID]: { enabled: false, level: this.DEFAULT_THINKING_LEVEL },
-    };
+    const result: Record<string, ThinkingModelSettings> = {};
+    ALL_MODEL_IDS.forEach(id => {
+      result[id] = Settings.createDefaultSettingsForModel(id);
+    });
+    return result;
   }
 
   get thinkingEnabled(): boolean {
@@ -183,8 +199,14 @@ export class Settings {
     const normalized: Record<string, ThinkingModelSettings> = {};
     const source = settings ?? {};
 
-    [GEMINI_FLASH_MODEL_ID, GEMINI_PRO_MODEL_ID].forEach(id => {
+    ALL_MODEL_IDS.forEach(id => {
       normalized[id] = Settings.createNormalizedModelSettings(id, source[id]);
+    });
+
+    Object.keys(source).forEach(id => {
+      if (!normalized[id]) {
+        normalized[id] = Settings.createNormalizedModelSettings(id, source[id]);
+      }
     });
 
     return normalized;

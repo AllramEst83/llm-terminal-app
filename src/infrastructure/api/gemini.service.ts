@@ -77,7 +77,14 @@ function extractUsageMetadata(rawMetadata: unknown): GeminiUsageMetadata | undef
 
 const DEFAULT_THINKING_BUDGET = 8192;
 const DEFAULT_THINKING_LEVEL = 'high';
-const BUDGET_MODELS = new Set(['gemini-3-flash-preview']);
+const BUDGET_MODELS = new Set([
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+]);
+const LEVEL_MODELS = new Set([
+  'gemini-3.1-pro-preview',
+]);
 
 function buildThinkingConfig(
   modelName: string,
@@ -89,7 +96,7 @@ function buildThinkingConfig(
 
   const canonicalModelId = ModelService.getCanonicalModelId(modelName);
 
-  if (canonicalModelId === GEMINI_PRO_MODEL_ID) {
+  if (LEVEL_MODELS.has(canonicalModelId) || canonicalModelId.includes('pro')) {
     return {
       thinkingConfig: {
         thinkingLevel: thinkingSettings.level ?? DEFAULT_THINKING_LEVEL,
@@ -97,7 +104,7 @@ function buildThinkingConfig(
     };
   }
 
-  if (BUDGET_MODELS.has(canonicalModelId)) {
+  if (BUDGET_MODELS.has(canonicalModelId) || canonicalModelId.includes('flash')) {
     return {
       thinkingConfig: {
         thinkingBudget: thinkingSettings.budget ?? DEFAULT_THINKING_BUDGET,
