@@ -25,4 +25,22 @@ describe('ModelService', () => {
     const proModel = ModelService.resolveModel('pro');
     expect(proModel?.id).toBe('gemini-3.1-pro-preview');
   });
+
+  it('lists Nano Banana 2 image models', () => {
+    const imageModels = ModelService.listImageModels();
+    const ids = imageModels.map(m => m.id);
+
+    expect(ids).toContain('gemini-3.1-flash-image');
+    expect(ids).toContain('gemini-3.1-flash-lite-image');
+
+    const defaultImageModel = ModelService.getDefaultImageModel();
+    expect(defaultImageModel.id).toBe('gemini-3.1-flash-image');
+  });
+
+  it('resolves Nano Banana 2 image model aliases', () => {
+    expect(ModelService.resolveImageModel('nano-banana-2')?.id).toBe('gemini-3.1-flash-image');
+    expect(ModelService.resolveImageModel('nano-banana-2-lite')?.id).toBe('gemini-3.1-flash-lite-image');
+    expect(ModelService.resolveImageModel('flash-image')?.id).toBe('gemini-3.1-flash-image');
+    expect(ModelService.resolveImageModel('flash-lite-image')?.id).toBe('gemini-3.1-flash-lite-image');
+  });
 });

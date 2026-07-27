@@ -81,13 +81,13 @@ const CHAT_MODELS: Record<string, ModelDefinition> = {
 };
 
 const IMAGE_MODELS: Record<string, ImageModelDefinition> = {
-  'gemini-3-pro-image-preview': {
-    id: 'gemini-3-pro-image-preview',
-    displayName: 'Gemini 3 Pro Image Preview',
-    shortLabel: '3-pro-image',
-    description: 'High quality multimodal image model.',
-    aliases: ['3-pro-image', 'gemini-3-pro-image'],
-    apiModelId: 'gemini-3-pro-image-preview',
+  'gemini-3.1-flash-image': {
+    id: 'gemini-3.1-flash-image',
+    displayName: 'Gemini 3.1 Flash Image (Nano Banana 2)',
+    shortLabel: '3.1-flash-image',
+    description: 'High-efficiency Nano Banana 2 image model for fast generation and editing.',
+    aliases: ['3.1-flash-image', 'flash-image', 'gemini-3.1-flash-image', 'nano-banana-2'],
+    apiModelId: 'gemini-3.1-flash-image',
     generationMethod: 'generateContent',
     supportedAspectRatios: [
       '1:1',
@@ -102,21 +102,34 @@ const IMAGE_MODELS: Record<string, ImageModelDefinition> = {
       '21:9',
     ],
     defaultAspectRatio: '1:1',
-    inputTokenLimit: 32_768,
-    tokenCountModelId: 'gemini-3-pro-image-preview',
+    inputTokenLimit: 131_072,
+    tokenCountModelId: 'gemini-3.1-flash-image',
     outputMimeType: 'image/png',
   },
-  'imagen-3.0-generate-002': {
-    id: 'imagen-3.0-generate-002',
-    displayName: 'Imagen 3',
-    shortLabel: 'imagen-3',
-    description: 'Google highest quality text-to-image model.',
-    aliases: ['imagen-3', 'imagen-3.0-generate-002'],
-    apiModelId: 'imagen-3.0-generate-002',
-    generationMethod: 'generateImages',
-    supportedAspectRatios: ['1:1', '3:4', '4:3', '16:9', '9:16'],
+  'gemini-3.1-flash-lite-image': {
+    id: 'gemini-3.1-flash-lite-image',
+    displayName: 'Gemini 3.1 Flash-Lite Image (Nano Banana 2)',
+    shortLabel: '3.1-lite-image',
+    description: 'Ultra-low latency, cost-effective Nano Banana 2 model for real-time visual generation.',
+    aliases: ['3.1-lite-image', 'flash-lite-image', 'gemini-3.1-flash-lite-image', 'nano-banana-2-lite'],
+    apiModelId: 'gemini-3.1-flash-lite-image',
+    generationMethod: 'generateContent',
+    supportedAspectRatios: [
+      '1:1',
+      '2:3',
+      '3:2',
+      '3:4',
+      '4:3',
+      '4:5',
+      '5:4',
+      '9:16',
+      '16:9',
+      '21:9',
+    ],
     defaultAspectRatio: '1:1',
-    outputMimeType: 'image/jpeg',
+    inputTokenLimit: 131_072,
+    tokenCountModelId: 'gemini-3.1-flash-lite-image',
+    outputMimeType: 'image/png',
   },
 };
 
@@ -226,7 +239,7 @@ export class ModelService {
   }
 
   static getDefaultImageModel(): ImageModelDefinition {
-    return IMAGE_MODELS['gemini-3-pro-image-preview'];
+    return IMAGE_MODELS['gemini-3.1-flash-image'];
   }
 
   static resolveImageModel(input?: string): ImageModelDefinition | undefined {
