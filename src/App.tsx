@@ -74,10 +74,16 @@ export const App: React.FC = () => {
     setIsKeyReady(true);
   }, []);
 
-  const handleApiKeySubmit = useCallback((submittedKey: string) => {
-    ApiKeyService.setApiKey(submittedKey);
-    setApiKey(submittedKey);
-    setIsKeyReady(true);
+  const handleApiKeySubmit = useCallback(async (submittedKey: string) => {
+    if (submittedKey) {
+      ApiKeyService.setApiKey(submittedKey);
+      setApiKey(submittedKey);
+      setIsKeyReady(true);
+    } else {
+      ApiKeyService.removeApiKey();
+      setApiKey('');
+      setIsKeyReady(false);
+    }
   }, []);
 
   const handleNewTab = useCallback(() => {

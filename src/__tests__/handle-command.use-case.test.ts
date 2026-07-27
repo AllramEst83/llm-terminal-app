@@ -7,6 +7,9 @@ vi.mock('../infrastructure/services/api-key.service', () => ({
   ApiKeyService: {
     getApiKey: vi.fn().mockResolvedValue('test-key'),
     openKeySelector: vi.fn().mockResolvedValue(undefined),
+    removeApiKey: vi.fn(),
+    getEnvApiKey: vi.fn().mockReturnValue(''),
+    isStudioEnvironment: vi.fn().mockReturnValue(false),
   },
 }));
 

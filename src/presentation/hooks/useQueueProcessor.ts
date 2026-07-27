@@ -162,7 +162,7 @@ export function useQueueProcessor(
       const storedApiKey = await ApiKeyService.getApiKey();
 
       if (!storedApiKey) {
-        setMessages(prev => [...prev, MessageService.createErrorMessage('SYSTEM ERROR: API Key is missing. Please reset the app.')]);
+        callbacksRef.current.onApiKeySubmit('');
         markCompleteAndRemove(nextItem.id);
         continue;
       }

@@ -243,8 +243,9 @@ export class HandleCommandUseCase {
 
   private async handleReset(): Promise<CommandResult> {
     const defaultModelName = ModelService.getDefaultModel().id;
+    ApiKeyService.removeApiKey();
     const message = MessageService.createSystemMessage(
-      'SYSTEM: All settings have been reset to default.'
+      'SYSTEM: All settings and API key have been reset.'
     );
 
     return {
@@ -253,7 +254,7 @@ export class HandleCommandUseCase {
       settingsUpdate: {
         fontSize: Settings.DEFAULT_FONT_SIZE,
         themeName: Theme.DEFAULT_THEME_NAME,
-        apiKey: this.currentSettings.apiKey,
+        apiKey: '',
         modelName: defaultModelName,
         thinkingSettings: Settings.createDefaultThinkingSettings(),
         systemPromptId: DEFAULT_SYSTEM_PROMPT_ID,
