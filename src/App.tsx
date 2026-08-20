@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DEFAULT_SESSION_ID } from './domain';
-import { ApiKeyService, TokenCountService } from './infrastructure/services';
+import { ApiKeyService, MockModelService, TokenCountService } from './infrastructure/services';
 import { SettingsRepository } from './infrastructure/repositories/settings.repository';
 import { generateId } from './infrastructure/utils/id.utils';
 import { TerminalSession } from './presentation/components/features';
@@ -79,6 +79,7 @@ export const App: React.FC = () => {
       ApiKeyService.setApiKey(submittedKey);
       setApiKey(submittedKey);
       setIsKeyReady(true);
+      MockModelService.resetCount();
     } else {
       ApiKeyService.removeApiKey();
       setApiKey('');

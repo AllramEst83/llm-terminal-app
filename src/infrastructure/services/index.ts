@@ -4,6 +4,7 @@ export * from './browser-info.service';
 export * from './command.service';
 export * from './image.service';
 export * from './message.service';
+export * from './mock-model.service';
 export * from './model.service';
 export * from './queue.service';
 export * from './theme.service';

@@ -17,10 +17,6 @@ export function useBootSequence(
   }, []);
 
   useEffect(() => {
-    if (!isKeyReady) {
-      setBooted(false);
-      return;
-    }
     if (!isActive || booted) return;
     startBoot();
   }, [isKeyReady, booted, isActive, startBoot]);

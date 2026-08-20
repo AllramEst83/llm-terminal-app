@@ -16,8 +16,6 @@ import {
   TerminalTabs,
   BootScreen,
   PressToBoot,
-  ApiKeySelection,
-  ApiKeyInput,
   QueueDisplay
 } from './';
 import { useSessionSettings } from '../../hooks/useSessionSettings';
@@ -85,8 +83,14 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const commandShortcuts = useMemo(
-    () => CommandService.getAllCommands().sort((a, b) => a.name.localeCompare(b.name)),
-    []
+    () => {
+      const all = CommandService.getAllCommands().sort((a, b) => a.name.localeCompare(b.name));
+      if (!isKeyReady) {
+        return all.filter(cmd => cmd.name === 'apikey');
+      }
+      return all;
+    },
+    [isKeyReady]
   );
 
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -242,16 +246,7 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
     }
   }, [booted, isActive]);
 
-  const handleApiKeySubmit = useCallback((submittedKey: string) => {
-    onApiKeySubmit(submittedKey);
-    setSettings(prev => prev.withApiKey(submittedKey));
-    startBoot();
-  }, [onApiKeySubmit, setSettings, startBoot]);
 
-  const handleSelectKeyAndBoot = useCallback(async () => {
-    await handleSelectKey();
-    startBoot();
-  }, [handleSelectKey, startBoot]);
 
   const handleImageAttach = useCallback((image: AttachedImage) => {
     setAttachedImages(prev => [...prev, image]);
@@ -299,14 +294,17 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
     setHistoryIndex(-1);
     if (value.startsWith('/')) {
       const commandPart = value.substring(1).toLowerCase();
-      const filtered = CommandService.findMatchingCommands(commandPart);
+      let filtered = CommandService.findMatchingCommands(commandPart);
+      if (!isKeyReady) {
+        filtered = filtered.filter(cmd => cmd.name === 'apikey');
+      }
       setSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
       setActiveSuggestionIndex(0);
     } else {
       setShowSuggestions(false);
     }
-  }, []);
+  }, [isKeyReady]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showSuggestions && commandHistory.length > 0) {
@@ -330,11 +328,6 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
   }, [commandHistory, historyIndex, showSuggestions]);
 
   const renderContent = () => {
-    if (!isKeyReady) {
-      return isStudioEnv
-        ? <ApiKeySelection theme={theme} onSelectKey={handleSelectKeyAndBoot} />
-        : <ApiKeyInput theme={theme} onApiKeySubmit={handleApiKeySubmit} />;
-    }
     if (booting) return <BootScreen sequence={bootSequence} theme={theme} />;
     if (!booted) return <PressToBoot theme={theme} />;
 
@@ -344,7 +337,7 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
         {isLoading && (
           <div className="flex items-center">
             <span className="mr-2" style={{ color: theme.accent, opacity: 0.6 }}>{getCurrentTimestamp()}</span>
-            <span style={{ color: theme.prompt }}>{'>'} </span>
+            <span style={{ color: theme.prompt }}>{'> '}</span>
             <span className="ml-2">CONNECTING..... [<span className="loading-char">{loadingChars[loadingCharIndex]}</span>]</span>
           </div>
         )}
@@ -352,7 +345,7 @@ export const TerminalSession: React.FC<TerminalSessionProps> = ({
     );
   };
 
-  const systemInfoVisible = isKeyReady && booted;
+  const systemInfoVisible = booted;
 
   return (
     <div

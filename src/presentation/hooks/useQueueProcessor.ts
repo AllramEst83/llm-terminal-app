@@ -9,6 +9,7 @@ import {
   ApiKeyService,
   CommandService,
   MessageService,
+  MockModelService,
   QueueService,
   TokenCountService,
 } from '../../infrastructure/services';
@@ -179,12 +180,7 @@ export function useQueueProcessor(
 
       const trimmedInput = nextItem.text.trim();
       const storedApiKey = await ApiKeyService.getApiKey();
-
-      if (!storedApiKey) {
-        callbacksRef.current.onApiKeySubmit('');
-        markCompleteAndRemove(nextItem.id);
-        continue;
-      }
+      const isInDemoMode = !storedApiKey;
 
       const messageImages = nextItem.attachedImages.length > 0
         ? nextItem.attachedImages.map(img => ({ base64Data: img.base64Data, mimeType: img.mimeType, fileName: img.fileName }))
@@ -194,6 +190,18 @@ export function useQueueProcessor(
       const modelNameInUse = currentSettings.modelName;
 
       if (CommandService.isCommand(trimmedInput)) {
+        const parsed = CommandService.parseCommand(trimmedInput);
+        // In demo mode, only allow /apikey
+        if (isInDemoMode && parsed && parsed.command !== 'apikey') {
+          const echo = MessageService.createCommandExecutionMessage(trimmedInput, parsed.command);
+          setMessages(prev => [...prev, echo]);
+          setMessages(prev => [...prev, MessageService.createErrorMessage(
+            `SYSTEM: Command /${parsed.command} is disabled in demo mode.\n\nAdd your Google API key first:\n  /apikey <your_key>`
+          )]);
+          markCompleteAndRemove(nextItem.id);
+          currentProcessingItemIdRef.current = null;
+          continue;
+        }
         await processCommand(nextItem, trimmedInput, currentSettings, messageImages);
         currentProcessingItemIdRef.current = null;
         continue;
@@ -202,9 +210,13 @@ export function useQueueProcessor(
       const itemExists = queueRef.current.some(i => i.id === nextItem.id && i.isProcessing());
       if (!itemExists) break;
 
-      shouldContinue = await processMessage(
-        nextItem, trimmedInput, currentSettings, modelNameInUse, messageImages
-      );
+      if (isInDemoMode) {
+        shouldContinue = await processMockMessage(nextItem, trimmedInput, messageImages);
+      } else {
+        shouldContinue = await processMessage(
+          nextItem, trimmedInput, currentSettings, modelNameInUse, messageImages
+        );
+      }
       currentProcessingItemIdRef.current = null;
     }
 
@@ -310,6 +322,77 @@ export function useQueueProcessor(
     }
 
     markCompleteAndRemove(nextItem.id);
+  }
+
+  async function processMockMessage(
+    nextItem: QueueItem,
+    trimmedInput: string,
+    messageImages: Array<{ base64Data: string; mimeType: string; fileName: string }> | undefined
+  ): Promise<boolean> {
+    const userMessage = MessageService.createUserMessage(
+      trimmedInput || (nextItem.attachedImages.length > 0
+        ? `Analyze ${nextItem.attachedImages.length === 1 ? 'this image' : 'these images'}`
+        : ''),
+      undefined, undefined, messageImages
+    );
+
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+
+    if (queueProcessingAbortRef.current || currentProcessingItemIdRef.current !== nextItem.id) {
+      setIsLoading(false);
+      setQueue(prev => QueueService.updateItemStatus(prev, nextItem.id, 'cancelled'));
+      queueProcessingAbortRef.current = false;
+      return false;
+    }
+
+    const MOCK_MODEL_LABEL = 'Demo Mode';
+    let streamingCompleted = false;
+
+    try {
+      await MockModelService.streamResponse(
+        (chunkText, isFirstChunk) => {
+          if (queueProcessingAbortRef.current || currentProcessingItemIdRef.current !== nextItem.id) {
+            return;
+          }
+          if (isFirstChunk) {
+            setIsLoading(false);
+            setIsStreaming(true);
+            const newMessage = Message.create(
+              'model', MessageType.AI, chunkText, getCurrentTimestamp(),
+              undefined, undefined, MOCK_MODEL_LABEL
+            );
+            setMessages(prev => [...prev, newMessage]);
+          } else {
+            setMessages(prev => MessageService.updateLastMessage(prev, msg => {
+              if (msg.role === 'model') {
+                return msg.withUpdatedText(msg.text + chunkText);
+              }
+              return msg;
+            }));
+          }
+        },
+        () => {
+          if (queueProcessingAbortRef.current || currentProcessingItemIdRef.current !== nextItem.id) {
+            return;
+          }
+          setIsLoading(false);
+          setIsStreaming(false);
+          streamingCompleted = true;
+        }
+      );
+    } catch {
+      setIsLoading(false);
+      setIsStreaming(false);
+    }
+
+    if (!streamingCompleted) {
+      setQueue(prev => QueueService.updateItemStatus(prev, nextItem.id, 'cancelled'));
+      return true;
+    }
+
+    markCompleteAndRemove(nextItem.id);
+    return true;
   }
 
   async function processMessage(
