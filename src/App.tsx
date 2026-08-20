@@ -3,7 +3,7 @@ import { DEFAULT_SESSION_ID } from './domain';
 import { ApiKeyService, MockModelService, TokenCountService } from './infrastructure/services';
 import { SettingsRepository } from './infrastructure/repositories/settings.repository';
 import { generateId } from './infrastructure/utils/id.utils';
-import { TerminalSession } from './presentation/components/features';
+import { CrtStartup, TerminalSession } from './presentation/components/features';
 import type { TerminalTabItem } from './types/ui/components';
 
 export const App: React.FC = () => {
@@ -126,6 +126,7 @@ export const App: React.FC = () => {
         flexDirection: 'column'
       }}
     >
+      <CrtStartup />
       <div className="flex-1 min-h-0 flex flex-col h-full" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {tabs.map((tab) => (
           <TerminalSession
