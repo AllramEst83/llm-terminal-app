@@ -46,6 +46,14 @@ export interface ImageModelDefinition {
 }
 
 const CHAT_MODELS: Record<string, ModelDefinition> = {
+  'gemini-3.7-flash': {
+    id: 'gemini-3.7-flash',
+    displayName: 'Gemini 3.7 Flash',
+    shortLabel: '3.7-flash',
+    description: 'Latest Flash model with enhanced speed and multimodal capabilities.',
+    aliases: ['3.7-flash', 'gemini-3.7-flash', 'flash-3.7', '3.7'],
+    contextLimit: 1_048_576,
+  },
   'gemini-3.6-flash': {
     id: 'gemini-3.6-flash',
     displayName: 'Gemini 3.6 Flash',
@@ -197,7 +205,7 @@ function normalizeInput(value?: string): string | undefined {
 
 export class ModelService {
   static getDefaultModel(): ModelDefinition {
-    return CHAT_MODELS['gemini-3.6-flash'] ?? CHAT_MODELS['gemini-3-flash-preview'];
+    return CHAT_MODELS['gemini-3.7-flash'] ?? CHAT_MODELS['gemini-3.6-flash'];
   }
 
   static listModels(): ModelDefinition[] {

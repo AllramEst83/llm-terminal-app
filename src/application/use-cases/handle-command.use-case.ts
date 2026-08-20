@@ -1,5 +1,6 @@
 import {
   Settings,
+  GEMINI_FLASH_3_7_MODEL_ID,
   GEMINI_FLASH_3_6_MODEL_ID,
   GEMINI_FLASH_3_5_MODEL_ID,
   GEMINI_FLASH_LITE_3_5_MODEL_ID,
@@ -32,12 +33,14 @@ import {
 } from '../../domain/system.prompts';
 
 const THINKING_BUDGET_MODEL_IDS = new Set([
+  GEMINI_FLASH_3_7_MODEL_ID,
   GEMINI_FLASH_3_6_MODEL_ID,
   GEMINI_FLASH_3_5_MODEL_ID,
   GEMINI_FLASH_LITE_3_5_MODEL_ID,
 ]);
 
 const THINKING_MODEL_LABELS: Record<string, string> = {
+  [GEMINI_FLASH_3_7_MODEL_ID]: 'Gemini 3.7 Flash',
   [GEMINI_FLASH_3_6_MODEL_ID]: 'Gemini 3.6 Flash',
   [GEMINI_FLASH_3_5_MODEL_ID]: 'Gemini 3.5 Flash',
   [GEMINI_FLASH_LITE_3_5_MODEL_ID]: 'Gemini 3.5 Flash-Lite',
@@ -45,6 +48,7 @@ const THINKING_MODEL_LABELS: Record<string, string> = {
 };
 
 const THINKING_MODEL_SHORTCUTS: Record<string, string> = {
+  [GEMINI_FLASH_3_7_MODEL_ID]: '3.7-flash',
   [GEMINI_FLASH_3_6_MODEL_ID]: '3.6-flash',
   [GEMINI_FLASH_3_5_MODEL_ID]: '3.5-flash',
   [GEMINI_FLASH_LITE_3_5_MODEL_ID]: '3.5-lite',

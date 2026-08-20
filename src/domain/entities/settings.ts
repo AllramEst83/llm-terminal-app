@@ -15,20 +15,23 @@ export interface ThinkingModelSettings {
   level?: ThinkingLevel;
 }
 
+export const GEMINI_FLASH_3_7_MODEL_ID = 'gemini-3.7-flash';
 export const GEMINI_FLASH_3_6_MODEL_ID = 'gemini-3.6-flash';
 export const GEMINI_FLASH_3_5_MODEL_ID = 'gemini-3.5-flash';
 export const GEMINI_FLASH_LITE_3_5_MODEL_ID = 'gemini-3.5-flash-lite';
 export const GEMINI_PRO_3_1_MODEL_ID = 'gemini-3.1-pro-preview';
-export const GEMINI_FLASH_MODEL_ID = GEMINI_FLASH_3_6_MODEL_ID;
+export const GEMINI_FLASH_MODEL_ID = GEMINI_FLASH_3_7_MODEL_ID;
 export const GEMINI_PRO_MODEL_ID = GEMINI_PRO_3_1_MODEL_ID;
 
 const BUDGET_MODEL_IDS = new Set<string>([
+  GEMINI_FLASH_3_7_MODEL_ID,
   GEMINI_FLASH_3_6_MODEL_ID,
   GEMINI_FLASH_3_5_MODEL_ID,
   GEMINI_FLASH_LITE_3_5_MODEL_ID,
 ]);
 
 export const ALL_MODEL_IDS = [
+  GEMINI_FLASH_3_7_MODEL_ID,
   GEMINI_FLASH_3_6_MODEL_ID,
   GEMINI_FLASH_3_5_MODEL_ID,
   GEMINI_FLASH_LITE_3_5_MODEL_ID,
@@ -51,7 +54,7 @@ export class Settings {
   static readonly DEFAULT_FONT_SIZE = 16;
   static readonly MIN_FONT_SIZE = 8;
   static readonly MAX_FONT_SIZE = 48;
-  static readonly DEFAULT_MODEL_NAME = 'gemini-3.6-flash';
+  static readonly DEFAULT_MODEL_NAME = 'gemini-3.7-flash';
   static readonly DEFAULT_THINKING_BUDGET = 8192;
   static readonly DEFAULT_THINKING_LEVEL: ThinkingLevel = 'high';
 
